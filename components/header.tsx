@@ -64,7 +64,7 @@ export function Header() {
               Sign In
             </Button>
           </Link>
-          <Link href="/register">
+          <Link href="/signup">
             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">Get Started</Button>
           </Link>
         </div>
@@ -124,7 +124,7 @@ export function Header() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/register" className="w-full">
+              <Link href="/signup" className="w-full">
                 <Button className="w-full bg-primary hover:bg-primary/90">Get Started</Button>
               </Link>
             </div>
