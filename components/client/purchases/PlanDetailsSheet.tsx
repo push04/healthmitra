@@ -257,7 +257,7 @@ export function PlanDetailsSheet({ plan, isOpen, onClose }: PlanDetailsSheetProp
                                             }>{claim.status}</Badge>
                                         </div>
                                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
-                                            <span className="font-medium text-slate-900">₹ {claim.amount.toLocaleString()}</span>
+                                            <span className="font-medium text-slate-900">₹ {claim.amount.toLocaleString('en-US')}</span>
                                             <Button variant="link" size="sm" className="h-auto p-0 text-teal-600">View Details →</Button>
                                         </div>
                                     </div>

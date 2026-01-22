@@ -147,7 +147,7 @@ export default function ECardFlip({ card }: ECardFlipProps) {
                         <div className="space-y-4">
                             <div className="bg-teal-50 p-3 rounded-lg border border-teal-100">
                                 <p className="text-xs text-teal-600 font-medium uppercase">Total Coverage Amount</p>
-                                <p className="text-xl font-bold text-teal-800">₹{(card.coverageAmount || 500000).toLocaleString()}</p>
+                                <p className="text-xl font-bold text-teal-800">₹{(card.coverageAmount || 500000).toLocaleString('en-US')}</p>
                             </div>
 
                             <ul className="space-y-2 text-sm text-slate-600">

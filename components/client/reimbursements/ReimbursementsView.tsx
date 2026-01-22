@@ -48,7 +48,7 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                 <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden">
                     <div className="relative z-10">
                         <p className="text-indigo-100 font-medium text-sm">Total Claims Value</p>
-                        <h3 className="text-3xl font-bold mt-1">₹{totalValue.toLocaleString()}</h3>
+                        <h3 className="text-3xl font-bold mt-1">₹{totalValue.toLocaleString('en-US')}</h3>
                         <p className="text-xs text-indigo-200 mt-2 bg-white/10 inline-block px-2 py-1 rounded">{initialClaims.length} Claims total</p>
                     </div>
                     <Activity className="absolute bottom-[-10px] right-[-10px] w-24 h-24 text-white opacity-10" />
@@ -113,7 +113,7 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                                             <p className="text-xs text-slate-500">{new Date(claim.created_at).toISOString().split('T')[0]}</p>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="font-bold text-slate-800">₹{claim.amount?.toLocaleString()}</span>
+                                            <span className="font-bold text-slate-800">₹{claim.amount?.toLocaleString('en-US')}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <StatusBadge status={claim.status} />

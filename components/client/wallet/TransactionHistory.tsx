@@ -51,7 +51,7 @@ export default function TransactionHistory() {
                         </div>
 
                         <div className={`font-bold text-sm ${txn.type === 'credit' ? 'text-emerald-600' : 'text-slate-800'}`}>
-                            {txn.type === 'credit' ? '+' : '-'} ₹{txn.amount.toLocaleString()}
+                            {txn.type === 'credit' ? '+' : '-'} ₹{txn.amount.toLocaleString('en-US')}
                         </div>
                     </div>
                 ))}

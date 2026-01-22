@@ -35,7 +35,7 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
                             <h2 className="text-emerald-100 font-medium text-sm mb-2 flex items-center gap-2">
                                 <Wallet size={16} /> WALLET BALANCE
                             </h2>
-                            <div className="text-4xl font-bold mb-1">₹ {balance.toLocaleString()}</div>
+                            <div className="text-4xl font-bold mb-1">₹ {balance.toLocaleString('en-US')}</div>
                             <p className="text-emerald-100 text-xs mb-8">Available Balance</p>
 
                             <div className="flex flex-wrap gap-4">
@@ -69,7 +69,7 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
                                 <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><ArrowDownLeft size={12} /></span>
                                 CREDITED
                             </div>
-                            <p className="text-lg font-bold text-slate-800">₹{stats.totalCredited.toLocaleString()}</p>
+                            <p className="text-lg font-bold text-slate-800">₹{stats.totalCredited.toLocaleString('en-US')}</p>
                             <p className="text-xs text-slate-400 mt-1">{stats.creditedCount} txns</p>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -77,7 +77,7 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
                                 <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><ArrowUpRight size={12} /></span>
                                 DEBITED
                             </div>
-                            <p className="text-lg font-bold text-slate-800">₹{stats.totalDebited.toLocaleString()}</p>
+                            <p className="text-lg font-bold text-slate-800">₹{stats.totalDebited.toLocaleString('en-US')}</p>
                             <p className="text-xs text-slate-400 mt-1">{stats.debitedCount} txns</p>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -85,7 +85,7 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
                                 <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><RefreshCw size={12} /></span>
                                 THIS MONTH
                             </div>
-                            <p className="text-lg font-bold text-slate-800">₹{stats.thisMonthSpend.toLocaleString()}</p>
+                            <p className="text-lg font-bold text-slate-800">₹{stats.thisMonthSpend.toLocaleString('en-US')}</p>
                             <p className="text-xs text-slate-400 mt-1">{stats.thisMonthCount} txns</p>
                         </div>
                     </div>

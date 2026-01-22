@@ -31,7 +31,34 @@ const MOCK_DATA: DashboardData = {
     wallet: {
         balance: 15450,
         currency: "INR",
-        minimumBalance: 0,
+        minimumBalance: 1,
+    },
+    vouchers: {
+        available: 3,
+        used: 2,
+        expired: 0,
+        totalValue: 5000,
+    },
+    services: {
+        activeServices: 2,
+        completedThisMonth: 5,
+        pendingApproval: 1,
+    },
+    members: {
+        totalMembers: 4,
+        withActiveCards: 4,
+        familyMembers: [
+            { name: "Demo User", relation: "Self" },
+            { name: "Spouse User", relation: "Spouse" },
+            { name: "Child One", relation: "Child" },
+            { name: "Parent User", relation: "Parent" },
+        ],
+    },
+    reimbursementSummary: {
+        totalClaimed: 25000,
+        approved: 3,
+        pending: 1,
+        rejected: 0,
     },
     pendingRequests: {
         total: 3,
@@ -124,13 +151,17 @@ export function DashboardView({ initialData }: DashboardViewProps) {
                 </div>
             </div>
 
-            {/* 2. Quick Stats */}
+            {/* 2. Quick Stats - Now with 8 cards */}
             <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                 <QuickStats
                     plan={data.activePlan}
                     eCard={data.eCardStatus}
                     wallet={data.wallet}
                     pending={data.pendingRequests}
+                    vouchers={data.vouchers}
+                    services={data.services}
+                    members={data.members}
+                    reimbursement={data.reimbursementSummary}
                     loading={loading}
                 />
             </div>

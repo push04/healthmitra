@@ -30,7 +30,7 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance }: AddMo
         setTimeout(() => {
             setIsProcessing(false);
             toast.success('Money added to wallet!', {
-                description: `₹${Number(amount).toLocaleString()} credited successfully.`
+                description: `₹${Number(amount).toLocaleString('en-US')} credited successfully.`
             });
             onClose();
             setAmount('');
@@ -50,7 +50,7 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance }: AddMo
                 <div className="p-6 space-y-6">
                     <div className="text-center">
                         <p className="text-sm text-slate-500 mb-1">Current Balance</p>
-                        <p className="text-2xl font-bold text-slate-800">₹ {currentBalance.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-slate-800">₹ {currentBalance.toLocaleString('en-US')}</p>
                     </div>
 
                     <div className="space-y-4">
@@ -79,7 +79,7 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance }: AddMo
                                         : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'
                                         }`}
                                 >
-                                    ₹{amt.toLocaleString()}
+                                    ₹{amt.toLocaleString('en-US')}
                                 </button>
                             ))}
                         </div>

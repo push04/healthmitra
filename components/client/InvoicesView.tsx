@@ -78,15 +78,15 @@ export function InvoicesView({ invoices }: InvoicesViewProps) {
                                 <div className="md:w-64 bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm">
                                     <div className="flex justify-between mb-1">
                                         <span className="text-slate-500">Plan Amount</span>
-                                        <span className="text-slate-700">₹{inv.amount.toLocaleString()}</span>
+                                        <span className="text-slate-700">₹{inv.amount.toLocaleString('en-US')}</span>
                                     </div>
                                     <div className="flex justify-between mb-2">
                                         <span className="text-slate-500">GST (18%)</span>
-                                        <span className="text-slate-700">₹{inv.gst.toLocaleString()}</span>
+                                        <span className="text-slate-700">₹{inv.gst.toLocaleString('en-US')}</span>
                                     </div>
                                     <div className="flex justify-between pt-2 border-t border-slate-200 font-bold">
                                         <span className="text-slate-800">Total Amount</span>
-                                        <span className="text-slate-800">₹{inv.total.toLocaleString()}</span>
+                                        <span className="text-slate-800">₹{inv.total.toLocaleString('en-US')}</span>
                                     </div>
                                     <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-emerald-600 justify-end">
                                         <ShieldCheck size={14} /> Payment Successful

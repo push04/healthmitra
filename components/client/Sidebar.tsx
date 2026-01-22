@@ -22,12 +22,14 @@ import { cn } from "@/lib/utils";
 export const NAV_ITEMS = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
     { icon: FileText, label: 'Service Requests', href: '/service-requests' },
+    { icon: ShoppingBag, label: 'My Purchases', href: '/my-purchases' },
     { icon: Wallet, label: 'My Wallet', href: '/wallet' },
     { icon: Receipt, label: 'Invoices', href: '/invoices' },
+    { icon: Folder, label: 'Reimbursements', href: '/reimbursements' },
     { icon: FolderHeart, label: 'Health Records', href: '/phr' },
-    { icon: Settings, label: 'Settings', href: '/settings' },
     { icon: CreditCard, label: 'E-Cards', href: '/e-cards' },
     { icon: User, label: 'Profile', href: '/profile' },
+    { icon: Settings, label: 'Settings', href: '/settings' },
     { icon: HelpCircle, label: 'Support', href: '/support' }
 ];
 

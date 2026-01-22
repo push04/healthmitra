@@ -69,7 +69,7 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance }: Wit
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm space-y-1">
                         <div className="flex justify-between">
                             <span className="text-slate-500">Available Balance:</span>
-                            <span className="font-bold text-slate-800">₹{currentBalance.toLocaleString()}</span>
+                            <span className="font-bold text-slate-800">₹{currentBalance.toLocaleString('en-US')}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-slate-500">Min. Balance Required:</span>
@@ -77,7 +77,7 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance }: Wit
                         </div>
                         <div className="flex justify-between pt-2 border-t border-slate-200 mt-2">
                             <span className="text-slate-600 font-medium">Max Withdrawal:</span>
-                            <span className="font-bold text-teal-600">₹{maxWithdrawal.toLocaleString()}</span>
+                            <span className="font-bold text-teal-600">₹{maxWithdrawal.toLocaleString('en-US')}</span>
                         </div>
                     </div>
 

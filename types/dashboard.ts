@@ -33,6 +33,32 @@ export interface WalletData {
     minimumBalance: number;
 }
 
+export interface VoucherData {
+    available: number;
+    used: number;
+    expired: number;
+    totalValue: number;
+}
+
+export interface ServiceData {
+    activeServices: number;
+    completedThisMonth: number;
+    pendingApproval: number;
+}
+
+export interface MembersData {
+    totalMembers: number;
+    withActiveCards: number;
+    familyMembers: { name: string; relation: string }[];
+}
+
+export interface ReimbursementData {
+    totalClaimed: number;
+    approved: number;
+    pending: number;
+    rejected: number;
+}
+
 export interface PendingRequests {
     total: number;
     breakdown: {
@@ -66,6 +92,10 @@ export interface DashboardData {
     activePlan: ActivePlan;
     eCardStatus: ECardStatusData;
     wallet: WalletData;
+    vouchers: VoucherData;
+    services: ServiceData;
+    members: MembersData;
+    reimbursementSummary: ReimbursementData;
     pendingRequests: PendingRequests;
     recentActivity: RecentActivity[];
     notifications: Notification[];
