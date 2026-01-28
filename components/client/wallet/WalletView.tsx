@@ -1,21 +1,44 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Wallet, Upload, Download, ArrowDownLeft, ArrowUpRight, RefreshCw } from 'lucide-react';
+import { Wallet, Upload, Download, ArrowDownLeft, ArrowUpRight, RefreshCw, CreditCard, Clock, AlertCircle, Receipt, CheckCircle, Info, ChevronRight } from 'lucide-react';
 import AddMoneyModal from '@/components/client/wallet/AddMoneyModal';
 import WithdrawalModal from '@/components/client/wallet/WithdrawalModal';
 import TransactionHistory from '@/components/client/wallet/TransactionHistory';
+import { toast } from 'sonner';
 
 interface WalletViewProps {
     wallet: any;
     stats: any;
 }
 
+// Mock approved bill refunds (withdrawable)
+const MOCK_BILL_REFUNDS = [
+    { id: 'CLM-001', type: 'Medicine Bill', amount: 1250, date: 'Jan 16, 2025', status: 'withdrawable' },
+    { id: 'CLM-002', type: 'Test Bill', amount: 850, date: 'Jan 15, 2025', status: 'withdrawable' },
+    { id: 'CLM-003', type: 'OPD Bill', amount: 1140, date: 'Jan 12, 2025', status: 'withdrawable' },
+];
+
 export function WalletView({ wallet, stats }: WalletViewProps) {
     const [isAddMoneyOpen, setIsAddMoneyOpen] = useState(false);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
 
-    const balance = wallet?.balance || 0;
+    const totalBalance = wallet?.balance || 5240;
+
+    // Split balance: Added Money vs Bill Refunds
+    const addedMoney = 2000; // Money added via "Add Money" - NOT withdrawable
+    const billRefundBalance = totalBalance - addedMoney; // From approved reimbursements - WITHDRAWABLE
+
+    // Daily withdrawal limit tracking
+    const todayWithdrawals = 2;
+    const MAX_DAILY_WITHDRAWALS = 5;
+    const remainingWithdrawals = MAX_DAILY_WITHDRAWALS - todayWithdrawals;
+
+    const handleWalletPayment = () => {
+        toast.success('Wallet Payment', {
+            description: 'Select a service to pay using your wallet balance.'
+        });
+    };
 
     return (
         <div className="space-y-6 pb-10">
@@ -25,40 +48,134 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
                 <p className="text-slate-500 text-sm">Manage your wallet balance and transactions</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Daily Withdrawal Limit Banner */}
+            <div className={`p-4 rounded-xl flex items-center justify-between ${remainingWithdrawals <= 2 ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
+                <div className="flex items-center gap-3">
+                    <Clock className={remainingWithdrawals <= 2 ? 'text-amber-600' : 'text-blue-600'} size={20} />
+                    <div>
+                        <p className={`font-semibold ${remainingWithdrawals <= 2 ? 'text-amber-800' : 'text-blue-800'}`}>
+                            Daily Withdrawal Limit
+                        </p>
+                        <p className={`text-sm ${remainingWithdrawals <= 2 ? 'text-amber-600' : 'text-blue-600'}`}>
+                            {remainingWithdrawals} of {MAX_DAILY_WITHDRAWALS} withdrawals remaining today
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-1">
+                    {[...Array(MAX_DAILY_WITHDRAWALS)].map((_, i) => (
+                        <div key={i} className={`w-3 h-3 rounded-full ${i < todayWithdrawals ? 'bg-slate-300' : 'bg-teal-500'}`} />
+                    ))}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Left Col: Balance Card & Actions */}
-                <div className="md:col-span-2 space-y-6">
-                    {/* Balance Card */}
-                    <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-8 text-white shadow-lg shadow-teal-200/50 relative overflow-hidden">
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Main Balance Card */}
+                    <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg shadow-teal-200/50 relative overflow-hidden">
                         <div className="relative z-10">
                             <h2 className="text-emerald-100 font-medium text-sm mb-2 flex items-center gap-2">
-                                <Wallet size={16} /> WALLET BALANCE
+                                <Wallet size={16} /> TOTAL WALLET BALANCE
                             </h2>
-                            <div className="text-4xl font-bold mb-1">₹ {balance.toLocaleString('en-US')}</div>
-                            <p className="text-emerald-100 text-xs mb-8">Available Balance</p>
+                            <div className="text-4xl font-bold mb-4">₹{totalBalance.toLocaleString('en-IN')}</div>
 
-                            <div className="flex flex-wrap gap-4">
+                            {/* Balance Breakdown */}
+                            <div className="grid grid-cols-2 gap-3 mb-5">
+                                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                                    <div className="flex items-center gap-2 text-emerald-100 text-xs mb-1">
+                                        <Upload size={12} /> Added Money
+                                    </div>
+                                    <p className="text-xl font-bold">₹{addedMoney.toLocaleString('en-IN')}</p>
+                                    <p className="text-[10px] text-emerald-200 mt-1 flex items-center gap-1">
+                                        <AlertCircle size={10} /> Not withdrawable
+                                    </p>
+                                </div>
+                                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                                    <div className="flex items-center gap-2 text-white text-xs mb-1">
+                                        <Receipt size={12} /> Bill Refunds
+                                    </div>
+                                    <p className="text-xl font-bold">₹{billRefundBalance.toLocaleString('en-IN')}</p>
+                                    <p className="text-[10px] text-emerald-100 mt-1 flex items-center gap-1">
+                                        <CheckCircle size={10} /> Withdrawable
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-3">
                                 <button
                                     onClick={() => setIsAddMoneyOpen(true)}
-                                    className="bg-white text-teal-700 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-colors flex items-center gap-2 shadow-sm"
+                                    className="bg-white text-teal-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-colors flex items-center gap-2 shadow-sm"
                                 >
                                     <Upload size={16} /> Add Money
                                 </button>
                                 <button
                                     onClick={() => setIsWithdrawOpen(true)}
-                                    className="bg-teal-700/50 hover:bg-teal-700 text-white border border-teal-400/30 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 backdrop-blur-sm"
+                                    className="bg-teal-700/50 hover:bg-teal-700 text-white border border-teal-400/30 px-5 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 backdrop-blur-sm"
                                 >
-                                    <Download size={16} /> Request Withdrawal
+                                    <Download size={16} /> Withdraw
+                                </button>
+                                <button
+                                    onClick={handleWalletPayment}
+                                    className="bg-yellow-400 text-yellow-900 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-yellow-300 transition-colors flex items-center gap-2 shadow-sm"
+                                >
+                                    <CreditCard size={16} /> Pay Now
                                 </button>
                             </div>
                         </div>
 
-                        {/* Decorative Circles */}
+                        {/* Decorative */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
                         <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full -ml-10 -mb-10 blur-xl"></div>
-                        <div className="absolute bottom-4 right-6 text-xs text-white/60 bg-black/10 px-3 py-1 rounded-full">
-                            Min balance restriction: ₹1.00
+                    </div>
+
+                    {/* Info Banner */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+                        <Info className="text-slate-400 flex-shrink-0 mt-0.5" size={18} />
+                        <div className="text-sm text-slate-600">
+                            <p className="font-medium text-slate-700 mb-1">How Wallet Works:</p>
+                            <ul className="space-y-1 text-xs">
+                                <li>• <strong>Added Money</strong>: Use for paying services only (not withdrawable)</li>
+                                <li>• <strong>Bill Refunds</strong>: From approved reimbursements (can be withdrawn to bank)</li>
+                                <li>• Maximum <strong>5 withdrawals per day</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Withdrawable Bills Section */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                <Receipt size={18} className="text-teal-600" /> Withdrawable Bill Refunds
+                            </h3>
+                            <span className="text-sm text-teal-600 font-semibold">₹{billRefundBalance.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="divide-y divide-slate-100">
+                            {MOCK_BILL_REFUNDS.map((bill) => (
+                                <div key={bill.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                            <CheckCircle className="text-emerald-600" size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-slate-800">{bill.type}</p>
+                                            <p className="text-xs text-slate-500">{bill.id} • {bill.date}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-emerald-600">₹{bill.amount.toLocaleString('en-IN')}</p>
+                                        <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Withdrawable</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-3 bg-slate-50 border-t border-slate-100">
+                            <button
+                                onClick={() => setIsWithdrawOpen(true)}
+                                className="w-full py-2 text-sm font-semibold text-teal-600 hover:text-teal-700 flex items-center justify-center gap-1"
+                            >
+                                Withdraw Now <ChevronRight size={14} />
+                            </button>
                         </div>
                     </div>
 
@@ -93,8 +210,29 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
                     <TransactionHistory />
                 </div>
 
-                {/* Right Col: Promotions/Info */}
-                <div className="hidden md:block md:col-span-1 space-y-6">
+                {/* Right Col: Sidebar */}
+                <div className="hidden lg:block lg:col-span-1 space-y-6">
+                    {/* Wallet Payment Card */}
+                    <div className="bg-gradient-to-b from-yellow-400 to-amber-500 rounded-2xl p-6 text-amber-900">
+                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CreditCard size={24} />
+                        </div>
+                        <h3 className="font-bold text-center mb-2">Pay Using Wallet</h3>
+                        <p className="text-sm text-amber-800 text-center mb-4">Use your wallet balance to pay for services instantly.</p>
+                        <ul className="text-xs space-y-1 mb-4">
+                            <li className="flex items-center gap-2"><CheckCircle size={12} /> Instant confirmation</li>
+                            <li className="flex items-center gap-2"><CheckCircle size={12} /> No additional charges</li>
+                            <li className="flex items-center gap-2"><CheckCircle size={12} /> Quick checkout</li>
+                        </ul>
+                        <button
+                            onClick={handleWalletPayment}
+                            className="w-full py-2 bg-white text-amber-900 rounded-lg font-bold text-sm hover:bg-amber-50 transition-colors"
+                        >
+                            Pay Now
+                        </button>
+                    </div>
+
+                    {/* Refer & Earn */}
                     <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 text-white text-center">
                         <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">+</div>
                         <h3 className="font-bold mb-2">Refer & Earn</h3>
@@ -104,6 +242,7 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
                         </button>
                     </div>
 
+                    {/* Help */}
                     <div className="bg-sky-50 border border-sky-100 rounded-2xl p-6">
                         <h3 className="font-bold text-sky-900 mb-2 text-sm">Need Help?</h3>
                         <p className="text-xs text-sky-800 mb-4">Having trouble with your wallet balance or transaction? Contact our support team.</p>
@@ -117,13 +256,13 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
             <AddMoneyModal
                 isOpen={isAddMoneyOpen}
                 onClose={() => setIsAddMoneyOpen(false)}
-                currentBalance={balance}
+                currentBalance={totalBalance}
             />
 
             <WithdrawalModal
                 isOpen={isWithdrawOpen}
                 onClose={() => setIsWithdrawOpen(false)}
-                currentBalance={balance}
+                currentBalance={billRefundBalance} // Only bill refund balance is withdrawable
             />
         </div>
     );

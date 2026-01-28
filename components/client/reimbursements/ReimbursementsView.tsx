@@ -1,143 +1,341 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { ReimbursementClaim } from '@/types/reimbursement';
-import { Plus, FileText, Activity, AlertCircle, Search, Filter } from 'lucide-react';
+import { FileText, Activity, Search, Filter, X, ChevronDown, Download, CheckCircle, XCircle, Clock, RefreshCw, Wallet, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ReimbursementsViewProps {
     initialClaims: any[];
 }
 
+// MOCK CLAIMS DATA with rejection reasons and wallet credits
+const MOCK_CLAIMS = [
+    { id: 'CLM-2025-001', claim_type: 'Medicine', created_at: '2025-01-25', amount: 2500, status: 'approved', member: 'Self', creditedToWallet: true },
+    { id: 'CLM-2025-002', claim_type: 'Diagnostic Test', created_at: '2025-01-22', amount: 4500, status: 'processing', member: 'Spouse' },
+    { id: 'CLM-2025-003', claim_type: 'OPD Consultation', created_at: '2025-01-18', amount: 1500, status: 'rejected', member: 'Self', rejectionReason: 'Bill date outside policy validity period' },
+    { id: 'CLM-2025-004', claim_type: 'Hospitalization', created_at: '2025-01-10', amount: 35000, status: 'approved', member: 'Father', creditedToWallet: true },
+    { id: 'CLM-2024-005', claim_type: 'Medicine', created_at: '2024-12-15', amount: 3200, status: 'approved', member: 'Self', creditedToWallet: true },
+    { id: 'CLM-2024-006', claim_type: 'Diagnostic Test', created_at: '2024-11-28', amount: 5800, status: 'rejected', member: 'Mother', rejectionReason: 'Insufficient documentation provided' },
+    { id: 'CLM-2024-007', claim_type: 'Medicine', created_at: '2024-11-20', amount: 2100, status: 'under_review', member: 'Self' },
+];
+
 const StatusBadge = ({ status }: { status: string }) => {
     switch (status) {
         case 'approved':
-            return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Approved</span>;
+            return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200 flex items-center gap-1"><CheckCircle size={12} /> Approved</span>;
         case 'processing':
-            return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">Processing</span>;
+        case 'pending':
+            return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1"><Clock size={12} /> Processing</span>;
+        case 'under_review':
+            return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-1"><Clock size={12} /> Under Review</span>;
         case 'rejected':
-            return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">Rejected</span>;
+            return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 flex items-center gap-1"><XCircle size={12} /> Rejected</span>;
         default:
             return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">Submitted</span>;
     }
 };
 
+type StatusFilter = 'approved' | 'rejected' | 'pending' | 'under_review';
+
 export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
-    const totalValue = initialClaims.reduce((sum, claim) => sum + (claim.amount || 0), 0);
-    const pendingCount = initialClaims.filter(c => c.status === 'processing' || c.status === 'pending').length;
-    const settledCount = initialClaims.filter(c => c.status === 'approved' || c.status === 'settled').length;
+    const claims = initialClaims.length > 0 ? initialClaims : MOCK_CLAIMS;
+
+    // Checkbox filter state - multi-select
+    const [selectedStatuses, setSelectedStatuses] = useState<StatusFilter[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');
+
+    // Toggle status filter
+    const toggleStatus = (status: StatusFilter) => {
+        setSelectedStatuses(prev =>
+            prev.includes(status)
+                ? prev.filter(s => s !== status)
+                : [...prev, status]
+        );
+    };
+
+    // Apply filters
+    const filteredClaims = claims.filter(claim => {
+        // Status filter (checkbox multi-select)
+        if (selectedStatuses.length > 0) {
+            const claimStatus = claim.status === 'processing' ? 'pending' : claim.status;
+            if (!selectedStatuses.includes(claimStatus as StatusFilter)) return false;
+        }
+
+        // Type filter
+        if (typeFilter !== 'all') {
+            const claimType = (claim.claim_type || claim.type || '').toLowerCase();
+            if (!claimType.includes(typeFilter.toLowerCase())) return false;
+        }
+
+        // Search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            const matchSearch =
+                claim.id.toLowerCase().includes(query) ||
+                (claim.claim_type || claim.type || '').toLowerCase().includes(query) ||
+                (claim.member || '').toLowerCase().includes(query) ||
+                String(claim.amount).includes(query);
+            if (!matchSearch) return false;
+        }
+
+        return true;
+    });
+
+    // Stats
+    const approvedAmount = claims.filter(c => c.status === 'approved').reduce((sum, claim) => sum + (claim.amount || 0), 0);
+    const rejectedAmount = claims.filter(c => c.status === 'rejected').reduce((sum, claim) => sum + (claim.amount || 0), 0);
+    const pendingAmount = claims.filter(c => c.status === 'processing' || c.status === 'pending' || c.status === 'under_review').reduce((sum, claim) => sum + (claim.amount || 0), 0);
+    const pendingCount = claims.filter(c => c.status === 'processing' || c.status === 'pending' || c.status === 'under_review').length;
+    const approvedCount = claims.filter(c => c.status === 'approved').length;
+    const rejectedCount = claims.filter(c => c.status === 'rejected').length;
+
+    const statusFilters: { value: StatusFilter; label: string; count: number; color: string }[] = [
+        { value: 'approved', label: 'Approved', count: approvedCount, color: 'emerald' },
+        { value: 'rejected', label: 'Rejected', count: rejectedCount, color: 'red' },
+        { value: 'pending', label: 'Pending', count: pendingCount, color: 'amber' },
+        { value: 'under_review', label: 'Under Review', count: claims.filter(c => c.status === 'under_review').length, color: 'blue' },
+    ];
+
+    const claimTypes = ['all', 'Medicine', 'Diagnostic Test', 'OPD Consultation', 'Hospitalization'];
+
+    const handleReset = () => {
+        setSelectedStatuses([]);
+        setSearchQuery('');
+        setTypeFilter('all');
+    };
+
+    const handleResubmit = (claimId: string) => {
+        toast.info('Resubmit Claim', {
+            description: `You can resubmit ${claimId} with corrected documents.`
+        });
+    };
+
+    const handleDownloadReceipt = (claimId: string) => {
+        toast.success('Downloading Receipt', {
+            description: `Receipt for ${claimId} is being downloaded.`
+        });
+    };
 
     return (
-        <div className="space-y-8">
-            {/* Header */}
+        <div className="space-y-6 pb-10">
+            {/* Header - NO NEW CLAIM BUTTON */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">Reimbursements</h1>
                     <p className="text-slate-500">Track and manage your insurance claims</p>
                 </div>
-                <Link
-                    href="/reimbursements/new"
-                    className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5"
-                >
-                    <Plus size={18} /> New Claim
-                </Link>
             </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden">
+                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden">
                     <div className="relative z-10">
-                        <p className="text-indigo-100 font-medium text-sm">Total Claims Value</p>
-                        <h3 className="text-3xl font-bold mt-1">₹{totalValue.toLocaleString('en-US')}</h3>
-                        <p className="text-xs text-indigo-200 mt-2 bg-white/10 inline-block px-2 py-1 rounded">{initialClaims.length} Claims total</p>
+                        <p className="text-emerald-100 font-medium text-sm">Approved Amount</p>
+                        <h3 className="text-3xl font-bold mt-1">₹{approvedAmount.toLocaleString('en-IN')}</h3>
+                        <p className="text-xs text-emerald-200 mt-2 bg-white/10 inline-block px-2 py-1 rounded">{approvedCount} Claims approved</p>
                     </div>
                     <Activity className="absolute bottom-[-10px] right-[-10px] w-24 h-24 text-white opacity-10" />
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-slate-500 text-sm font-medium">Pending Processing</p>
-                            <h3 className="text-2xl font-bold text-slate-800 mt-1">{pendingCount}</h3>
-                        </div>
-                        <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
-                            <ClockIcon size={20} />
-                        </div>
+                <div className="bg-gradient-to-br from-red-500 to-red-600 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden">
+                    <div className="relative z-10">
+                        <p className="text-red-100 font-medium text-sm">Rejected Amount</p>
+                        <h3 className="text-3xl font-bold mt-1">₹{rejectedAmount.toLocaleString('en-IN')}</h3>
+                        <p className="text-xs text-red-200 mt-2 bg-white/10 inline-block px-2 py-1 rounded">{rejectedCount} Claims rejected</p>
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-slate-500 text-sm font-medium">Settled Claims</p>
-                            <h3 className="text-2xl font-bold text-slate-800 mt-1">{settledCount}</h3>
+                            <p className="text-slate-500 text-sm font-medium">Pending Processing</p>
+                            <h3 className="text-2xl font-bold text-slate-800 mt-1">₹{pendingAmount.toLocaleString('en-IN')}</h3>
+                            <p className="text-xs text-amber-600 mt-1">{pendingCount} claims in review</p>
                         </div>
-                        <div className="p-2 bg-green-50 text-green-600 rounded-lg">
-                            <CheckCircleIcon size={20} />
+                        <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                            <Clock size={20} />
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Claims List */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="min-w-full overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50 border-b border-slate-100">
-                            <tr>
-                                <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Claim ID</th>
-                                <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Amount</th>
-                                <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {initialClaims.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                                        No claims found. Create a new claim to get started.
-                                    </td>
-                                </tr>
-                            ) : (
-                                initialClaims.map((claim) => (
-                                    <tr key={claim.id} className="hover:bg-slate-50 transition-colors cursor-pointer">
-                                        <td className="px-6 py-4">
-                                            <span className="font-mono text-sm font-medium text-slate-800">{claim.id.slice(0, 8)}...</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-sm font-medium text-slate-700">{claim.claim_type || claim.type || 'General'}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="text-xs text-slate-500">{new Date(claim.created_at).toISOString().split('T')[0]}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="font-bold text-slate-800">₹{claim.amount?.toLocaleString('en-US')}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <StatusBadge status={claim.status} />
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button className="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center justify-end gap-1 ml-auto">
-                                                View Details <FileText size={14} />
+            {/* Enhanced Filter Section */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Filter Bar */}
+                <div className="p-4 border-b border-slate-100 space-y-4">
+                    {/* Search and Type Filter */}
+                    <div className="flex flex-wrap gap-3 items-center">
+                        <div className="relative flex-1 min-w-[200px] max-w-sm">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search by ID, member, amount..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            />
+                        </div>
+                        <select
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value)}
+                            className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        >
+                            {claimTypes.map(type => (
+                                <option key={type} value={type}>{type === 'all' ? 'Type: All' : type}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Checkbox Status Filters */}
+                    <div className="flex flex-wrap items-center gap-4">
+                        <span className="text-sm font-medium text-slate-600">Filter by Status:</span>
+                        {statusFilters.map(filter => (
+                            <label key={filter.value} className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedStatuses.includes(filter.value)}
+                                    onChange={() => toggleStatus(filter.value)}
+                                    className={`w-4 h-4 rounded border-2 focus:ring-2 focus:ring-offset-1 transition-all
+                                        ${filter.color === 'emerald' ? 'text-emerald-600 focus:ring-emerald-500 border-emerald-300' : ''}
+                                        ${filter.color === 'red' ? 'text-red-600 focus:ring-red-500 border-red-300' : ''}
+                                        ${filter.color === 'amber' ? 'text-amber-600 focus:ring-amber-500 border-amber-300' : ''}
+                                        ${filter.color === 'blue' ? 'text-blue-600 focus:ring-blue-500 border-blue-300' : ''}
+                                    `}
+                                />
+                                <span className={`text-sm font-medium transition-colors
+                                    ${selectedStatuses.includes(filter.value)
+                                        ? filter.color === 'emerald' ? 'text-emerald-700'
+                                            : filter.color === 'red' ? 'text-red-700'
+                                                : filter.color === 'amber' ? 'text-amber-700'
+                                                    : 'text-blue-700'
+                                        : 'text-slate-600 group-hover:text-slate-800'
+                                    }`}>
+                                    {filter.label} ({filter.count})
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* Apply/Reset Buttons */}
+                    <div className="flex gap-2">
+                        {(selectedStatuses.length > 0 || searchQuery || typeFilter !== 'all') && (
+                            <button
+                                onClick={handleReset}
+                                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                            >
+                                <X size={14} /> Reset Filters
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Results Count */}
+                <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 text-sm text-slate-500">
+                    Showing {filteredClaims.length} of {claims.length} claims
+                </div>
+
+                {/* Claims as Cards */}
+                <div className="p-4 space-y-4">
+                    {filteredClaims.length === 0 ? (
+                        <div className="py-12 text-center">
+                            <div className="text-6xl mb-3">📋</div>
+                            <p className="text-slate-600 font-medium">No claims found</p>
+                            <p className="text-slate-400 text-sm mt-1">
+                                {selectedStatuses.length > 0
+                                    ? `No claims matching selected filters`
+                                    : 'You have not submitted any claims yet'}
+                            </p>
+                        </div>
+                    ) : (
+                        filteredClaims.map((claim) => (
+                            <div
+                                key={claim.id}
+                                className={`p-4 rounded-xl border transition-all hover:shadow-md ${claim.status === 'approved' ? 'bg-emerald-50/50 border-emerald-200' :
+                                        claim.status === 'rejected' ? 'bg-red-50/50 border-red-200' :
+                                            'bg-white border-slate-200'
+                                    }`}
+                            >
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className={`p-3 rounded-xl ${claim.status === 'approved' ? 'bg-emerald-100 text-emerald-600' :
+                                                claim.status === 'rejected' ? 'bg-red-100 text-red-600' :
+                                                    'bg-amber-100 text-amber-600'
+                                            }`}>
+                                            {claim.claim_type === 'Medicine' ? '💊' :
+                                                claim.claim_type === 'Diagnostic Test' ? '🧪' :
+                                                    claim.claim_type === 'OPD Consultation' ? '👨‍⚕️' :
+                                                        claim.claim_type === 'Hospitalization' ? '🏥' : '📄'}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h4 className="font-semibold text-slate-800">{claim.claim_type}</h4>
+                                                <span className="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{claim.id}</span>
+                                                <StatusBadge status={claim.status} />
+                                            </div>
+                                            <p className="text-sm text-slate-500 mt-1">
+                                                {new Date(claim.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                {claim.member && <span> • {claim.member}</span>}
+                                            </p>
+
+                                            {/* Approved: Show wallet credit */}
+                                            {claim.status === 'approved' && claim.creditedToWallet && (
+                                                <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                                                    <Wallet size={12} /> Credited to wallet
+                                                </p>
+                                            )}
+
+                                            {/* Rejected: Show reason */}
+                                            {claim.status === 'rejected' && claim.rejectionReason && (
+                                                <div className="mt-2 p-2 bg-red-100/50 rounded-lg">
+                                                    <p className="text-xs text-red-700 flex items-start gap-1">
+                                                        <AlertCircle size={12} className="flex-shrink-0 mt-0.5" />
+                                                        <span><strong>Rejection Reason:</strong> "{claim.rejectionReason}"</span>
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-right">
+                                            <p className={`text-xl font-bold ${claim.status === 'approved' ? 'text-emerald-600' :
+                                                    claim.status === 'rejected' ? 'text-red-600' :
+                                                        'text-slate-800'
+                                                }`}>
+                                                ₹{claim.amount?.toLocaleString('en-IN')}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <button className="px-3 py-1.5 text-sm font-medium text-teal-600 hover:bg-teal-50 rounded-lg transition-colors">
+                                                View Details
                                             </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                            {claim.status === 'approved' && (
+                                                <button
+                                                    onClick={() => handleDownloadReceipt(claim.id)}
+                                                    className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1"
+                                                >
+                                                    <Download size={14} /> Receipt
+                                                </button>
+                                            )}
+                                            {claim.status === 'rejected' && (
+                                                <button
+                                                    onClick={() => handleResubmit(claim.id)}
+                                                    className="px-3 py-1.5 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors flex items-center gap-1"
+                                                >
+                                                    <RefreshCw size={14} /> Resubmit
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>
     );
 }
-
-const ClockIcon = ({ size }: { size: number }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-);
-
-const CheckCircleIcon = ({ size }: { size: number }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-);
