@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Filter, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Loader2, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { Plan, MOCK_CATEGORIES } from '@/app/lib/mock/plans-data';
-import { getPlans } from '@/app/actions/plans';
+import { getPlans, copyPlan } from '@/app/actions/plans';
 import PlanCard from '@/components/admin/plans/PlanCard';
 import { toast } from 'sonner';
 
@@ -15,13 +15,11 @@ export default function PlansListingPage() {
     const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Filters State
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
 
-    // Debounced Search (simulated)
     useEffect(() => {
         const fetchToLoad = async () => {
             setLoading(true);
@@ -35,7 +33,7 @@ export default function PlansListingPage() {
                 if (res.success && res.data) {
                     setPlans(res.data);
                 }
-            } catch (error) {
+            } catch {
                 toast.error("Failed to fetch plans");
             } finally {
                 setLoading(false);
@@ -47,7 +45,6 @@ export default function PlansListingPage() {
     }, [search, statusFilter, typeFilter, categoryFilter]);
 
     const handleEdit = (id: string) => {
-        // Navigate to edit page (implemented later)
         window.location.href = `/admin/plans/${id}/edit`;
     };
 
@@ -63,6 +60,18 @@ export default function PlansListingPage() {
         toast.info("Opening Audit Log mock...");
     };
 
+    const handleCopy = async (id: string) => {
+        const res = await copyPlan(id);
+        if (res.success && res.data) {
+            setPlans(prev => [...prev, res.data!]);
+            toast.success("Plan copied successfully", {
+                description: `"${res.data.name}" has been created as a draft.`
+            });
+        } else {
+            toast.error("Failed to copy plan");
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in py-6">
             {/* Page Header */}
@@ -73,11 +82,18 @@ export default function PlansListingPage() {
                     </h1>
                     <p className="text-slate-500 text-sm mt-1">Manage and organize all your B2B and B2C health plans.</p>
                 </div>
-                <Link href="/admin/plans/new">
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white w-full md:w-auto">
-                        <Plus className="mr-2 h-4 w-4" /> Create New Plan
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                    <Link href="/admin/plans/categories">
+                        <Button variant="outline" className="border-slate-200 text-slate-600 hover:bg-slate-50">
+                            <LayoutGrid className="mr-2 h-4 w-4" /> Categories
+                        </Button>
+                    </Link>
+                    <Link href="/admin/plans/new">
+                        <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+                            <Plus className="mr-2 h-4 w-4" /> Create New Plan
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Filters Toolbar */}
@@ -155,6 +171,7 @@ export default function PlansListingPage() {
                                 onDelete={handleDelete}
                                 onToggleStatus={handleToggle}
                                 onViewAudit={handleViewAudit}
+                                onCopy={handleCopy}
                             />
                         ))}
                     </div>

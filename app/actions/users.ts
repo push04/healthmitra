@@ -102,6 +102,36 @@ export async function toggleUserStatus(id: string, status: 'active' | 'inactive'
     return { success: true, message: `User ${status === 'active' ? 'activated' : 'deactivated'}` };
 }
 
+export async function updateBankDetails(id: string, bankDetails: any) {
+    await delay(600);
+    console.log(`Updating bank details for ${id}:`, bankDetails);
+    return { success: true, message: 'Bank details updated successfully' };
+}
+
+export async function updateDocuments(id: string, documents: any) {
+    await delay(600);
+    console.log(`Updating documents for ${id}:`, documents);
+    return { success: true, message: 'Documents updated successfully' };
+}
+
+export async function changePlan(id: string, planId: string, planName: string) {
+    await delay(600);
+    console.log(`Changing plan for ${id} to ${planName}`);
+    return { success: true, message: `Plan changed to ${planName}` };
+}
+
+export async function resendCredentials(id: string, method: 'whatsapp' | 'email') {
+    await delay(400);
+    console.log(`Resending credentials to ${id} via ${method}`);
+    return { success: true, message: `Credentials sent via ${method === 'whatsapp' ? 'WhatsApp' : 'Email'}` };
+}
+
+export async function activateNewPlan(id: string, planId: string) {
+    await delay(600);
+    console.log(`Activating plan ${planId} for user ${id}`);
+    return { success: true, message: 'New plan activated from backend' };
+}
+
 // --- DEPARTMENT ACTIONS ---
 
 export async function getDepartments() {

@@ -86,7 +86,7 @@ export default function DepartmentsPage() {
                                             {des.name}
                                         </div>
                                     ))}
-                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-teal-500 hover:text-teal-400 hover:bg-teal-900/10">
+                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-teal-500 hover:text-teal-400 hover:bg-teal-900/10" onClick={() => toast.info('Add Designation', { description: 'Feature to add new designations coming soon.' })}>
                                         + Add
                                     </Button>
                                 </div>

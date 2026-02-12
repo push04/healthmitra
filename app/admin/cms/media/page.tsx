@@ -97,8 +97,8 @@ export default function MediaPage() {
 
                         {/* Overlay Actions */}
                         <div className="absolute inset-0 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-xl border border-teal-200">
-                            <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"><Download className="h-4 w-4" /></Button>
-                            <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-100"><Trash2 className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" onClick={() => toast.success(`Downloading ${file.name}`)}><Download className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-100" onClick={() => toast.success(`${file.name} deleted`)}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                     </Card>
                 ))}

@@ -14,7 +14,11 @@ import {
     BarChart3,
     ClipboardCheck,
     MapPin,
-    LayoutTemplate
+    LayoutTemplate,
+    HeartPulse,
+    Building2,
+    Handshake,
+    Headphones
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +30,10 @@ export const ADMIN_NAV_ITEMS = [
     { icon: LayoutTemplate, label: 'CMS Manager', href: '/admin/cms/pages' },
     { icon: Percent, label: 'Coupons', href: '/admin/coupons' },
     { icon: MessageSquare, label: 'Service Requests', href: '/admin/service-requests' },
+    { icon: HeartPulse, label: 'PHR Management', href: '/admin/phr' },
+    { icon: Building2, label: 'Franchise Management', href: '/admin/franchises' },
+    { icon: Handshake, label: 'Partner Management', href: '/admin/partners' },
+    { icon: Headphones, label: 'Call Centre', href: '/admin/call-centre' },
     { icon: CreditCard, label: 'Reimbursements', href: '/admin/reimbursements' },
     { icon: BarChart3, label: 'Reports', href: '/admin/reports' },
     { icon: ClipboardCheck, label: 'Audit Trail', href: '/admin/audit' },

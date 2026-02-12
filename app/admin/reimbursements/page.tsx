@@ -113,7 +113,7 @@ export default function ReimbursementsPage() {
                                             <div key={i} className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="font-medium text-slate-900">{doc.type}</span>
-                                                    <Button size="sm" variant="ghost" className="h-6 text-slate-500"><Download className="h-3 w-3" /></Button>
+                                                    <Button size="sm" variant="ghost" className="h-6 text-slate-500" onClick={() => toast.success(`Downloading ${doc.name}...`)}><Download className="h-3 w-3" /></Button>
                                                 </div>
                                                 <div className="aspect-video bg-slate-100 rounded flex items-center justify-center border border-slate-200 border-dashed text-slate-500">
                                                     [Document Preview: {doc.name}]

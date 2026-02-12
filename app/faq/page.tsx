@@ -176,9 +176,11 @@ export default function FAQPage() {
                             <Link href="/contact">
                                 <Button size="lg" className="bg-primary hover:bg-primary/90">Contact Support</Button>
                             </Link>
-                            <Button size="lg" variant="outline">
-                                Call: 1800-123-4567
-                            </Button>
+                            <a href="tel:18001234567">
+                                <Button size="lg" variant="outline">
+                                    Call: 1800-123-4567
+                                </Button>
+                            </a>
                         </div>
                     </div>
                 </section>

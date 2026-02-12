@@ -2,7 +2,6 @@
 
 import { Plan, PlanCategory, MOCK_PLANS, MOCK_CATEGORIES } from '@/app/lib/mock/plans-data';
 
-// Simulate network delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- PLANS ACTIONS ---
@@ -46,7 +45,6 @@ export async function getPlan(id: string) {
 export async function createPlan(data: Partial<Plan>) {
     await delay(800);
     console.log('Creating Plan:', data);
-    // In a real app, validation and DB insert happens here
     const newPlan: Plan = {
         ...data as Plan,
         id: `PLAN-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
@@ -59,7 +57,6 @@ export async function createPlan(data: Partial<Plan>) {
 export async function updatePlan(id: string, data: Partial<Plan>) {
     await delay(600);
     console.log(`Updating Plan ${id}:`, data);
-    // Mock update logic would go here
     return { success: true, message: 'Plan updated successfully' };
 }
 
@@ -75,6 +72,27 @@ export async function togglePlanStatus(id: string, status: 'active' | 'inactive'
     return { success: true, message: `Plan status updated to ${status}` };
 }
 
+export async function copyPlan(id: string) {
+    await delay(600);
+    const originalPlan = MOCK_PLANS.find(p => p.id === id);
+    if (!originalPlan) return { success: false, error: 'Plan not found' };
+
+    const copiedPlan: Plan = {
+        ...originalPlan,
+        id: `PLAN-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
+        name: `${originalPlan.name} (Copy)`,
+        status: 'draft',
+        showOnWebsite: false,
+        isFeatured: false,
+        slug: originalPlan.slug ? `${originalPlan.slug}-copy` : undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+
+    console.log('Copied Plan:', copiedPlan);
+    return { success: true, message: 'Plan copied successfully', data: copiedPlan };
+}
+
 
 // --- CATEGORIES ACTIONS ---
 
@@ -87,4 +105,10 @@ export async function upsertCategory(data: Partial<PlanCategory>) {
     await delay(500);
     console.log('Upserting Category:', data);
     return { success: true, message: 'Category saved successfully' };
+}
+
+export async function deleteCategory(id: string) {
+    await delay(400);
+    console.log(`Deleting Category ${id}`);
+    return { success: true, message: 'Category deleted successfully' };
 }

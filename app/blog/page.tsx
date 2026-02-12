@@ -1,8 +1,12 @@
+"use client"
+
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Calendar, Clock, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
+import { useState } from "react"
 
 const blogPosts = [
     {
@@ -55,6 +59,27 @@ const blogPosts = [
     }
 ]
 
+function NewsletterForm() {
+    const [email, setEmail] = useState('')
+    const handleSubscribe = () => {
+        if (!email) return toast.error('Please enter your email address')
+        toast.success('Subscribed successfully!', { description: `We'll send updates to ${email}` })
+        setEmail('')
+    }
+    return (
+        <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <Button className="bg-primary hover:bg-primary/90" onClick={handleSubscribe}>Subscribe</Button>
+        </div>
+    )
+}
+
 export default function BlogPage() {
     return (
         <>
@@ -80,7 +105,7 @@ export default function BlogPage() {
                                 <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-sm mb-4">Featured</span>
                                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Complete Guide to Preventive Healthcare</h2>
                                 <p className="opacity-90 mb-6">Learn how regular checkups, vaccinations, and lifestyle changes can help you live a longer, healthier life.</p>
-                                <Button variant="secondary" className="group">
+                                <Button variant="secondary" className="group" onClick={() => toast.info('Opening full article...', { description: 'Blog article viewer coming soon.' })}>
                                     Read Article
                                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                                 </Button>
@@ -135,14 +160,7 @@ export default function BlogPage() {
                     <div className="max-w-2xl mx-auto text-center">
                         <h2 className="text-3xl font-bold mb-4">Subscribe to Our Newsletter</h2>
                         <p className="text-muted-foreground mb-8">Get the latest health tips and updates delivered to your inbox.</p>
-                        <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-                            <input
-                                type="email"
-                                placeholder="Enter your email"
-                                className="flex-1 px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
-                            <Button className="bg-primary hover:bg-primary/90">Subscribe</Button>
-                        </div>
+                        <NewsletterForm />
                     </div>
                 </section>
             </main>

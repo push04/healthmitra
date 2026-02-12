@@ -1,9 +1,12 @@
+'use client';
+
 import React from 'react';
-import { notFound } from "next/navigation";
 import ClaimStatusTimeline from '@/components/client/reimbursements/ClaimStatusTimeline';
 import { ChevronLeft, Download, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
+import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 const getStatusStyle = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -26,9 +29,9 @@ const MOCK_CLAIM = {
     diagnosis: "General checkup and medication",
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
     timeline: [
-        { status: 'submitted', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), completed: true, label: 'Claim Submitted' },
-        { status: 'under_review', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), completed: true, label: 'Under Review' },
-        { status: 'completed', timestamp: null, completed: false, label: 'Decision Pending' }
+        { status: 'Claim Submitted', date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toLocaleDateString('en-IN'), isCompleted: true },
+        { status: 'Under Review', date: new Date(Date.now() - 1000 * 60 * 60 * 24).toLocaleDateString('en-IN'), isCompleted: true },
+        { status: 'Decision Pending', date: 'Pending', isCompleted: false }
     ],
     documents: [
         { name: "Medical Bill.pdf" },
@@ -36,8 +39,9 @@ const MOCK_CLAIM = {
     ]
 };
 
-export default async function ClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export default function ClaimDetailPage() {
+    const params = useParams();
+    const id = params.id as string;
 
     // In mock mode, always return the mock claim
     const claim = MOCK_CLAIM;
@@ -124,7 +128,7 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
                             </div>
                         </div>
 
-                        <Button className="w-full" variant="secondary">
+                        <Button className="w-full" variant="secondary" onClick={() => toast.success('Download started', { description: 'Documents will be saved to your Downloads folder.' })}>
                             <Download size={16} className="mr-2" /> Download All Docs
                         </Button>
                     </div>

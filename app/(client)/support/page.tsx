@@ -151,7 +151,7 @@ export default function SupportPage() {
                     <p className="text-slate-500 text-xs mb-2">
                         <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-1"></span>Online
                     </p>
-                    <button className="text-emerald-600 font-bold hover:underline">Start Chat →</button>
+                    <button className="text-emerald-600 font-bold hover:underline" onClick={() => toast.info('Live chat connecting...', { description: 'A support agent will be with you shortly.' })}>Start Chat →</button>
                 </div>
             </div>
 
@@ -167,8 +167,8 @@ export default function SupportPage() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as TabType)}
                             className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === tab.id
-                                    ? 'border-teal-500 text-teal-600 bg-teal-50/50'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                ? 'border-teal-500 text-teal-600 bg-teal-50/50'
+                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                 }`}
                         >
                             <tab.icon size={16} />
@@ -217,10 +217,10 @@ export default function SupportPage() {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2 mt-3">
-                                                <button className="px-4 py-2 text-sm font-medium text-teal-600 bg-white border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors">
+                                                <button onClick={() => toast.info(`Viewing ticket ${ticket.id}`, { description: 'Full conversation thread loaded.' })} className="px-4 py-2 text-sm font-medium text-teal-600 bg-white border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors">
                                                     View Full Thread
                                                 </button>
-                                                <button className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-1">
+                                                <button onClick={() => toast.success('Reply sent!', { description: 'Your response has been added to the ticket.' })} className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-1">
                                                     <Send size={14} /> Reply
                                                 </button>
                                             </div>
@@ -251,7 +251,7 @@ export default function SupportPage() {
                                                         <strong>Resolution:</strong> "{ticket.resolution}"
                                                     </p>
                                                 </div>
-                                                <button className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
+                                                <button onClick={() => toast.info(`Ticket ${ticket.id}`, { description: `Resolution: ${ticket.resolution}` })} className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
                                                     View Details
                                                 </button>
                                             </div>
@@ -313,7 +313,7 @@ export default function SupportPage() {
                                 <h4 className="font-semibold text-slate-800 mb-4">Browse by Category</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {FAQ_CATEGORIES.map(cat => (
-                                        <button key={cat.name} className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left hover:border-teal-300 hover:bg-teal-50 transition-all">
+                                        <button key={cat.name} onClick={() => toast.info(`${cat.name}`, { description: `${cat.count} FAQs in this category.` })} className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left hover:border-teal-300 hover:bg-teal-50 transition-all">
                                             <p className="font-medium text-slate-700 text-sm">{cat.name}</p>
                                             <p className="text-xs text-slate-500">{cat.count} FAQs</p>
                                         </button>

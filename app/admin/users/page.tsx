@@ -79,7 +79,7 @@ export default function UsersListingPage() {
                     <p className="text-slate-500 text-sm mt-1">Manage all roles and permissions across the platform.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="border-teal-600 text-teal-400 hover:bg-teal-900/10">
+                    <Button variant="outline" className="border-teal-600 text-teal-400 hover:bg-teal-900/10" onClick={() => toast.success('Export started', { description: 'User data CSV is being prepared for download.' })}>
                         <Download className="mr-2 h-4 w-4" /> Export
                     </Button>
                     <Link href="/admin/users/new">
@@ -211,13 +211,13 @@ export default function UsersListingPage() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="bg-white border-slate-200 text-slate-700">
-                                                    <DropdownMenuItem className="hover:bg-slate-50 focus:bg-slate-50 cursor-pointer">
+                                                    <DropdownMenuItem className="hover:bg-slate-50 focus:bg-slate-50 cursor-pointer" onClick={() => window.location.href = `/admin/users/${user.id}`}>
                                                         <Eye className="mr-2 h-4 w-4" /> View Profile
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="hover:bg-slate-50 focus:bg-slate-50 cursor-pointer">
+                                                    <DropdownMenuItem className="hover:bg-slate-50 focus:bg-slate-50 cursor-pointer" onClick={() => window.location.href = `/admin/users/${user.id}`}>
                                                         <Edit2 className="mr-2 h-4 w-4" /> Edit Details
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="hover:bg-slate-50 focus:bg-slate-50 cursor-pointer">
+                                                    <DropdownMenuItem className="hover:bg-slate-50 focus:bg-slate-50 cursor-pointer" onClick={() => toast.success('Email sent', { description: `Notification email sent to ${user.email}` })}>
                                                         <Mail className="mr-2 h-4 w-4" /> Send Email
                                                     </DropdownMenuItem>
 

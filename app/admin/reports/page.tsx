@@ -105,7 +105,7 @@ export default function ReportsPage() {
                                     <div className="text-xs text-slate-500">Runs weekly on Mon • PDF</div>
                                 </div>
                             </div>
-                            <Button variant="outline" className="w-full mt-4 border-slate-200 text-slate-700 hover:bg-slate-50">Manage Schedules</Button>
+                            <Button variant="outline" className="w-full mt-4 border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => toast.info('Schedule management coming soon', { description: 'This feature will allow you to automate report generation.' })}>Manage Schedules</Button>
                         </CardContent>
                     </Card>
                 </div>
