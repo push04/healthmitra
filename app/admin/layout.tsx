@@ -12,15 +12,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
 
     // Verify admin role
+    // Select * to avoid TS errors about missing fields
     const { data: profile, error } = await supabase
         .from('profiles')
-        .select('role, email')
+        .select('*')
         .eq('id', user.id)
         .single();
 
     console.log("Admin Layout Check:", {
         userId: user.id,
+        email: user.email,
         profileRole: profile?.role,
+        fullProfile: profile,
         error: error?.message
     });
 
