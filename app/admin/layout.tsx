@@ -12,13 +12,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
 
     // Verify admin role
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('role, email')
         .eq('id', user.id)
         .single();
 
+    console.log("Admin Layout Check:", {
+        userId: user.id,
+        profileRole: profile?.role,
+        error: error?.message
+    });
+
     if (profile?.role !== 'admin') {
+        console.log("Redirecting non-admin to dashboard");
         redirect("/dashboard"); // Redirect non-admins to client dashboard
     }
 
