@@ -21,7 +21,7 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) redirect("/auth/login");
+    if (!user) redirect("/login");
 
     const { data: claim } = await supabase.from('reimbursement_claims')
         .select('*')
