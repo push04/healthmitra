@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PhoneCall, Clock, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { getAgentAssignedRequests } from '@/app/actions/callcentre';
-import { AdminServiceRequest } from '@/app/lib/mock/service-requests-data';
+import { ServiceRequest } from '@/types/service-requests';
 
 const STATUS_COLORS: Record<string, string> = {
     pending: 'bg-amber-100 text-amber-700', assigned: 'bg-blue-100 text-blue-700',
@@ -18,7 +18,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export default function AgentDashboardPage() {
-    const [requests, setRequests] = useState<AdminServiceRequest[]>([]);
+    const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Simulating logged-in agent: Priya Sharma (agent_1)

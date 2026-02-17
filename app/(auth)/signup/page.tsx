@@ -1,137 +1,153 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { useState } from 'react'
-import { signup } from '@/app/actions/auth'
-import { Loader2 } from 'lucide-react'
+import Link from 'next/link';
+import { useState } from 'react';
+import { signup } from '@/app/actions/auth';
+import { Loader2, ArrowRight, Mail, Lock, User, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 export default function SignupPage() {
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [loading, setLoading] = useState(false);
 
     async function handleSubmit(formData: FormData) {
-        setLoading(true)
-        setError(null)
+        setLoading(true);
 
-        // Simple client-side validation
-        const password = formData.get('password') as string
-        const confirmPassword = formData.get('confirmPassword') as string
+        // Client-side match check
+        const password = formData.get('password') as string;
+        const confirm = formData.get('confirmPassword') as string;
 
-        if (password !== confirmPassword) {
-            setError("Passwords do not match")
-            setLoading(false)
-            return
+        if (password !== confirm) {
+            toast.error("Passwords do not match");
+            setLoading(false);
+            return;
         }
 
-        const result = await signup(formData)
-
-        if (result?.error) {
-            setError(result.error)
-            setLoading(false)
+        try {
+            const result = await signup(formData);
+            if (result?.error) {
+                toast.error("Signup Failed", { description: result.error });
+            } else {
+                toast.success("Account created!", { description: "You might need to verify your email." });
+            }
+        } catch (e) {
+            toast.error("Something went wrong");
+        } finally {
+            setLoading(false);
         }
     }
 
     return (
-        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="p-8">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Create Account</h1>
-                <p className="text-slate-500 dark:text-slate-400 mb-8">Join HealthMitra to manage your health</p>
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
-                        {error}
-                    </div>
-                )}
-
-                <form action={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                            Full Name
-                        </label>
-                        <input
-                            name="fullName"
-                            type="text"
-                            required
-                            placeholder="Enter your full name"
-                            className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                            Email Address
-                        </label>
-                        <input
-                            name="email"
-                            type="email"
-                            required
-                            placeholder="you@example.com"
-                            className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                            Phone Number
-                        </label>
-                        <input
-                            name="phone"
-                            type="tel"
-                            required
-                            placeholder="+91 98765 43210"
-                            className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                Password
-                            </label>
-                            <input
-                                name="password"
-                                type="password"
-                                required
-                                placeholder="••••••••"
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                Confirm
-                            </label>
-                            <input
-                                name="confirmPassword"
-                                type="password"
-                                required
-                                placeholder="••••••••"
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
-                            />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3 px-4 bg-cyan-600 hover:bg-cyan-700 text-white font-medium rounded-lg shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            'Create Account'
-                        )}
-                    </button>
-                </form>
-            </div>
-
-            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 text-center">
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Already have an account?{' '}
-                    <Link href="/login" className="text-cyan-600 font-medium hover:underline">
-                        Sign in
-                    </Link>
+        <div className="w-full max-w-sm space-y-8 animate-in fade-in slide-in-from-right-8 duration-500 delay-100">
+            <div className="text-center">
+                <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    Create an account
+                </h2>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                    Get started with your health journey today.
                 </p>
             </div>
+
+            <form action={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <div className="relative">
+                        <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                            id="fullName"
+                            name="fullName"
+                            placeholder="John Doe"
+                            required
+                            className="pl-10 bg-slate-50 border-slate-200"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            placeholder="name@example.com"
+                            required
+                            className="pl-10 bg-slate-50 border-slate-200"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <div className="relative">
+                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            placeholder="+91 98765 43210"
+                            required
+                            className="pl-10 bg-slate-50 border-slate-200"
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input
+                                id="password"
+                                name="password"
+                                type="password"
+                                placeholder="••••••"
+                                required
+                                className="pl-10 bg-slate-50 border-slate-200"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm</Label>
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input
+                                id="confirmPassword"
+                                name="confirmPassword"
+                                type="password"
+                                placeholder="••••••"
+                                required
+                                className="pl-10 bg-slate-50 border-slate-200"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <Button
+                    type="submit"
+                    className="w-full bg-[#113a40] hover:bg-[#0d2b30] text-white h-11 shadow-lg shadow-teal-900/20"
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <>Create Account <ArrowRight className="ml-2 h-4 w-4" /></>
+                    )}
+                </Button>
+            </form>
+
+            <p className="px-8 text-center text-sm text-slate-600 dark:text-slate-400">
+                Already have an account?{' '}
+                <Link
+                    href="/login"
+                    className="font-semibold text-teal-600 hover:text-teal-500 underline underline-offset-4"
+                >
+                    Sign in
+                </Link>
+            </p>
         </div>
-    )
+    );
 }

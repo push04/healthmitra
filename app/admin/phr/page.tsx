@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
     Search, Loader2, FileText, User, Shield, Upload, Eye
 } from 'lucide-react';
-import { PatientMember } from '@/app/lib/mock/phr-data';
+import { PatientMember } from '@/types/phr';
 import { getPatients } from '@/app/actions/phr';
 import Link from 'next/link';
 

@@ -24,12 +24,16 @@ export function ECardsView({ initialCards, availableMembers }: ECardsViewProps) 
         memberId: c.member_id,
         planId: c.plan_id,
         planName: c.plan_name || "Health Plan",
+        validFrom: c.valid_from || new Date().toISOString(),
         validTill: c.valid_till || "2025-12-31",
         policyNo: c.policy_number,
-        issuedDate: c.issued_date,
-        emergencyContact: c.emergency_contact,
+        issuedDate: c.issued_date || new Date().toISOString(),
+        emergencyContact: c.emergency_contact || "1800-123-4567",
         coverageAmount: c.coverage_amount,
-        status: c.status
+        status: (c.status as any) || 'pending',
+        cardUniqueId: c.card_unique_id || `HM-${c.id.substr(0, 8).toUpperCase()}`,
+        planDescription: "Comprehensive health coverage",
+        planFeatures: ["Cashless Hospitalization", "24/7 Support"]
     })));
     const [isWizardOpen, setIsWizardOpen] = useState(false);
 

@@ -1,12 +1,11 @@
-'use client';
-
 import React from 'react';
 import ClaimStatusTimeline from '@/components/client/reimbursements/ClaimStatusTimeline';
-import { ChevronLeft, Download, FileText } from 'lucide-react';
+import { ChevronLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { useParams } from 'next/navigation';
-import { toast } from 'sonner';
+import { createClient } from "@/lib/supabase/server";
+import { notFound, redirect } from "next/navigation";
+import DownloadDocsButton from "@/components/client/reimbursements/DownloadDocsButton";
 
 const getStatusStyle = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -17,36 +16,30 @@ const getStatusStyle = (status: string) => {
     }
 }
 
-// MOCK DATA
-const MOCK_CLAIM = {
-    id: "clm-001",
-    type: "medicine",
-    status: "processing",
-    amount: 2500,
-    patient_name: "Test User",
-    treatment_date: "2024-01-15",
-    hospital_name: "City Hospital",
-    diagnosis: "General checkup and medication",
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-    timeline: [
-        { status: 'Claim Submitted', date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toLocaleDateString('en-IN'), isCompleted: true },
-        { status: 'Under Review', date: new Date(Date.now() - 1000 * 60 * 60 * 24).toLocaleDateString('en-IN'), isCompleted: true },
-        { status: 'Decision Pending', date: 'Pending', isCompleted: false }
-    ],
-    documents: [
-        { name: "Medical Bill.pdf" },
-        { name: "Prescription.pdf" }
-    ]
-};
+export default async function ClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-export default function ClaimDetailPage() {
-    const params = useParams();
-    const id = params.id as string;
+    if (!user) redirect("/auth/login");
 
-    // In mock mode, always return the mock claim
-    const claim = MOCK_CLAIM;
-    const timeline = claim.timeline;
-    const documents = claim.documents;
+    const { data: claim } = await supabase.from('reimbursement_claims')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+
+    if (!claim) notFound();
+
+    // Transform to match UI expectation if needed or use directly
+    // Mock timeline for now as backend might not support it yet
+    const timeline = [
+        { status: 'Claim Submitted', date: new Date(claim.created_at).toLocaleDateString('en-IN'), isCompleted: true },
+        { status: 'Under Review', date: claim.status !== 'pending' ? 'Completed' : 'Pending', isCompleted: claim.status !== 'pending' },
+        { status: 'Decision Pending', date: ['approved', 'rejected'].includes(claim.status) ? 'Completed' : 'Pending', isCompleted: ['approved', 'rejected'].includes(claim.status) }
+    ];
+
+    const documents = claim.documents || [];
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto pb-10">
@@ -128,9 +121,7 @@ export default function ClaimDetailPage() {
                             </div>
                         </div>
 
-                        <Button className="w-full" variant="secondary" onClick={() => toast.success('Download started', { description: 'Documents will be saved to your Downloads folder.' })}>
-                            <Download size={16} className="mr-2" /> Download All Docs
-                        </Button>
+                        <DownloadDocsButton count={documents.length} />
                     </div>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MediaItem, MediaFolder } from '@/app/lib/mock/cms-data';
+import { MediaItem, MediaFolder } from '@/types/cms';
 import { getMedia, uploadFile, createFolder } from '@/app/actions/cms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

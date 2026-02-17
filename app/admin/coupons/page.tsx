@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Coupon, MOCK_COUPONS, CouponType } from '@/app/lib/mock/coupons-data';
+import { Coupon, CouponType } from '@/types/coupons';
 import { getCoupons, upsertCoupon, deleteCoupon } from '@/app/actions/coupons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

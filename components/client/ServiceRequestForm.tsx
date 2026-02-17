@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2, Upload } from "lucide-react";
+import { createServiceRequest } from "@/app/actions/service-requests";
 
 // Simplified schema for all service types
 const formSchema = z.object({
@@ -59,15 +60,10 @@ type FormValues = z.infer<typeof formSchema>;
 interface ServiceRequestFormProps {
     initialType?: string;
     userProfile?: any;
+    vouchers?: { code: string; value: number; description: string }[];
 }
 
-const MOCK_VOUCHERS = [
-    { code: "HEALTH500", value: 500, description: "₹500 off on medicines" },
-    { code: "TEST200", value: 200, description: "₹200 off on diagnostic tests" },
-    { code: "CONSULT100", value: 100, description: "₹100 off on consultations" },
-];
-
-export function ServiceRequestForm({ initialType, userProfile }: ServiceRequestFormProps) {
+export function ServiceRequestForm({ initialType, userProfile, vouchers = [] }: ServiceRequestFormProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,13 +101,36 @@ export function ServiceRequestForm({ initialType, userProfile }: ServiceRequestF
 
     async function onSubmit(data: FormValues) {
         setIsSubmitting(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsSubmitting(false);
-        toast.success("Service request submitted successfully!", {
-            description: "You will be notified once our team reviews it."
-        });
-        router.push("/service-requests");
+        try {
+            // Map form type to DB enum (general/emergency/voucher -> 'other')
+            const validTypes = ['medical_consultation', 'diagnostic', 'medicine', 'ambulance', 'caretaker', 'nursing', 'other'];
+            const dbType = validTypes.includes(data.type) ? data.type : 'other';
+
+            // Build details JSONB from all type-specific fields
+            const { type, memberId, agreedToTerms, ...restFields } = data;
+            const details: Record<string, any> = { ...restFields };
+            if (data.type !== dbType) details.original_type = data.type;
+            details.member_name = memberId;
+
+            const result = await createServiceRequest({
+                type: dbType,
+                memberId,
+                details,
+            });
+
+            if (result.success) {
+                toast.success("Service request submitted successfully!", {
+                    description: "You will be notified once our team reviews it."
+                });
+                router.push("/service-requests");
+            } else {
+                toast.error("Failed to submit request", { description: result.error });
+            }
+        } catch {
+            toast.error("Something went wrong while submitting your request");
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     const getTitle = () => {
@@ -478,12 +497,12 @@ export function ServiceRequestForm({ initialType, userProfile }: ServiceRequestF
                             <div className="space-y-2">
                                 <Label>Available Vouchers</Label>
                                 <div className="space-y-2">
-                                    {MOCK_VOUCHERS.map(v => (
+                                    {vouchers.map((v: any) => (
                                         <div
                                             key={v.code}
                                             className={`p-4 border rounded-lg cursor-pointer transition-all ${form.watch("voucherCode") === v.code
-                                                    ? 'border-purple-500 bg-purple-50'
-                                                    : 'border-slate-200 hover:border-purple-300'
+                                                ? 'border-purple-500 bg-purple-50'
+                                                : 'border-slate-200 hover:border-purple-300'
                                                 }`}
                                             onClick={() => form.setValue("voucherCode", v.code)}
                                         >

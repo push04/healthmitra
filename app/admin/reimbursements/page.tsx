@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ReimbursementClaim, MOCK_CLAIMS } from '@/app/lib/mock/support-data';
-import { getClaims, processClaim } from '@/app/actions/support';
+import { ReimbursementClaim } from '@/types/reimbursements';
+import { getClaims, processClaim } from '@/app/actions/reimbursements';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

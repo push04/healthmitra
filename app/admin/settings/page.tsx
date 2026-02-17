@@ -6,95 +6,101 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import RazorpaySettingsForm from '@/components/admin/settings/RazorpaySettingsForm';
+import { Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
-    const [settings, setSettings] = useState<any>(null);
+    const [settings, setSettings] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        getSystemSettings().then(res => {
-            if (res.success) setSettings(res.data);
+        const load = async () => {
+            const res = await getSystemSettings();
+            if (res.success && res.data) {
+                // Merge with defaults to ensure controlled inputs
+                setSettings({
+                    site_name: res.data.site_name || '',
+                    support_email: res.data.support_email || '',
+                    smtp_host: res.data.smtp_host || '',
+                    smtp_port: res.data.smtp_port || '',
+                    smtp_user: res.data.smtp_user || '',
+                    ...res.data
+                });
+            }
             setLoading(false);
-        });
+        };
+        load();
     }, []);
 
-    const handleSave = async () => {
-        await updateSystemSettings(settings);
-        toast.success("Settings saved successfully");
+    const handleChange = (key: string, value: string) => {
+        setSettings(prev => ({ ...prev, [key]: value }));
     };
 
-    if (loading) return <div>Loading...</div>;
+    const handleSaveGeneral = async () => {
+        setSaving(true);
+        // Extract only general keys
+        const toSave = {
+            site_name: settings.site_name,
+            support_email: settings.support_email,
+            smtp_host: settings.smtp_host,
+            smtp_port: settings.smtp_port,
+            smtp_user: settings.smtp_user
+        };
+
+        const res = await updateSystemSettings(toSave);
+        if (res.success) {
+            toast.success("General settings saved");
+        } else {
+            toast.error("Failed to save", { description: res.error });
+        }
+        setSaving(false);
+    };
+
+    if (loading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
     return (
         <div className="space-y-6 animate-in fade-in max-w-[1000px] mx-auto p-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">System Settings</h1>
-                <Button className="bg-slate-900 text-white hover:bg-slate-800" onClick={handleSave}>Save Changes</Button>
-            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">System Settings</h1>
 
             <Tabs defaultValue="general" className="w-full">
                 <TabsList className="bg-slate-100 border border-slate-200 text-slate-500">
-                    <TabsTrigger value="general" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">General</TabsTrigger>
-                    <TabsTrigger value="email" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">Email</TabsTrigger>
-                    <TabsTrigger value="payment" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">Payment</TabsTrigger>
-                    <TabsTrigger value="security" className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">Security</TabsTrigger>
+                    <TabsTrigger value="general">General</TabsTrigger>
+                    <TabsTrigger value="payment">Payment Gateways</TabsTrigger>
+                    {/* Add more tabs as needed */}
                 </TabsList>
 
-                <TabsContent value="general">
-                    <Card className="bg-white border-slate-200 shadow-sm">
-                        <CardHeader><CardTitle className="text-slate-900">Company Information</CardTitle><CardDescription className="text-slate-500">Public facing details</CardDescription></CardHeader>
+                <TabsContent value="general" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>General Information</CardTitle>
+                            <CardDescription>Basic configuration for the application.</CardDescription>
+                        </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>Company Name</Label><Input value={settings.general.companyName} onChange={e => setSettings({ ...settings, general: { ...settings.general, companyName: e.target.value } })} className="bg-white border-slate-200 text-slate-900" /></div>
-                                <div className="space-y-2"><Label>Support Email</Label><Input value={settings.general.supportEmail} onChange={e => setSettings({ ...settings, general: { ...settings.general, supportEmail: e.target.value } })} className="bg-white border-slate-200 text-slate-900" /></div>
-                                <div className="space-y-2"><Label>Currency</Label><Input value={settings.general.currency} disabled className="bg-slate-50 border-slate-200 text-slate-500" /></div>
+                            <div className="grid gap-2">
+                                <Label>Site Name</Label>
+                                <Input value={settings.site_name} onChange={e => handleChange('site_name', e.target.value)} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Support Email</Label>
+                                <Input value={settings.support_email} onChange={e => handleChange('support_email', e.target.value)} />
                             </div>
                         </CardContent>
                     </Card>
-                </TabsContent>
 
-                <TabsContent value="email">
-                    <Card className="bg-white border-slate-200 shadow-sm">
-                        <CardHeader><CardTitle className="text-slate-900">SMTP Configuration</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2"><Label>SMTP Host</Label><Input value={settings.email.smtpHost} className="bg-white border-slate-200 text-slate-900" /></div>
-                                <div className="space-y-2"><Label>Port</Label><Input value={settings.email.smtpPort} className="bg-white border-slate-200 text-slate-900" /></div>
-                                <div className="space-y-2"><Label>From Email</Label><Input value={settings.email.fromEmail} className="bg-white border-slate-200 text-slate-900" /></div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div className="flex justify-end">
+                        <Button onClick={handleSaveGeneral} disabled={saving}>
+                            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save General Settings
+                        </Button>
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="payment">
-                    <Card className="bg-white border-slate-200 shadow-sm">
-                        <CardHeader><CardTitle className="text-slate-900">Payment Gateway</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2"><Label>Razorpay Key ID</Label><Input value={settings.payment.razorpayKey} className="bg-white border-slate-200 text-slate-900" type="password" /></div>
-                            <div className="flex items-center space-x-2">
-                                <Switch checked={settings.payment.mode === 'test'} />
-                                <Label>Test Mode</Label>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <RazorpaySettingsForm />
                 </TabsContent>
 
-                <TabsContent value="security">
-                    <Card className="bg-white border-slate-200 shadow-sm">
-                        <CardHeader><CardTitle className="text-slate-900">Security Policies</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2"><Label>Min Password Length</Label><Input type="number" value={settings.security.passwordMinLength} className="bg-white border-slate-200 text-slate-900" /></div>
-                            <div className="flex items-center space-x-2">
-                                <Switch checked={settings.security.mfaEnabled} />
-                                <Label>Enforce MFA for Admins</Label>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
             </Tabs>
         </div>
     );

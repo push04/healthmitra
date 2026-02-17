@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, UserType } from '@/app/lib/mock/users-data';
-import { MOCK_DEPARTMENTS } from '@/app/lib/mock/departments';
-import { getUsers, toggleUserStatus } from '@/app/actions/users';
+import { User, UserType } from '@/types/user';
+import { getUsers, toggleUserStatus, getDepartments } from '@/app/actions/users';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,12 +23,19 @@ export default function UsersListingPage() {
     const [query, setQuery] = useState('');
     const [deptFilter, setDeptFilter] = useState('all');
     const [stats, setStats] = useState({ total: 0, customers: 0, employees: 0, admins: 0, partners: 0 });
+    const [departments, setDepartments] = useState<any[]>([]);
 
     // Load data
     useEffect(() => {
         const load = async () => {
             setLoading(true);
             try {
+                // Load depts if empty
+                if (departments.length === 0) {
+                    const depts = await getDepartments();
+                    if (depts.success && depts.data) setDepartments(depts.data);
+                }
+
                 // Map generic tab names to specific user types for filtering
                 // All -> 'all', Customers -> 'Customer', etc.
                 const typeFilter =
@@ -60,12 +66,18 @@ export default function UsersListingPage() {
     }, [activeTab, query, deptFilter]);
 
     const handleStatusToggle = async (id: string, currentStatus: string) => {
-        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-        await toggleUserStatus(id, newStatus);
-
         // Optimistic update
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         setUsers(prev => prev.map(u => u.id === id ? { ...u, status: newStatus as any } : u));
-        toast.success(`User ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
+
+        const res = await toggleUserStatus(id, newStatus);
+        if (res.success) {
+            toast.success(`User ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
+        } else {
+            // Revert on failure
+            setUsers(prev => prev.map(u => u.id === id ? { ...u, status: currentStatus as any } : u));
+            toast.error(res.error || "Failed to update status");
+        }
     };
 
     return (
@@ -120,7 +132,7 @@ export default function UsersListingPage() {
                             </SelectTrigger>
                             <SelectContent className="bg-white border-slate-200 text-slate-700">
                                 <SelectItem value="all">All Departments</SelectItem>
-                                {MOCK_DEPARTMENTS.map(d => (
+                                {departments.map((d: any) => (
                                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                                 ))}
                             </SelectContent>
@@ -187,15 +199,15 @@ export default function UsersListingPage() {
                                         <TableCell>
                                             {user.type === 'Employee' ? (
                                                 <div className="flex flex-col text-xs text-slate-500">
-                                                    <span>{MOCK_DEPARTMENTS.find(d => d.id === user.departmentId)?.name || '-'}</span>
+                                                    <span>{departments.find((d: any) => d.id === user.departmentId)?.name || '-'}</span>
                                                     <span className="text-slate-400">Joined: {user.joinedDate}</span>
                                                 </div>
                                             ) : user.type === 'Referral Partner' ? (
                                                 <div className="flex flex-col text-xs text-amber-600">
-                                                    <span>Ref: {user.referralCode}</span>
+                                                    <span>Ref: {(user as any).referralCode || '-'}</span>
                                                 </div>
                                             ) : (
-                                                <div className="text-xs text-slate-500">{user.city}</div>
+                                                <div className="text-xs text-slate-500">{user.city || '-'}</div>
                                             )}
                                         </TableCell>
                                         <TableCell>

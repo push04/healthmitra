@@ -10,7 +10,7 @@ import {
     ArrowLeft, Loader2, Building2, Mail, Phone, MapPin, Shield, Percent,
     IndianRupee, Users, Calendar, Edit, Globe, CheckCircle, Clock, CreditCard
 } from 'lucide-react';
-import { Partner, SubPartner, PartnerCommission } from '@/app/lib/mock/partner-data';
+import { Partner, SubPartner, PartnerCommission } from '@/types/partners';
 import { getPartner } from '@/app/actions/partners';
 import { toast } from 'sonner';
 import Link from 'next/link';

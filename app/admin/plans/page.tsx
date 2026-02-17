@@ -6,19 +6,29 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, Filter, Loader2, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
-import { Plan, MOCK_CATEGORIES } from '@/app/lib/mock/plans-data';
-import { getPlans, copyPlan } from '@/app/actions/plans';
+import { Plan, PlanCategory } from '@/types/plans';
+import { getPlans, copyPlan, getCategories } from '@/app/actions/plans';
 import PlanCard from '@/components/admin/plans/PlanCard';
 import { toast } from 'sonner';
 
 export default function PlansListingPage() {
     const [plans, setPlans] = useState<Plan[]>([]);
+    const [categories, setCategories] = useState<PlanCategory[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
     const [categoryFilter, setCategoryFilter] = useState('all');
+
+    useEffect(() => {
+        const loadCats = async () => {
+            const res = await getCategories();
+            if (res.success && res.data) setCategories(res.data);
+        };
+        loadCats();
+    }, []);
 
     useEffect(() => {
         const fetchToLoad = async () => {
@@ -42,7 +52,7 @@ export default function PlansListingPage() {
 
         const timeout = setTimeout(fetchToLoad, 300);
         return () => clearTimeout(timeout);
-    }, [search, statusFilter, typeFilter, categoryFilter]);
+    }, [search, statusFilter, typeFilter, categoryFilter, refreshKey]);
 
     const handleEdit = (id: string) => {
         window.location.href = `/admin/plans/${id}/edit`;
@@ -60,15 +70,16 @@ export default function PlansListingPage() {
         toast.info("Opening Audit Log mock...");
     };
 
+
     const handleCopy = async (id: string) => {
         const res = await copyPlan(id);
-        if (res.success && res.data) {
-            setPlans(prev => [...prev, res.data!]);
+        if (res.success) {
+            setRefreshKey(prev => prev + 1);
             toast.success("Plan copied successfully", {
-                description: `"${res.data.name}" has been created as a draft.`
+                description: res.message
             });
         } else {
-            toast.error("Failed to copy plan");
+            toast.error("Failed to copy plan", { description: res.error });
         }
     };
 
@@ -138,7 +149,7 @@ export default function PlansListingPage() {
                         </SelectTrigger>
                         <SelectContent className="bg-white border-slate-200 text-slate-700">
                             <SelectItem value="all">All Categories</SelectItem>
-                            {MOCK_CATEGORIES.map(cat => (
+                            {categories.map(cat => (
                                 <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                             ))}
                         </SelectContent>
@@ -167,6 +178,7 @@ export default function PlansListingPage() {
                             <PlanCard
                                 key={plan.id}
                                 plan={plan}
+                                categories={categories}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                                 onToggleStatus={handleToggle}

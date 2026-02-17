@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MOCK_DEPARTMENTS, Department } from '@/app/lib/mock/departments';
+import { Department } from '@/types/departments';
+import { getDepartments, upsertDepartment, deleteDepartment } from '@/app/actions/departments';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,30 +18,31 @@ export default function DepartmentsPage() {
     const [open, setOpen] = useState(false);
     const [editingDept, setEditingDept] = useState<Partial<Department> | null>(null);
 
+    const loadData = async () => {
+        const res = await getDepartments();
+        if (res.success) setDepartments(res.data || []);
+    };
+
     useEffect(() => {
-        // Simulate fetch
-        setDepartments(MOCK_DEPARTMENTS);
+        loadData();
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!editingDept?.name) return;
 
-        if (editingDept.id) {
-            setDepartments(prev => prev.map(d => d.id === editingDept.id ? { ...d, ...editingDept } as Department : d));
-            toast.success("Department updated");
-        } else {
-            const newDept = {
-                ...editingDept,
-                id: `dept_${Date.now()}`,
-                employeeCount: 0,
-                status: 'active',
-                designations: []
-            } as Department;
-            setDepartments(prev => [...prev, newDept]);
-            toast.success("Department created");
-        }
+        await upsertDepartment(editingDept);
+        toast.success("Department saved");
         setOpen(false);
         setEditingDept(null);
+        loadData();
+    };
+
+    const handleDelete = async (id: string) => {
+        if (confirm("Delete this department?")) {
+            await deleteDepartment(id);
+            toast.success("Department deleted");
+            loadData();
+        }
     };
 
     return (
@@ -65,6 +67,9 @@ export default function DepartmentsPage() {
                             <div className="flex gap-1">
                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-white" onClick={() => { setEditingDept(dept); setOpen(true); }}>
                                     <Edit2 className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-red-500" onClick={() => handleDelete(dept.id)}>
+                                    <Trash2 className="h-3 w-3" />
                                 </Button>
                             </div>
                         </CardHeader>

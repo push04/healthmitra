@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,8 @@ import {
     ChevronUp, ChevronDown, Upload, FileText, ImageIcon, HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Plan, PlanService, PlanDetail, MOCK_CATEGORIES } from '@/app/lib/mock/plans-data';
+import { Plan, PlanService, PlanDetail, PlanCategory } from '@/types/plans';
+import { getCategories, createPlan } from '@/app/actions/plans';
 import Link from 'next/link';
 import { useDropzone } from 'react-dropzone';
 
@@ -131,6 +132,15 @@ function PdfDropzone({ value, onChange }: { value?: string; onChange: (v: string
 export default function CreatePlanWizard() {
     const [currentStep, setCurrentStep] = useState(1);
     const [plan, setPlan] = useState<Partial<Plan>>(INITIAL_PLAN);
+    const [categories, setCategories] = useState<PlanCategory[]>([]);
+
+    useEffect(() => {
+        const load = async () => {
+            const res = await getCategories();
+            if (res.success && res.data) setCategories(res.data);
+        };
+        load();
+    }, []);
 
     const updatePlan = (updates: Partial<Plan>) => {
         setPlan(prev => {
@@ -148,7 +158,7 @@ export default function CreatePlanWizard() {
         const newService: PlanService = {
             id: `srv_${Date.now()}`,
             name: '',
-            categoryId: MOCK_CATEGORIES[0]?.id,
+            categoryId: categories[0]?.id || '',
             description: '',
             status: 'enabled',
             displayOrder: (plan.services?.length || 0) + 1
@@ -194,11 +204,19 @@ export default function CreatePlanWizard() {
         if (currentStep > 1) setCurrentStep(c => c - 1);
     };
 
-    const handlePublish = () => {
-        console.log("PUBLISHING PLAN:", plan);
-        toast.success("Plan Published Successfully", {
-            description: "The plan is now live on the website."
-        });
+    const handlePublish = async () => {
+        toast.loading("Publishing plan...");
+        const res = await createPlan(plan);
+        toast.dismiss();
+
+        if (res.success) {
+            toast.success("Plan Published Successfully", {
+                description: "The plan is now live on the website."
+            });
+            // Redirect or reset? For now just success toast
+        } else {
+            toast.error("Failed to publish plan", { description: res.error });
+        }
     };
 
     const stepLabels = [
@@ -378,7 +396,7 @@ export default function CreatePlanWizard() {
                                                             <SelectValue placeholder="Select" />
                                                         </SelectTrigger>
                                                         <SelectContent className="bg-white text-slate-900 border-slate-200">
-                                                            {MOCK_CATEGORIES.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                                            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 </div>

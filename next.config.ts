@@ -7,7 +7,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    domains: ['vnjcaluifbmlbupamqwc.supabase.co'],
+    domains: ['fbqwsfkpytexbdsfgqbr.supabase.co', 'vnjcaluifbmlbupamqwc.supabase.co'],
   },
 };
 

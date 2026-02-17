@@ -6,111 +6,64 @@ import { ActivityFeed } from "@/components/client/ActivityFeed";
 import { NotificationsPanel } from "@/components/client/NotificationsPanel";
 import { DashboardData } from "@/types/dashboard";
 
-// HARDCODED MOCK DATA - No external dependencies
-const MOCK_DATA: DashboardData = {
+// Empty-state fallback when API returns no data
+const DEFAULT_EMPTY_DATA: DashboardData = {
     user: {
-        id: "mock-user-123",
-        name: "Demo User",
-        email: "demo@healthmitra.com",
-        phone: "+91 98765 43210",
+        id: "guest",
+        name: "Guest User",
+        email: "guest@example.com",
+        phone: "",
         avatar: "",
     },
     activePlan: {
-        id: "plan-gold-1",
-        name: "Gold Family Protection",
-        status: "active",
-        validUntil: "2025-12-31",
-        daysRemaining: 365,
-        coverageAmount: 500000,
+        id: "no-plan",
+        name: "No Active Plan",
+        status: "expired" as const,
+        validUntil: "",
+        daysRemaining: 0,
+        coverageAmount: 0,
     },
     eCardStatus: {
-        status: "active",
-        totalCards: 4,
-        activeCards: 4,
+        status: "pending" as const,
+        totalCards: 0,
+        activeCards: 0,
     },
     wallet: {
-        balance: 15450,
+        balance: 0,
         currency: "INR",
-        minimumBalance: 1,
+        minimumBalance: 0,
     },
     vouchers: {
-        available: 3,
-        used: 2,
+        available: 0,
+        used: 0,
         expired: 0,
-        totalValue: 5000,
+        totalValue: 0,
     },
     services: {
-        activeServices: 2,
-        completedThisMonth: 5,
-        pendingApproval: 1,
+        activeServices: 0,
+        completedThisMonth: 0,
+        pendingApproval: 0,
     },
     members: {
-        totalMembers: 4,
-        withActiveCards: 4,
-        familyMembers: [
-            { name: "Demo User", relation: "Self" },
-            { name: "Spouse User", relation: "Spouse" },
-            { name: "Child One", relation: "Child" },
-            { name: "Parent User", relation: "Parent" },
-        ],
+        totalMembers: 0,
+        withActiveCards: 0,
+        familyMembers: [],
     },
     reimbursementSummary: {
-        totalClaimed: 25000,
-        approved: 3,
-        pending: 1,
+        totalClaimed: 0,
+        approved: 0,
+        pending: 0,
         rejected: 0,
     },
     pendingRequests: {
-        total: 3,
+        total: 0,
         breakdown: {
-            serviceRequests: 2,
-            reimbursements: 1,
+            serviceRequests: 0,
+            reimbursements: 0,
         },
     },
-    recentActivity: [
-        {
-            id: "act-1",
-            type: "service_request",
-            title: "Home Doctor Visit",
-            description: "General Checkup",
-            status: "completed",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        },
-        {
-            id: "act-2",
-            type: "reimbursement",
-            title: "Claim Submitted",
-            description: "Amount: ₹1,200",
-            status: "pending",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        },
-        {
-            id: "act-3",
-            type: "purchase",
-            title: "Medicine Order",
-            description: "Monthly subscription",
-            status: "approved",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-        },
-    ],
-    notifications: [
-        {
-            id: "notif-1",
-            type: "success",
-            title: "Claim Approved",
-            message: "Your reimbursement claim #CLM-2024-001 has been approved.",
-            timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-            isRead: false,
-        },
-        {
-            id: "notif-2",
-            type: "info",
-            title: "Plan Renewal",
-            message: "Your Gold Plan is active and valid for another 365 days.",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-            isRead: true,
-        },
-    ],
+    recentActivity: [],
+    notifications: [],
 };
 
 interface DashboardViewProps {
@@ -118,12 +71,12 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ initialData }: DashboardViewProps) {
-    // FORCE USE MOCK DATA - ignore initialData entirely for reliability
-    const data = MOCK_DATA;
+    // USE REAL DATA
+    const data = initialData || DEFAULT_EMPTY_DATA;
     const loading = false;
     const markNotificationAsRead = async (id: string) => { };
 
-    const firstName = data.user.name.split(' ')[0];
+    const firstName = data.user.name?.split(' ')[0] || 'User';
 
     return (
         <div className="space-y-10">

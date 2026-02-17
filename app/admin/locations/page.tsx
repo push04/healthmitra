@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { City, INDIAN_STATES, Region } from '@/app/lib/mock/locations-data';
+import { City, INDIAN_STATES, Region } from '@/types/locations';
 import { getCities, upsertCity, deleteCity, searchPincode, bulkUploadCities } from '@/app/actions/locations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

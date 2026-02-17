@@ -9,17 +9,6 @@ interface ReimbursementsViewProps {
     initialClaims: any[];
 }
 
-// MOCK CLAIMS DATA with rejection reasons and wallet credits
-const MOCK_CLAIMS = [
-    { id: 'CLM-2025-001', claim_type: 'Medicine', created_at: '2025-01-25', amount: 2500, status: 'approved', member: 'Self', creditedToWallet: true },
-    { id: 'CLM-2025-002', claim_type: 'Diagnostic Test', created_at: '2025-01-22', amount: 4500, status: 'processing', member: 'Spouse' },
-    { id: 'CLM-2025-003', claim_type: 'OPD Consultation', created_at: '2025-01-18', amount: 1500, status: 'rejected', member: 'Self', rejectionReason: 'Bill date outside policy validity period' },
-    { id: 'CLM-2025-004', claim_type: 'Hospitalization', created_at: '2025-01-10', amount: 35000, status: 'approved', member: 'Father', creditedToWallet: true },
-    { id: 'CLM-2024-005', claim_type: 'Medicine', created_at: '2024-12-15', amount: 3200, status: 'approved', member: 'Self', creditedToWallet: true },
-    { id: 'CLM-2024-006', claim_type: 'Diagnostic Test', created_at: '2024-11-28', amount: 5800, status: 'rejected', member: 'Mother', rejectionReason: 'Insufficient documentation provided' },
-    { id: 'CLM-2024-007', claim_type: 'Medicine', created_at: '2024-11-20', amount: 2100, status: 'under_review', member: 'Self' },
-];
-
 const StatusBadge = ({ status }: { status: string }) => {
     switch (status) {
         case 'approved':
@@ -39,14 +28,12 @@ const StatusBadge = ({ status }: { status: string }) => {
 type StatusFilter = 'approved' | 'rejected' | 'pending' | 'under_review';
 
 export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
-    const claims = initialClaims.length > 0 ? initialClaims : MOCK_CLAIMS;
+    const claims = initialClaims || [];
 
-    // Checkbox filter state - multi-select
     const [selectedStatuses, setSelectedStatuses] = useState<StatusFilter[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
 
-    // Toggle status filter
     const toggleStatus = (status: StatusFilter) => {
         setSelectedStatuses(prev =>
             prev.includes(status)
@@ -55,21 +42,15 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
         );
     };
 
-    // Apply filters
-    const filteredClaims = claims.filter(claim => {
-        // Status filter (checkbox multi-select)
+    const filteredClaims = claims.filter((claim: any) => {
         if (selectedStatuses.length > 0) {
             const claimStatus = claim.status === 'processing' ? 'pending' : claim.status;
             if (!selectedStatuses.includes(claimStatus as StatusFilter)) return false;
         }
-
-        // Type filter
         if (typeFilter !== 'all') {
             const claimType = (claim.claim_type || claim.type || '').toLowerCase();
             if (!claimType.includes(typeFilter.toLowerCase())) return false;
         }
-
-        // Search filter
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             const matchSearch =
@@ -79,23 +60,21 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                 String(claim.amount).includes(query);
             if (!matchSearch) return false;
         }
-
         return true;
     });
 
-    // Stats
-    const approvedAmount = claims.filter(c => c.status === 'approved').reduce((sum, claim) => sum + (claim.amount || 0), 0);
-    const rejectedAmount = claims.filter(c => c.status === 'rejected').reduce((sum, claim) => sum + (claim.amount || 0), 0);
-    const pendingAmount = claims.filter(c => c.status === 'processing' || c.status === 'pending' || c.status === 'under_review').reduce((sum, claim) => sum + (claim.amount || 0), 0);
-    const pendingCount = claims.filter(c => c.status === 'processing' || c.status === 'pending' || c.status === 'under_review').length;
-    const approvedCount = claims.filter(c => c.status === 'approved').length;
-    const rejectedCount = claims.filter(c => c.status === 'rejected').length;
+    const approvedAmount = claims.filter((c: any) => c.status === 'approved').reduce((sum: number, claim: any) => sum + (claim.amount || 0), 0);
+    const rejectedAmount = claims.filter((c: any) => c.status === 'rejected').reduce((sum: number, claim: any) => sum + (claim.amount || 0), 0);
+    const pendingAmount = claims.filter((c: any) => c.status === 'processing' || c.status === 'pending' || c.status === 'under_review').reduce((sum: number, claim: any) => sum + (claim.amount || 0), 0);
+    const pendingCount = claims.filter((c: any) => c.status === 'processing' || c.status === 'pending' || c.status === 'under_review').length;
+    const approvedCount = claims.filter((c: any) => c.status === 'approved').length;
+    const rejectedCount = claims.filter((c: any) => c.status === 'rejected').length;
 
     const statusFilters: { value: StatusFilter; label: string; count: number; color: string }[] = [
         { value: 'approved', label: 'Approved', count: approvedCount, color: 'emerald' },
         { value: 'rejected', label: 'Rejected', count: rejectedCount, color: 'red' },
         { value: 'pending', label: 'Pending', count: pendingCount, color: 'amber' },
-        { value: 'under_review', label: 'Under Review', count: claims.filter(c => c.status === 'under_review').length, color: 'blue' },
+        { value: 'under_review', label: 'Under Review', count: claims.filter((c: any) => c.status === 'under_review').length, color: 'blue' },
     ];
 
     const claimTypes = ['all', 'Medicine', 'Diagnostic Test', 'OPD Consultation', 'Hospitalization'];
@@ -120,7 +99,6 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
 
     return (
         <div className="space-y-6 pb-10">
-            {/* Header - NO NEW CLAIM BUTTON */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">Reimbursements</h1>
@@ -128,7 +106,6 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                 </div>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden">
                     <div className="relative z-10">
@@ -161,11 +138,8 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                 </div>
             </div>
 
-            {/* Enhanced Filter Section */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                {/* Filter Bar */}
                 <div className="p-4 border-b border-slate-100 space-y-4">
-                    {/* Search and Type Filter */}
                     <div className="flex flex-wrap gap-3 items-center">
                         <div className="relative flex-1 min-w-[200px] max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -188,7 +162,6 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                         </select>
                     </div>
 
-                    {/* Checkbox Status Filters */}
                     <div className="flex flex-wrap items-center gap-4">
                         <span className="text-sm font-medium text-slate-600">Filter by Status:</span>
                         {statusFilters.map(filter => (
@@ -218,7 +191,6 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                         ))}
                     </div>
 
-                    {/* Apply/Reset Buttons */}
                     <div className="flex gap-2">
                         {(selectedStatuses.length > 0 || searchQuery || typeFilter !== 'all') && (
                             <button
@@ -231,12 +203,10 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                     </div>
                 </div>
 
-                {/* Results Count */}
                 <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 text-sm text-slate-500">
                     Showing {filteredClaims.length} of {claims.length} claims
                 </div>
 
-                {/* Claims as Cards */}
                 <div className="p-4 space-y-4">
                     {filteredClaims.length === 0 ? (
                         <div className="py-12 text-center">
@@ -249,19 +219,19 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                             </p>
                         </div>
                     ) : (
-                        filteredClaims.map((claim) => (
+                        filteredClaims.map((claim: any) => (
                             <div
                                 key={claim.id}
                                 className={`p-4 rounded-xl border transition-all hover:shadow-md ${claim.status === 'approved' ? 'bg-emerald-50/50 border-emerald-200' :
-                                        claim.status === 'rejected' ? 'bg-red-50/50 border-red-200' :
-                                            'bg-white border-slate-200'
+                                    claim.status === 'rejected' ? 'bg-red-50/50 border-red-200' :
+                                        'bg-white border-slate-200'
                                     }`}
                             >
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div className="flex items-start gap-4">
                                         <div className={`p-3 rounded-xl ${claim.status === 'approved' ? 'bg-emerald-100 text-emerald-600' :
-                                                claim.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                                                    'bg-amber-100 text-amber-600'
+                                            claim.status === 'rejected' ? 'bg-red-100 text-red-600' :
+                                                'bg-amber-100 text-amber-600'
                                             }`}>
                                             {claim.claim_type === 'Medicine' ? '💊' :
                                                 claim.claim_type === 'Diagnostic Test' ? '🧪' :
@@ -279,19 +249,17 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                                                 {claim.member && <span> • {claim.member}</span>}
                                             </p>
 
-                                            {/* Approved: Show wallet credit */}
                                             {claim.status === 'approved' && claim.creditedToWallet && (
                                                 <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
                                                     <Wallet size={12} /> Credited to wallet
                                                 </p>
                                             )}
 
-                                            {/* Rejected: Show reason */}
                                             {claim.status === 'rejected' && claim.rejectionReason && (
                                                 <div className="mt-2 p-2 bg-red-100/50 rounded-lg">
                                                     <p className="text-xs text-red-700 flex items-start gap-1">
                                                         <AlertCircle size={12} className="flex-shrink-0 mt-0.5" />
-                                                        <span><strong>Rejection Reason:</strong> "{claim.rejectionReason}"</span>
+                                                        <span><strong>Rejection Reason:</strong> &quot;{claim.rejectionReason}&quot;</span>
                                                     </p>
                                                 </div>
                                             )}
@@ -301,8 +269,8 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                                     <div className="flex items-center gap-4">
                                         <div className="text-right">
                                             <p className={`text-xl font-bold ${claim.status === 'approved' ? 'text-emerald-600' :
-                                                    claim.status === 'rejected' ? 'text-red-600' :
-                                                        'text-slate-800'
+                                                claim.status === 'rejected' ? 'text-red-600' :
+                                                    'text-slate-800'
                                                 }`}>
                                                 ₹{claim.amount?.toLocaleString('en-IN')}
                                             </p>

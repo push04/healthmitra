@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Testimonial } from '@/app/lib/mock/cms-data';
+import { Testimonial } from '@/types/cms';
 import { getTestimonials, upsertTestimonial, deleteTestimonial, toggleTestimonialFeatured } from '@/app/actions/cms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

@@ -1,13 +1,14 @@
 import ClaimForm from "@/components/client/reimbursements/ClaimForm";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function NewReimbursementPage() {
-    // MOCK PROFILE
-    const MOCK_PROFILE = {
-        id: "mock-user-123",
-        full_name: "Test User",
-        email: "test@example.com",
-        phone: "+91 98765 43210"
-    };
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) redirect("/auth/login");
+
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
     return (
         <div className="space-y-6">
@@ -15,7 +16,7 @@ export default async function NewReimbursementPage() {
                 <h1 className="text-2xl font-bold text-slate-800">New Reimbursement</h1>
                 <p className="text-slate-500">Submit a new insurance claim for your recent treatments</p>
             </div>
-            <ClaimForm userProfile={MOCK_PROFILE} />
+            <ClaimForm userProfile={profile || { id: user.id }} />
         </div>
     );
 }

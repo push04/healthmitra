@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Loader2 } from 'lucide-react';
-import { getCallCentreRequests } from '@/app/actions/callcentre';
-import { AdminServiceRequest, MOCK_AGENTS } from '@/app/lib/mock/service-requests-data';
+import { getCallCentreRequests, getAgents } from '@/app/actions/callcentre';
+import { ServiceRequest } from '@/types/service-requests';
 
 const STATUS_COLORS: Record<string, string> = {
     pending: 'bg-amber-100 text-amber-700', assigned: 'bg-blue-100 text-blue-700',
@@ -19,17 +19,26 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export default function AllRequestsPage() {
-    const [requests, setRequests] = useState<AdminServiceRequest[]>([]);
+    const [requests, setRequests] = useState<ServiceRequest[]>([]);
+    const [agents, setAgents] = useState<any[]>([]); // Use Agent type if available
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [agentFilter, setAgentFilter] = useState('all');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const loadAgents = async () => {
+            const res = await getAgents();
+            if (res.success && res.data) setAgents(res.data);
+        };
+        loadAgents();
+    }, []);
+
+    useEffect(() => {
         const load = async () => {
             setLoading(true);
             const res = await getCallCentreRequests({ query: search, status: statusFilter, agentId: agentFilter });
-            if (res.success) setRequests(res.data);
+            if (res.success) setRequests(res.data || []);
             setLoading(false);
         };
         const t = setTimeout(load, 300);
@@ -62,7 +71,7 @@ export default function AllRequestsPage() {
                     <SelectTrigger className="w-[160px] bg-white border-slate-200 text-slate-700"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-white border-slate-200 text-slate-700">
                         <SelectItem value="all">All Agents</SelectItem>
-                        {MOCK_AGENTS.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                        {agents.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
             </div>

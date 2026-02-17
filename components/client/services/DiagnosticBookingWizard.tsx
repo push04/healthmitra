@@ -19,20 +19,10 @@ import { Search, X, TestTube, MapPin, Calendar, CheckCircle } from "lucide-react
 interface DiagnosticBookingWizardProps {
     isOpen: boolean;
     onClose: () => void;
+    testCatalog?: { id: number; name: string; price: number; category: string }[];
 }
 
-// Mock Data
-const TEST_CATALOG = [
-    { id: 1, name: "Complete Blood Count (CBC)", price: 450, category: "Blood Tests" },
-    { id: 2, name: "Lipid Profile", price: 850, category: "Blood Tests" },
-    { id: 3, name: "Thyroid Function Test (TFT)", price: 650, category: "Blood Tests" },
-    { id: 4, name: "Liver Function Test (LFT)", price: 750, category: "Blood Tests" },
-    { id: 5, name: "HbA1c", price: 500, category: "Diabetes" },
-    { id: 6, name: "Vitamin D Total", price: 1200, category: "Vitamins" },
-    { id: 7, name: "Full Body Checkup - Basic", price: 1499, category: "Packages" },
-];
-
-export function DiagnosticBookingWizard({ isOpen, onClose }: DiagnosticBookingWizardProps) {
+export function DiagnosticBookingWizard({ isOpen, onClose, testCatalog = [] }: DiagnosticBookingWizardProps) {
     const [step, setStep] = useState(1);
     const [selectedTests, setSelectedTests] = useState<any[]>([]);
     const [testSearch, setTestSearch] = useState("");
@@ -40,7 +30,7 @@ export function DiagnosticBookingWizard({ isOpen, onClose }: DiagnosticBookingWi
 
     // Search Logic
     const filteredTests = testSearch.length > 1
-        ? TEST_CATALOG.filter(t => t.name.toLowerCase().includes(testSearch.toLowerCase()) && !selectedTests.find(st => st.id === t.id))
+        ? testCatalog.filter(t => t.name.toLowerCase().includes(testSearch.toLowerCase()) && !selectedTests.find(st => st.id === t.id))
         : [];
 
     const addTest = (test: any) => {

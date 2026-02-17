@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Edit2, Camera, Save, CreditCard, Shield, Ruler, Scale, Building2, AlertCircle, Lock, Eye, EyeOff, Upload, CheckCircle, Bell, Globe, Moon, Sun, FileText, X, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
+import { updateUserProfile } from '@/app/actions/user';
 
 interface ProfileViewProps {
     profile: any;
@@ -17,6 +17,31 @@ const INDIAN_STATES = [
     'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
     'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
 ];
+
+const InputField = ({ label, name, type = 'text', required = false, disabled = false, placeholder = '', maxLength, icon: Icon, formData, handleChange, errors, isEditing, ...props }: any) => (
+    <div className="space-y-2">
+        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+            {Icon && <Icon size={14} className="text-slate-400" />}
+            {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        <input
+            type={type}
+            name={name}
+            value={formData[name as keyof typeof formData] as string}
+            onChange={handleChange}
+            disabled={disabled || !isEditing}
+            placeholder={placeholder}
+            maxLength={maxLength}
+            className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all ${errors[name] ? 'border-red-300 focus:ring-red-500' : 'border-slate-200'}`}
+            {...props}
+        />
+        {errors[name] && (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle size={12} /> {errors[name]}
+            </p>
+        )}
+    </div>
+);
 
 export default function ProfileView({ profile }: ProfileViewProps) {
     const [activeTab, setActiveTab] = useState<TabType>('personal');
@@ -149,11 +174,19 @@ export default function ProfileView({ profile }: ProfileViewProps) {
         }
 
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        toast.success('Profile updated successfully!');
-        setIsEditing(false);
-        setLoading(false);
+        try {
+            const result = await updateUserProfile(formData);
+            if (result.success) {
+                toast.success('Profile updated successfully!');
+                setIsEditing(false);
+            } else {
+                toast.error('Failed to update profile', { description: result.error });
+            }
+        } catch {
+            toast.error('Something went wrong while saving');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const formatAadhaar = (value: string) => {
@@ -171,30 +204,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
         { id: 'preferences', label: 'Preferences', icon: Bell },
     ];
 
-    const InputField = ({ label, name, type = 'text', required = false, disabled = false, placeholder = '', maxLength, icon: Icon, ...props }: any) => (
-        <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                {Icon && <Icon size={14} className="text-slate-400" />}
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            <input
-                type={type}
-                name={name}
-                value={formData[name as keyof typeof formData] as string}
-                onChange={handleChange}
-                disabled={disabled || !isEditing}
-                placeholder={placeholder}
-                maxLength={maxLength}
-                className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all ${errors[name] ? 'border-red-300 focus:ring-red-500' : 'border-slate-200'}`}
-                {...props}
-            />
-            {errors[name] && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                    <AlertCircle size={12} /> {errors[name]}
-                </p>
-            )}
-        </div>
-    );
+    // InputField moved outside
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 pb-10">
@@ -281,8 +291,8 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as TabType)}
                             className={`flex items-center gap-2 px-5 py-4 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${activeTab === tab.id
-                                    ? 'border-teal-500 text-teal-600 bg-teal-50/50'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                ? 'border-teal-500 text-teal-600 bg-teal-50/50'
+                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                 }`}
                         >
                             <tab.icon size={16} />
@@ -296,8 +306,8 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                     {activeTab === 'personal' && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField label="Full Name" name="full_name" required placeholder="Enter your full name" icon={User} />
-                                <InputField label="Date of Birth" name="dob" type="date" required icon={Calendar} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Full Name" name="full_name" required placeholder="Enter your full name" icon={User} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Date of Birth" name="dob" type="date" required icon={Calendar} />
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Gender <span className="text-red-500">*</span></label>
@@ -370,11 +380,11 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                     </div>
                                 </div>
 
-                                <InputField label="Height (cm)" name="height_cm" type="number" placeholder="e.g., 175" icon={Ruler} />
-                                <InputField label="Weight (kg)" name="weight_kg" type="number" placeholder="e.g., 72" icon={Scale} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Height (cm)" name="height_cm" type="number" placeholder="e.g., 175" icon={Ruler} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Weight (kg)" name="weight_kg" type="number" placeholder="e.g., 72" icon={Scale} />
 
                                 <div className="md:col-span-2">
-                                    <InputField label="Emergency Contact" name="emergency_contact" type="tel" required placeholder="+91 9123456789" icon={Phone} maxLength={10} />
+                                    <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Emergency Contact" name="emergency_contact" type="tel" required placeholder="+91 9123456789" icon={Phone} maxLength={10} />
                                 </div>
                             </div>
                         </div>
@@ -392,13 +402,13 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                             </div>
 
                             <div className="grid grid-cols-1 gap-6">
-                                <InputField
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing}
                                     label="Address Line 1 (House/Flat No., Building)"
                                     name="address_line1"
                                     required
                                     placeholder="A-101, Sunrise Apartments"
                                 />
-                                <InputField
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing}
                                     label="Address Line 2 (Street/Area)"
                                     name="address_line2"
                                     required
@@ -407,7 +417,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField label="City" name="city" required placeholder="Ahmedabad" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="City" name="city" required placeholder="Ahmedabad" />
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">State <span className="text-red-500">*</span></label>
@@ -425,7 +435,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                     </select>
                                 </div>
 
-                                <InputField label="Pincode" name="pincode" required placeholder="380015" maxLength={6} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Pincode" name="pincode" required placeholder="380015" maxLength={6} />
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Country</label>
@@ -438,7 +448,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <InputField label="Landmark" name="landmark" placeholder="Near Star Bazaar" />
+                                    <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Landmark" name="landmark" placeholder="Near Star Bazaar" />
                                 </div>
                             </div>
                         </div>
@@ -453,12 +463,12 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField label="Account Holder Name" name="bank_holder_name" required placeholder="As per bank records" />
-                                <InputField label="Account Number" name="bank_account_number" required placeholder="Enter account number" />
-                                <InputField label="Confirm Account Number" name="bank_confirm_account" required placeholder="Re-enter account number" />
-                                <InputField label="IFSC Code" name="bank_ifsc" required placeholder="e.g., HDFC0001234" maxLength={11} />
-                                <InputField label="Bank Name" name="bank_name" placeholder="Auto-filled from IFSC" />
-                                <InputField label="Branch Name" name="bank_branch" placeholder="Branch name" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Account Holder Name" name="bank_holder_name" required placeholder="As per bank records" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Account Number" name="bank_account_number" required placeholder="Enter account number" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Confirm Account Number" name="bank_confirm_account" required placeholder="Re-enter account number" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="IFSC Code" name="bank_ifsc" required placeholder="e.g., HDFC0001234" maxLength={11} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Bank Name" name="bank_name" placeholder="Auto-filled from IFSC" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Branch Name" name="bank_branch" placeholder="Branch name" />
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Account Type</label>
@@ -646,8 +656,8 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <InputField label="New Password" name="new_password" type="password" required placeholder="••••••••••••" />
-                                        <InputField label="Confirm Password" name="confirm_password" type="password" required placeholder="••••••••••••" />
+                                        <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="New Password" name="new_password" type="password" required placeholder="••••••••••••" />
+                                        <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Confirm Password" name="confirm_password" type="password" required placeholder="••••••••••••" />
                                     </div>
                                     <button className="px-5 py-2.5 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-900 transition-colors">
                                         Update Password
@@ -809,8 +819,8 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                                     className="sr-only"
                                                 />
                                                 <div className={`p-3 text-center rounded-lg border-2 transition-all ${formData.theme === option.value
-                                                        ? 'border-teal-500 bg-teal-50 text-teal-700'
-                                                        : 'border-slate-200 hover:border-slate-300'
+                                                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                                                    : 'border-slate-200 hover:border-slate-300'
                                                     }`}>
                                                     <option.icon size={18} className="mx-auto mb-1" />
                                                     <p className="text-xs font-medium">{option.label}</p>

@@ -15,47 +15,15 @@ interface MyPurchasesViewProps {
     purchases: any[];
 }
 
-// Mock member data - MANDATORY 4 MEMBERS for first attempt
-const INITIAL_MEMBERS = [
+// Empty member template structure for first-time plan activation
+const EMPTY_MEMBER_TEMPLATE = [
     { id: 'm1', name: '', relation: 'Self', dob: '', gender: '', age: 0, bloodGroup: '', mobile: '', isLocked: false, isMandatory: true },
     { id: 'm2', name: '', relation: 'Spouse', dob: '', gender: '', age: 0, bloodGroup: '', mobile: '', isLocked: false, isMandatory: true },
     { id: 'm3', name: '', relation: 'Child 1', dob: '', gender: '', age: 0, bloodGroup: '', mobile: '', isLocked: false, isMandatory: true },
     { id: 'm4', name: '', relation: 'Child 2', dob: '', gender: '', age: 0, bloodGroup: '', mobile: '', isLocked: false, isMandatory: true },
 ];
 
-// Mock multiple purchased plans
-const MOCK_MULTIPLE_PURCHASES = [
-    {
-        id: 'HLTH-2024-001',
-        plan_name: 'Gold Health Plan',
-        status: 'active',
-        start_date: '2024-01-15',
-        expiry_date: '2025-01-14',
-        coverage_amount: 500000,
-        members_count: 4,
-        isFirstPurchase: true
-    },
-    {
-        id: 'HLTH-2023-045',
-        plan_name: 'Silver Health Plan',
-        status: 'active',
-        start_date: '2023-03-10',
-        expiry_date: '2024-03-09',
-        coverage_amount: 300000,
-        members_count: 2,
-        isFirstPurchase: false
-    },
-    {
-        id: 'HLTH-2022-128',
-        plan_name: 'Basic Health Plan',
-        status: 'expired',
-        start_date: '2022-06-05',
-        expiry_date: '2023-06-04',
-        coverage_amount: 200000,
-        members_count: 4,
-        isFirstPurchase: false
-    }
-];
+
 
 interface MemberFormData {
     name: string;
@@ -90,14 +58,13 @@ function calculateAge(dob: string): number {
 }
 
 export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
-    // Use mock data if no purchases provided
-    const allPurchases = purchases.length > 0 ? purchases : MOCK_MULTIPLE_PURCHASES;
+    const allPurchases = purchases || [];
 
     const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isMemberFormOpen, setIsMemberFormOpen] = useState(false);
     const [isMemberWizardOpen, setIsMemberWizardOpen] = useState(false);
-    const [members, setMembers] = useState(INITIAL_MEMBERS);
+    const [members, setMembers] = useState(EMPTY_MEMBER_TEMPLATE);
     const [editingMember, setEditingMember] = useState<any>(null);
     const [memberForm, setMemberForm] = useState<MemberFormData>({
         name: '',
@@ -223,8 +190,8 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                                     <div
                                         key={member.id}
                                         className={`flex items-center justify-between p-3 rounded-lg border transition-all ${member.isLocked
-                                                ? 'bg-emerald-50 border-emerald-200'
-                                                : 'bg-white border-amber-200 hover:border-amber-400 cursor-pointer'
+                                            ? 'bg-emerald-50 border-emerald-200'
+                                            : 'bg-white border-amber-200 hover:border-amber-400 cursor-pointer'
                                             }`}
                                         onClick={() => !member.isLocked && handleEditMember(member)}
                                     >
@@ -464,8 +431,8 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                     {selectedPurchase && (
                         <div className="space-y-6">
                             <div className={`p-5 rounded-xl text-white ${selectedPurchase.status === 'active'
-                                    ? 'bg-gradient-to-r from-teal-500 to-cyan-500'
-                                    : 'bg-gradient-to-r from-slate-500 to-slate-600'
+                                ? 'bg-gradient-to-r from-teal-500 to-cyan-500'
+                                : 'bg-gradient-to-r from-slate-500 to-slate-600'
                                 }`}>
                                 <div className="flex justify-between items-start">
                                     <div>
@@ -473,8 +440,8 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                                         <p className="text-white/80 text-sm mt-1">Plan ID: {selectedPurchase.id}</p>
                                     </div>
                                     <Badge className={`${selectedPurchase.status === 'active'
-                                            ? 'bg-white/20 text-white'
-                                            : 'bg-red-500 text-white'
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-red-500 text-white'
                                         }`}>
                                         {selectedPurchase.status}
                                     </Badge>
@@ -566,8 +533,8 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                                 <div
                                     key={member.id}
                                     className={`flex items-center justify-between p-3 rounded-lg border ${member.isLocked
-                                            ? 'bg-emerald-50 border-emerald-200'
-                                            : 'bg-white border-slate-200 hover:border-teal-300 cursor-pointer'
+                                        ? 'bg-emerald-50 border-emerald-200'
+                                        : 'bg-white border-slate-200 hover:border-teal-300 cursor-pointer'
                                         }`}
                                     onClick={() => !member.isLocked && handleEditMember(member)}
                                 >

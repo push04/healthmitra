@@ -20,18 +20,8 @@ const PREDEFINED_CATEGORIES = [
     { name: 'HealthMitra & ABHA', icon: Shield, color: 'teal' },
 ];
 
-// Mock documents with new categories
-const MOCK_DOCUMENTS = [
-    { id: 'd1', name: 'Dr. Sharma Consultation', category: 'Doctor Consultant', uploaded_at: '2025-01-25', size: '1.2 MB', addedBy: 'user' },
-    { id: 'd2', name: 'Blood Test Report - Jan 2025', category: 'Test Reports', uploaded_at: '2025-01-20', size: '450 KB', addedBy: 'vendor' },
-    { id: 'd3', name: 'Health Checkup Summary', category: 'General Records', uploaded_at: '2025-01-18', size: '2.1 MB', addedBy: 'user' },
-    { id: 'd4', name: 'Prescription - Metformin', category: 'Medicine', uploaded_at: '2025-01-15', size: '320 KB', addedBy: 'vendor' },
-    { id: 'd5', name: 'ABHA ID Card', category: 'HealthMitra & ABHA', uploaded_at: '2025-01-10', size: '150 KB', addedBy: 'system' },
-    { id: 'd6', name: 'ECG Report', category: 'Test Reports', uploaded_at: '2025-01-08', size: '890 KB', addedBy: 'vendor' },
-];
-
 export function PHRView({ documents }: PHRViewProps) {
-    const allDocs = documents.length > 0 ? documents : MOCK_DOCUMENTS;
+    const allDocs = documents || [];
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
     const [searchQuery, setSearchQuery] = useState('');
@@ -162,13 +152,13 @@ export function PHRView({ documents }: PHRViewProps) {
                                 }`}
                         >
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${selectedCategory === folder.name
-                                    ? 'bg-teal-100 text-teal-700'
-                                    : folder.color === 'blue' ? 'bg-blue-100 text-blue-600'
-                                        : folder.color === 'purple' ? 'bg-purple-100 text-purple-600'
-                                            : folder.color === 'pink' ? 'bg-pink-100 text-pink-600'
-                                                : folder.color === 'green' ? 'bg-green-100 text-green-600'
-                                                    : folder.color === 'teal' ? 'bg-teal-100 text-teal-600'
-                                                        : 'bg-slate-100 text-slate-500'
+                                ? 'bg-teal-100 text-teal-700'
+                                : folder.color === 'blue' ? 'bg-blue-100 text-blue-600'
+                                    : folder.color === 'purple' ? 'bg-purple-100 text-purple-600'
+                                        : folder.color === 'pink' ? 'bg-pink-100 text-pink-600'
+                                            : folder.color === 'green' ? 'bg-green-100 text-green-600'
+                                                : folder.color === 'teal' ? 'bg-teal-100 text-teal-600'
+                                                    : 'bg-slate-100 text-slate-500'
                                 }`}>
                                 <IconComponent size={18} />
                             </div>

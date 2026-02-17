@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Pencil, Trash2, Plus, GripVertical, ArrowLeft, AlertTriangle } from 'lucide-react';
-import { PlanCategory, MOCK_CATEGORIES } from '@/app/lib/mock/plans-data';
+import { PlanCategory } from '@/types/plans';
 import { getCategories, upsertCategory, deleteCategory } from '@/app/actions/plans';
 import { toast } from 'sonner';
 import Link from 'next/link';

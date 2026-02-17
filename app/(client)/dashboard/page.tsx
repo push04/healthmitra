@@ -1,9 +1,11 @@
 import { fetchDashboardData } from "@/lib/api/client";
 import { DashboardView } from "@/components/client/DashboardView";
 
+import { createClient } from "@/lib/supabase/server";
+
 export default async function DashboardPage() {
-    // Fetch mock data directly
-    const response = await fetchDashboardData();
+    const supabase = await createClient();
+    const response = await fetchDashboardData(supabase);
 
     if (!response.success) {
         return (

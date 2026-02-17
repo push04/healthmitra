@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FooterSection, MOCK_FOOTER } from '@/app/lib/mock/cms-data';
+import { FooterSection } from '@/types/cms';
 import { getFooter, updateFooter } from '@/app/actions/cms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

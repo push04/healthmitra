@@ -8,7 +8,7 @@ import {
     ArrowLeft, Loader2, FileText, User, Shield, Download, Eye,
     ClipboardList, Syringe, Building2, Activity, Folder, Receipt
 } from 'lucide-react';
-import { PHRRecord, PatientMember, PHR_CATEGORIES } from '@/app/lib/mock/phr-data';
+import { PHRRecord, PatientMember, PHR_CATEGORIES } from '@/types/phr';
 import { getPatientPHR } from '@/app/actions/phr';
 import Link from 'next/link';
 import { toast } from 'sonner';

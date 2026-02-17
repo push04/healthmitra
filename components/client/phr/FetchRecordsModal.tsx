@@ -17,19 +17,14 @@ export default function FetchRecordsModal({ isOpen, onClose }: FetchRecordsModal
 
     if (!isOpen) return null;
 
-    // Mock records found after search
-    const MOCK_RECORDS = [
-        { id: 'rec1', type: 'OPD Consultation', date: 'Jan 10, 2025' },
-        { id: 'rec2', type: 'Lab Reports', date: 'Jan 10, 2025' },
-        { id: 'rec3', type: 'Prescription', date: 'Jan 10, 2025' }
-    ];
+    // Records found via ABDM/ABHA API search - empty until real integration
+    const [foundRecords, setFoundRecords] = useState<{ id: string; type: string; date: string }[]>([]);
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
         if (!search) return;
-        // Simulate API search time
-        setTimeout(() => {
-            setHasSearched(true);
-        }, 800);
+        setHasSearched(true);
+        // TODO: Integrate with ABDM/ABHA API to fetch real records
+        setFoundRecords([]);
     };
 
     const toggleSelection = (id: string) => {
@@ -93,13 +88,15 @@ export default function FetchRecordsModal({ isOpen, onClose }: FetchRecordsModal
                             </div>
 
                             <div className="space-y-2">
-                                {MOCK_RECORDS.map((rec) => (
+                                {foundRecords.length === 0 ? (
+                                    <div className="p-6 text-center text-slate-400 text-sm">No records found for this provider. Try another hospital.</div>
+                                ) : foundRecords.map((rec) => (
                                     <button
                                         key={rec.id}
                                         onClick={() => toggleSelection(rec.id)}
                                         className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left group ${selectedRecords.includes(rec.id)
-                                                ? 'bg-teal-50 border-teal-200 ring-1 ring-teal-200'
-                                                : 'bg-white border-slate-100 hover:bg-slate-50'
+                                            ? 'bg-teal-50 border-teal-200 ring-1 ring-teal-200'
+                                            : 'bg-white border-slate-100 hover:bg-slate-50'
                                             }`}
                                     >
                                         <div className={selectedRecords.includes(rec.id) ? 'text-teal-600' : 'text-slate-300 group-hover:text-slate-400'}>

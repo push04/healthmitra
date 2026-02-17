@@ -11,9 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Search, Loader2, PhoneCall, Users, UserCheck, Clock, AlertTriangle, CheckCircle, Eye
 } from 'lucide-react';
-import { MOCK_AGENTS } from '@/app/lib/mock/service-requests-data';
+import { ServiceRequest, Agent } from '@/types/service-requests';
 import { getCallCentreRequests, getAgents, assignRequestToAgent } from '@/app/actions/callcentre';
-import { AdminServiceRequest } from '@/app/lib/mock/service-requests-data';
 import { toast } from 'sonner';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -38,8 +37,8 @@ const AGENT_STATUS: Record<string, string> = {
 };
 
 export default function AdminCallCentrePage() {
-    const [requests, setRequests] = useState<AdminServiceRequest[]>([]);
-    const [agents, setAgents] = useState<any[]>([]);
+    const [requests, setRequests] = useState<ServiceRequest[]>([]);
+    const [agents, setAgents] = useState<Agent[]>([]);
     const [stats, setStats] = useState({ total: 0, pending: 0, assigned: 0, inProgress: 0, completed: 0 });
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -53,7 +52,7 @@ export default function AdminCallCentrePage() {
                 getCallCentreRequests({ query: search, status: statusFilter, agentId: agentFilter }),
                 getAgents()
             ]);
-            if (reqRes.success) { setRequests(reqRes.data); setStats(reqRes.stats); }
+            if (reqRes.success) { setRequests(reqRes.data || []); setStats(reqRes.stats || { total: 0, pending: 0, assigned: 0, inProgress: 0, completed: 0 }); }
             if (agentRes.success) setAgents(agentRes.data);
             setLoading(false);
         };
@@ -120,7 +119,7 @@ export default function AdminCallCentrePage() {
                             <SelectTrigger className="w-[160px] bg-white border-slate-200 text-slate-700"><SelectValue placeholder="Agent" /></SelectTrigger>
                             <SelectContent className="bg-white border-slate-200 text-slate-700">
                                 <SelectItem value="all">All Agents</SelectItem>
-                                {MOCK_AGENTS.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                                {agents.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -160,7 +159,7 @@ export default function AdminCallCentrePage() {
                                                     <Select onValueChange={v => handleAssign(sr.id, v)}>
                                                         <SelectTrigger className="w-[130px] h-8 text-xs bg-white border-slate-200"><SelectValue placeholder="Assign..." /></SelectTrigger>
                                                         <SelectContent className="bg-white border-slate-200 text-slate-700">
-                                                            {MOCK_AGENTS.filter(a => a.status !== 'offline').map(a => (
+                                                            {agents.filter(a => a.status !== 'offline').map(a => (
                                                                 <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                                                             ))}
                                                         </SelectContent>

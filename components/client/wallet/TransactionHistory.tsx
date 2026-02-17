@@ -1,13 +1,16 @@
 'use client';
 
 import React from 'react';
-import { MOCK_TRANSACTIONS, TransactionType } from '@/types/wallet';
+import type { WalletTransaction, TransactionType } from '@/types/wallet';
 import { ArrowDownLeft, ArrowUpRight, Search, Filter, Calendar } from 'lucide-react';
 
-export default function TransactionHistory() {
+interface TransactionHistoryProps {
+    transactions?: WalletTransaction[];
+}
+
+export default function TransactionHistory({ transactions = [] }: TransactionHistoryProps) {
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            {/* Header / Filters */}
             <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
                 <h3 className="font-bold text-slate-800">Recent Transactions</h3>
 
@@ -29,32 +32,35 @@ export default function TransactionHistory() {
                 </div>
             </div>
 
-            {/* List */}
             <div className="divide-y divide-slate-100">
-                {MOCK_TRANSACTIONS.map((txn) => (
-                    <div key={txn.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${txn.type === 'credit' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                {txn.type === 'credit' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
-                            </div>
-
-                            <div>
-                                <p className="font-medium text-slate-800 text-sm">{txn.description}</p>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-xs text-slate-400">{txn.date}</span>
-                                    {txn.status === 'pending' && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 rounded font-bold uppercase">Pending</span>}
-                                    {txn.status === 'failed' && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 rounded font-bold uppercase">Failed</span>}
+                {transactions.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400">No transactions yet</div>
+                ) : (
+                    transactions.map((txn) => (
+                        <div key={txn.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${txn.type === 'credit' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'
+                                    }`}>
+                                    {txn.type === 'credit' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
                                 </div>
-                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">{txn.referenceId}</p>
+
+                                <div>
+                                    <p className="font-medium text-slate-800 text-sm">{txn.description}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-xs text-slate-400">{txn.date}</span>
+                                        {txn.status === 'pending' && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 rounded font-bold uppercase">Pending</span>}
+                                        {txn.status === 'failed' && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 rounded font-bold uppercase">Failed</span>}
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{txn.referenceId}</p>
+                                </div>
+                            </div>
+
+                            <div className={`font-bold text-sm ${txn.type === 'credit' ? 'text-emerald-600' : 'text-slate-800'}`}>
+                                {txn.type === 'credit' ? '+' : '-'} ₹{txn.amount.toLocaleString('en-US')}
                             </div>
                         </div>
-
-                        <div className={`font-bold text-sm ${txn.type === 'credit' ? 'text-emerald-600' : 'text-slate-800'}`}>
-                            {txn.type === 'credit' ? '+' : '-'} ₹{txn.amount.toLocaleString('en-US')}
-                        </div>
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
 
             <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
@@ -65,3 +71,4 @@ export default function TransactionHistory() {
         </div>
     );
 }
+

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FAQ, MOCK_FAQS, FAQCategory } from '@/app/lib/mock/cms-data';
+import { FAQ, FAQCategory } from '@/types/cms';
 import { getFAQs, upsertFAQ, deleteFAQ, reorderFAQs } from '@/app/actions/cms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

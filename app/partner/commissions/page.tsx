@@ -1,15 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { IndianRupee, TrendingUp, Clock, CheckCircle2, Banknote } from 'lucide-react';
-import { MOCK_PARTNERS, MOCK_COMMISSIONS } from '@/app/lib/mock/partner-data';
-
-const partner = MOCK_PARTNERS[0];
-const allCommissions = MOCK_COMMISSIONS.filter(c => c.partnerId === partner.id);
+import { IndianRupee, TrendingUp, Clock, CheckCircle2, Banknote, Loader2 } from 'lucide-react';
+import { getCurrentPartner, getPartnerCommissions } from '@/app/actions/partners';
+import { Partner, PartnerCommission } from '@/types/partners';
+import { toast } from 'sonner';
 
 const STATUS_COLORS: Record<string, string> = {
     paid: 'bg-emerald-100 text-emerald-700',
@@ -18,7 +17,30 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function CommissionsPage() {
+    const [partner, setPartner] = useState<Partner | null>(null);
+    const [allCommissions, setAllCommissions] = useState<PartnerCommission[]>([]);
+    const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('all');
+
+    useEffect(() => {
+        const load = async () => {
+            const res: any = await getCurrentPartner();
+            if (res.success && res.data?.partner) {
+                setPartner(res.data.partner);
+                // Fetch commissions
+                const comRes = await getPartnerCommissions(res.data.partner.id);
+                setAllCommissions(comRes.data || []);
+            } else {
+                toast.error(res.error || "Failed to load partner data");
+            }
+            setLoading(false);
+        };
+        load();
+    }, []);
+
+    if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-teal-600" /></div>;
+    if (!partner) return <div className="p-8 text-center text-slate-500">Partner profile not found. Please contact support.</div>;
+
     const filtered = statusFilter === 'all' ? allCommissions : allCommissions.filter(c => c.status === statusFilter);
 
     const totalEarned = allCommissions.reduce((a, c) => a + c.commissionAmount, 0);

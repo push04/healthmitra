@@ -10,27 +10,18 @@ import { toast } from 'sonner';
 interface WalletViewProps {
     wallet: any;
     stats: any;
+    billRefunds?: any[];
 }
 
-// Mock approved bill refunds (withdrawable)
-const MOCK_BILL_REFUNDS = [
-    { id: 'CLM-001', type: 'Medicine Bill', amount: 1250, date: 'Jan 16, 2025', status: 'withdrawable' },
-    { id: 'CLM-002', type: 'Test Bill', amount: 850, date: 'Jan 15, 2025', status: 'withdrawable' },
-    { id: 'CLM-003', type: 'OPD Bill', amount: 1140, date: 'Jan 12, 2025', status: 'withdrawable' },
-];
-
-export function WalletView({ wallet, stats }: WalletViewProps) {
+export function WalletView({ wallet, stats, billRefunds = [] }: WalletViewProps) {
     const [isAddMoneyOpen, setIsAddMoneyOpen] = useState(false);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
 
-    const totalBalance = wallet?.balance || 5240;
+    const totalBalance = wallet?.balance || 0;
+    const addedMoney = wallet?.addedMoney || 0;
+    const billRefundBalance = totalBalance - addedMoney;
 
-    // Split balance: Added Money vs Bill Refunds
-    const addedMoney = 2000; // Money added via "Add Money" - NOT withdrawable
-    const billRefundBalance = totalBalance - addedMoney; // From approved reimbursements - WITHDRAWABLE
-
-    // Daily withdrawal limit tracking
-    const todayWithdrawals = 2;
+    const todayWithdrawals = wallet?.todayWithdrawals || 0;
     const MAX_DAILY_WITHDRAWALS = 5;
     const remainingWithdrawals = MAX_DAILY_WITHDRAWALS - todayWithdrawals;
 
@@ -151,7 +142,9 @@ export function WalletView({ wallet, stats }: WalletViewProps) {
                             <span className="text-sm text-teal-600 font-semibold">₹{billRefundBalance.toLocaleString('en-IN')}</span>
                         </div>
                         <div className="divide-y divide-slate-100">
-                            {MOCK_BILL_REFUNDS.map((bill) => (
+                            {billRefunds.length === 0 ? (
+                                <div className="p-6 text-center text-slate-400 text-sm">No withdrawable refunds</div>
+                            ) : billRefunds.map((bill: any) => (
                                 <div key={bill.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HomepageSection } from '@/app/lib/mock/cms-data';
+import { HomepageSection } from '@/types/cms';
 import { getHomepageSections, reorderHomepageSections, updateSectionConfig } from '@/app/actions/cms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

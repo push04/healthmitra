@@ -1,81 +1,100 @@
 'use server';
 
-import { MOCK_CITIES, City, Region } from '@/app/lib/mock/locations-data';
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { createClient } from '@/lib/supabase/server';
+import { City, Region } from '@/types/locations';
 
 // --- LOCATION ACTIONS ---
 
 interface GetCitiesFilters {
     query?: string;
     state?: string;
-    region?: Region | 'all';
+    region?: string | 'all';
     status?: string;
 }
 
 export async function getCities(filters?: GetCitiesFilters) {
-    await delay(600);
-
-    let cities = [...MOCK_CITIES];
+    const supabase = await createClient();
+    let query = supabase.from('cities').select('*');
 
     if (filters?.query) {
-        const q = filters.query.toLowerCase();
-        cities = cities.filter(c =>
-            c.name.toLowerCase().includes(q) ||
-            c.pincodes.some(p => p.includes(q))
-        );
+        query = query.ilike('name', `%${filters.query}%`);
     }
 
     if (filters?.state && filters.state !== 'all') {
-        cities = cities.filter(c => c.state === filters.state);
+        query = query.eq('state', filters.state);
     }
 
     if (filters?.region && filters.region !== 'all') {
-        cities = cities.filter(c => c.region === filters.region);
+        query = query.eq('region', filters.region);
     }
+
+    if (filters?.status) {
+        query = query.eq('status', filters.status);
+    }
+
+    const { data, error } = await query.order('name');
+
+    if (error) return { success: false, error: error.message };
+
+    // Map to frontend expectation
+    const cities: City[] = data.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        state: c.state,
+        region: c.region,
+        tier: 'Tier 2', // Mock or add to schema
+        pincodes: c.pincodes || [],
+        isServiceable: c.is_serviceable,
+        status: c.status,
+        serviceCenters: c.service_centers || []
+    }));
 
     return { success: true, data: cities };
 }
 
 export async function upsertCity(city: Partial<City>) {
-    await delay(800);
-    console.log("Upserting City:", city);
+    const supabase = await createClient();
+    const { error } = await supabase.from('cities').upsert({
+        id: city.id,
+        name: city.name,
+        state: city.state,
+        region: city.region,
+        pincodes: city.pincodes,
+        is_serviceable: city.isServiceable,
+        status: city.status,
+        service_centers: city.serviceCenters
+    });
 
-    if (city.id) {
-        return { success: true, message: 'City updated successfully' };
-    } else {
-        const newCity = {
-            ...city,
-            id: `city_${Date.now()}`,
-            status: city.status || 'active',
-            isServiceable: city.isServiceable ?? true,
-            pincodes: city.pincodes || [],
-            serviceCenters: city.serviceCenters || []
-        };
-        return { success: true, message: 'City added successfully', data: newCity };
-    }
+    if (error) return { success: false, error: error.message };
+    return { success: true, message: 'City saved successfully' };
 }
 
 export async function deleteCity(id: string) {
-    await delay(500);
-    console.log("Deleting City:", id);
+    const supabase = await createClient();
+    const { error } = await supabase.from('cities').delete().eq('id', id);
+    if (error) return { success: false, error: error.message };
     return { success: true, message: 'City deleted successfully' };
 }
 
 export async function searchPincode(pincode: string) {
-    await delay(400);
-    const city = MOCK_CITIES.find(c => c.pincodes.includes(pincode));
+    const supabase = await createClient();
 
-    if (city) {
+    const { data, error } = await supabase
+        .from('cities')
+        .select('*')
+        .contains('pincodes', [pincode])
+        .maybeSingle(); // Use maybeSingle to avoid error if not found
+
+    if (data) {
         return {
             success: true,
             found: true,
             data: {
-                city: city.name,
-                state: city.state,
-                region: city.region,
-                isServiceable: city.isServiceable,
-                nearestCenter: city.serviceCenters[0] || null
+                city: data.name,
+                state: data.state,
+                region: data.region,
+                isServiceable: data.is_serviceable,
+                nearestCenter: data.service_centers?.[0] || null
             }
         };
     }
@@ -84,8 +103,22 @@ export async function searchPincode(pincode: string) {
 }
 
 export async function bulkUploadCities(data: any[]) {
-    await delay(2000); // larger delay for bulk op
-    console.log("Processing Bulk Upload:", data.length, "entries");
+    const supabase = await createClient();
+
+    // Map data to schema columns
+    const rows = data.map(d => ({
+        name: d.name,
+        state: d.state,
+        region: d.region,
+        pincodes: d.pincodes,
+        is_serviceable: d.isServiceable,
+        status: 'active'
+    }));
+
+    const { error } = await supabase.from('cities').insert(rows);
+
+    if (error) return { success: false, error: error.message };
+
     return {
         success: true,
         message: `Successfully processed ${data.length} entries.`,

@@ -1,24 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Plus, Search, TrendingUp, IndianRupee } from 'lucide-react';
-import { MOCK_PARTNERS, MOCK_SUB_PARTNERS } from '@/app/lib/mock/partner-data';
+import { Users, Plus, Search, TrendingUp, IndianRupee, Loader2 } from 'lucide-react';
+import { getCurrentPartner, getSubPartners } from '@/app/actions/partners';
+import { Partner, SubPartner } from '@/types/partners';
 import { toast } from 'sonner';
 
-const partner = MOCK_PARTNERS[0];
-const allSubs = MOCK_SUB_PARTNERS.filter(sp => sp.parentPartnerId === partner.id);
-
 export default function SubPartnersPage() {
+    const [partner, setPartner] = useState<Partner | null>(null);
+    const [allSubs, setAllSubs] = useState<SubPartner[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        const load = async () => {
+            const res: any = await getCurrentPartner();
+            if (res.success && res.data?.partner) {
+                setPartner(res.data.partner);
+                // getCurrentPartner returns subPartners in data.subPartners
+                setAllSubs(res.data.subPartners || []);
+            } else {
+                toast.error(res.error || "Failed to load partner data");
+            }
+            setLoading(false);
+        };
+        load();
+    }, []);
+
     const filtered = allSubs.filter(sp => sp.name.toLowerCase().includes(search.toLowerCase()) || sp.referralCode.toLowerCase().includes(search.toLowerCase()));
 
-    const totalSales = allSubs.reduce((a, sp) => a + sp.salesCount, 0);
-    const totalRev = allSubs.reduce((a, sp) => a + sp.totalRevenue, 0);
+    const totalSales = allSubs.reduce((a, sp) => a + (sp.salesCount || 0), 0);
+    const totalRev = allSubs.reduce((a, sp) => a + (sp.totalRevenue || 0), 0);
+
+    if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-teal-600" /></div>;
 
     return (
         <div className="space-y-6 animate-in fade-in">

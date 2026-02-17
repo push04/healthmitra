@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Hotspot, HotspotType, HotspotPosition } from '@/app/lib/mock/cms-data';
+import { Hotspot, HotspotType, HotspotPosition } from '@/types/cms';
 import { getHotspots, upsertHotspot, deleteHotspot } from '@/app/actions/cms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

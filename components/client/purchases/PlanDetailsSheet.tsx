@@ -22,28 +22,12 @@ interface PlanDetailsSheetProps {
     plan: PurchasedPlan | null;
     isOpen: boolean;
     onClose: () => void;
+    documents?: { name: string; date: string; size: string }[];
+    claims?: { id: string; type: string; amount: number; date: string; status: string }[];
+    members?: any[];
 }
 
-// MOCK DATA for extended details not in main Plan object
-const MOCK_DOCS = [
-    { name: "Policy Document.pdf", date: "Jan 15, 2024", size: "2.4 MB" },
-    { name: "Terms and Conditions.pdf", date: "Jan 15, 2024", size: "856 KB" },
-    { name: "Purchase Receipt.pdf", date: "Jan 15, 2024", size: "124 KB" }
-];
-
-const MOCK_CLAIMS = [
-    { id: "CLM-2025-001", type: "Medicine Reimbursement", amount: 1250, date: "Jan 10, 2025", status: "Approved" },
-    { id: "CLM-2024-056", type: "OPD Consultation", amount: 800, date: "Nov 12, 2024", status: "Approved" },
-    { id: "CLM-2024-042", type: "Diagnostic Tests", amount: 2400, date: "Oct 05, 2024", status: "Pending" }
-];
-
-const MOCK_MEMBERS = [
-    { id: "m1", fullName: "Rajesh Kumar", relation: "Self", dob: "1989-03-15", gender: "Male", eCardGenerated: true, mobile: "+91 98765 43210", bloodGroup: "B+", height: "175", weight: "72" },
-    { id: "m2", fullName: "Priya Kumar", relation: "Spouse", dob: "1992-06-20", gender: "Female", eCardGenerated: true, mobile: "+91 98765 43211", bloodGroup: "O+", height: "162", weight: "58" },
-    { id: "m3", fullName: "Arav Kumar", relation: "Son", dob: "2018-01-10", gender: "Male", eCardGenerated: false, mobile: "", bloodGroup: "B+", height: "110", weight: "18" },
-];
-
-export function PlanDetailsSheet({ plan, isOpen, onClose }: PlanDetailsSheetProps) {
+export function PlanDetailsSheet({ plan, isOpen, onClose, documents = [], claims = [], members = [] }: PlanDetailsSheetProps) {
     if (!plan) return null;
 
     const isExpired = plan.status === 'expired';
@@ -200,7 +184,7 @@ export function PlanDetailsSheet({ plan, isOpen, onClose }: PlanDetailsSheetProp
                         {/* MEMBERS TAB */}
                         <TabsContent value="members" className="animate-in fade-in-50 duration-300">
                             <MemberManagement
-                                members={MOCK_MEMBERS as any[]}
+                                members={members}
                                 onUpdateMembers={() => { }}
                             />
                         </TabsContent>
@@ -209,7 +193,9 @@ export function PlanDetailsSheet({ plan, isOpen, onClose }: PlanDetailsSheetProp
                         <TabsContent value="documents" className="animate-in fade-in-50 duration-300">
                             <h3 className="font-semibold text-slate-900 mb-4">Policy Documents</h3>
                             <div className="space-y-3">
-                                {MOCK_DOCS.map((doc, i) => (
+                                {documents.length === 0 ? (
+                                    <div className="p-8 text-center text-slate-400">No documents available</div>
+                                ) : documents.map((doc, i) => (
                                     <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:shadow-sm transition-shadow">
                                         <div className="flex items-center gap-4">
                                             <div className="h-10 w-10 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
@@ -241,10 +227,12 @@ export function PlanDetailsSheet({ plan, isOpen, onClose }: PlanDetailsSheetProp
                         <TabsContent value="claims" className="animate-in fade-in-50 duration-300">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-semibold text-slate-900">Claims History</h3>
-                                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Total: 3 (2 Approved)</span>
+                                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Total: {claims.length}</span>
                             </div>
                             <div className="space-y-3">
-                                {MOCK_CLAIMS.map(claim => (
+                                {claims.length === 0 ? (
+                                    <div className="p-8 text-center text-slate-400">No claims yet</div>
+                                ) : claims.map(claim => (
                                     <div key={claim.id} className="p-4 rounded-xl border border-slate-200 bg-white">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>

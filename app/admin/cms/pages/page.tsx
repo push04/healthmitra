@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Page, PageStatus } from '@/app/lib/mock/cms-data';
+import { Page, PageStatus } from '@/types/cms';
 import { getPages, upsertPage, deletePage } from '@/app/actions/cms';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

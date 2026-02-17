@@ -1,33 +1,17 @@
 import { ReimbursementsView } from "@/components/client/reimbursements/ReimbursementsView";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function ReimbursementsPage() {
-    // MOCK CLAIMS DATA
-    const MOCK_CLAIMS = [
-        {
-            id: "clm-001",
-            claim_type: "medicine",
-            amount: 1500,
-            status: "approved",
-            description: "Pharmacy expenses for monthly medication",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
-        },
-        {
-            id: "clm-002",
-            claim_type: "diagnostic",
-            amount: 3500,
-            status: "pending",
-            description: "Blood test and X-ray at City Hospital",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
-        },
-        {
-            id: "clm-003",
-            claim_type: "consultation",
-            amount: 800,
-            status: "processing",
-            description: "Specialist consultation fee",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString()
-        }
-    ];
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    return <ReimbursementsView initialClaims={MOCK_CLAIMS} />;
+    if (!user) redirect("/auth/login");
+
+    const { data: claims } = await supabase.from('reimbursement_claims')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+    return <ReimbursementsView initialClaims={claims || []} />;
 }

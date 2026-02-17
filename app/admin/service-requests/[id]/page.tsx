@@ -11,9 +11,9 @@ import {
     Building2, Loader2, CheckCircle, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { MOCK_AGENTS } from '@/app/lib/mock/service-requests-data';
-import { getAdminServiceRequest, assignServiceRequest, updateServiceRequestStatus } from '@/app/actions/service-requests';
-import type { AdminServiceRequest } from '@/app/lib/mock/service-requests-data';
+import { ServiceRequest } from '@/types/service-requests';
+import { getAdminServiceRequest, assignServiceRequest, updateServiceRequestStatus, getAgents } from '@/app/actions/service-requests';
+import { Agent } from '@/types/service-requests';
 import Link from 'next/link';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -26,7 +26,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function ServiceRequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const [request, setRequest] = useState<AdminServiceRequest | null>(null);
+    const [request, setRequest] = useState<ServiceRequest | null>(null);
+    const [agents, setAgents] = useState<Agent[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedAgent, setSelectedAgent] = useState('');
     const [notes, setNotes] = useState('');
@@ -34,9 +35,16 @@ export default function ServiceRequestDetailPage({ params }: { params: Promise<{
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            const res = await getAdminServiceRequest(id);
-            if (res.success && res.data) {
-                setRequest(res.data);
+            const [resRequest, resAgents] = await Promise.all([
+                getAdminServiceRequest(id),
+                getAgents()
+            ]);
+
+            if (resRequest.success && resRequest.data) {
+                setRequest(resRequest.data);
+            }
+            if (resAgents.success && resAgents.data) {
+                setAgents(resAgents.data);
             }
             setLoading(false);
         };
@@ -216,7 +224,7 @@ export default function ServiceRequestDetailPage({ params }: { params: Promise<{
                                 <Select value={selectedAgent} onValueChange={setSelectedAgent}>
                                     <SelectTrigger className="bg-white border-slate-200 text-slate-900"><SelectValue placeholder="Select agent..." /></SelectTrigger>
                                     <SelectContent className="bg-white border-slate-200 text-slate-900">
-                                        {MOCK_AGENTS.filter(a => a.status !== 'offline').map(a => (
+                                        {agents.filter(a => a.status !== 'offline').map(a => (
                                             <SelectItem key={a.id} value={a.id}>{a.name} ({a.status})</SelectItem>
                                         ))}
                                     </SelectContent>

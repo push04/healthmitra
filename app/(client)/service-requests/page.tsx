@@ -87,96 +87,7 @@ const SERVICES = [
     }
 ];
 
-// MOCK RAISED REQUESTS WITH MORE DATA
-const MOCK_REQUESTS = [
-    {
-        id: "REQ-2025-0120-001",
-        type: "medicine",
-        title: "Medicine Order",
-        description: "Monthly blood pressure medicines - Amlodipine, Losartan",
-        status: "approved",
-        previousStatus: "pending",
-        member: "self",
-        doctorName: "Dr. Sharma",
-        hospitalName: "City Hospital",
-        createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
-        updatedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-        teamReply: "Order has been approved and dispatched. Expected delivery: Tomorrow.",
-        isNew: true
-    },
-    {
-        id: "REQ-2025-0119-002",
-        type: "diagnostic",
-        title: "Blood Test - CBC",
-        description: "Complete blood count test for general checkup",
-        status: "completed",
-        previousStatus: "in_progress",
-        member: "spouse",
-        doctorName: null,
-        hospitalName: "HealthMitra Labs",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-        teamReply: "Test completed. Report uploaded to your PHR section.",
-        isNew: true
-    },
-    {
-        id: "REQ-2025-0118-003",
-        type: "medical_consultation",
-        title: "Doctor Appointment",
-        description: "General physician consultation for fever symptoms",
-        status: "pending",
-        previousStatus: null,
-        member: "self",
-        doctorName: "Dr. Priyanka",
-        hospitalName: "HealthMitra Clinic",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-        teamReply: null,
-        isNew: false
-    },
-    {
-        id: "REQ-2025-0115-004",
-        type: "voucher",
-        title: "Voucher Redemption",
-        description: "₹500 voucher for medicine purchase",
-        status: "cleared",
-        previousStatus: "approved",
-        member: "self",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-        teamReply: "Voucher redeemed successfully. Amount credited to wallet.",
-        isNew: false
-    },
-    {
-        id: "REQ-2025-0117-005",
-        type: "nursing",
-        title: "Nursing Visit",
-        description: "Wound dressing for post-surgery care",
-        status: "rejected",
-        previousStatus: "under_review",
-        member: "father",
-        doctorName: null,
-        hospitalName: null,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        teamReply: "Rejected: This service is not covered under your current plan. Please upgrade to Gold plan.",
-        isNew: true
-    },
-    {
-        id: "REQ-2025-0110-006",
-        type: "ambulance",
-        title: "Ambulance Booking",
-        description: "Non-emergency hospital transfer",
-        status: "bill_rejected",
-        previousStatus: "completed",
-        member: "mother",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-        teamReply: "Bill rejected: Uploaded bill does not match the service dates. Please resubmit.",
-        isNew: false
-    }
-];
-
+// Re-adding Badges as they were removed in previous step (oops)
 function StatusBadge({ status }: { status: string }) {
     const colors: Record<string, string> = {
         pending: "bg-amber-100 text-amber-700 border-amber-200",
@@ -197,6 +108,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function MemberBadge({ member }: { member: string }) {
+    if (!member) return null;
     return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs">
             <User className="h-3 w-3" />
@@ -212,26 +124,48 @@ const DEFAULT_FILTERS: FilterState = {
     member: 'all',
     dateRange: 'all',
 };
+import { getServiceRequests } from "@/app/actions/service-requests";
+import { toast } from "sonner";
+
+// ... existing imports ...
+
+// Keep SERVICES array as is (it's static config)
 
 export default function ServiceRequestsPage() {
     const [activeTab, setActiveTab] = useState("book");
     const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
     const [showPopup, setShowPopup] = useState(false);
     const [dismissedUpdates, setDismissedUpdates] = useState<string[]>([]);
+    const [requests, setRequests] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const load = async () => {
+            const res = await getServiceRequests();
+            if (res.success && res.data) {
+                setRequests(res.data);
+            } else {
+                console.error(res.error);
+            }
+            setLoading(false);
+        };
+        load();
+    }, []);
 
     // Get new updates for popup
-    const newUpdates = MOCK_REQUESTS.filter(req =>
-        req.isNew &&
-        req.previousStatus &&
+    const newUpdates = requests.filter(req =>
+        // enhanced logic for "new" - for now just check status or timeframe
+        // assuming backend doesn't have "isNew" flag, we simulate or ignore
+        req.status !== 'pending' &&
         !dismissedUpdates.includes(req.id)
     ).map(req => ({
         id: req.id,
-        title: req.title,
+        title: req.service_type || 'Service Request', // Mapping data
         requestId: req.id,
-        previousStatus: req.previousStatus || '',
+        previousStatus: '', // Not tracking history deeply yet
         newStatus: req.status,
-        updatedAt: req.updatedAt,
-        adminComment: req.teamReply || undefined
+        updatedAt: req.updated_at || req.created_at,
+        adminComment: req.admin_notes
     }));
 
     // Show popup when landing on page and there are new updates
@@ -246,31 +180,26 @@ export default function ServiceRequestsPage() {
     }, [activeTab, newUpdates.length]);
 
     // Apply filters
-    const filteredRequests = MOCK_REQUESTS.filter(req => {
+    const filteredRequests = requests.filter(req => {
         // Search filter
         if (filters.search) {
             const searchLower = filters.search.toLowerCase();
             const matchSearch =
                 req.id.toLowerCase().includes(searchLower) ||
-                req.title.toLowerCase().includes(searchLower) ||
-                req.description.toLowerCase().includes(searchLower) ||
-                (req.doctorName && req.doctorName.toLowerCase().includes(searchLower)) ||
-                (req.hospitalName && req.hospitalName.toLowerCase().includes(searchLower));
+                (req.service_type && req.service_type.toLowerCase().includes(searchLower)) ||
+                (req.description && req.description.toLowerCase().includes(searchLower));
             if (!matchSearch) return false;
         }
 
         // Type filter
-        if (filters.type !== 'all' && req.type !== filters.type) return false;
+        if (filters.type !== 'all' && req.service_type !== filters.type) return false;
 
         // Status filter
         if (filters.status !== 'all' && req.status !== filters.status) return false;
 
-        // Member filter
-        if (filters.member !== 'all' && req.member !== filters.member) return false;
-
         // Date filter
         if (filters.dateRange !== 'all') {
-            const reqDate = new Date(req.createdAt);
+            const reqDate = new Date(req.created_at);
             const now = new Date();
 
             switch (filters.dateRange) {
@@ -295,6 +224,8 @@ export default function ServiceRequestsPage() {
 
         return true;
     });
+
+    // ... rest of filtering ...
 
     const filteredServices = filters.search
         ? SERVICES.filter(s =>
@@ -347,7 +278,7 @@ export default function ServiceRequestsPage() {
                         Book Services
                     </TabsTrigger>
                     <TabsTrigger value="requests" className="px-6 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm relative">
-                        My Requests ({MOCK_REQUESTS.length})
+                        My Requests ({requests.length})
                         {newUpdates.length > 0 && (
                             <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                                 {newUpdates.length}
@@ -391,7 +322,7 @@ export default function ServiceRequestsPage() {
 
                     {/* Results Count */}
                     <div className="text-sm text-slate-500 mb-4">
-                        Showing {filteredRequests.length} of {MOCK_REQUESTS.length} requests
+                        Showing {filteredRequests.length} of {requests.length} requests
                     </div>
 
                     {filteredRequests.length === 0 ? (
@@ -403,53 +334,44 @@ export default function ServiceRequestsPage() {
                     ) : (
                         <div className="space-y-4">
                             {filteredRequests.map(req => (
-                                <div key={req.id} className={`bg-white rounded-xl border ${req.isNew ? 'border-teal-200 ring-1 ring-teal-100' : 'border-slate-200'} p-5 shadow-sm hover:shadow-md transition-all`}>
+                                <div key={req.id} className={`bg-white rounded-xl border ${req.status !== 'pending' ? 'border-teal-200 ring-1 ring-teal-100' : 'border-slate-200'} p-5 shadow-sm hover:shadow-md transition-all`}>
                                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                         <div className="flex-1">
                                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                <h3 className="font-bold text-slate-800">{req.title}</h3>
+                                                <h3 className="font-bold text-slate-800">{req.service_type ? req.service_type.replace('_', ' ').toUpperCase() : 'REQUEST'}</h3>
                                                 <StatusBadge status={req.status} />
-                                                <MemberBadge member={req.member} />
-                                                {req.isNew && (
-                                                    <span className="px-2 py-0.5 bg-teal-500 text-white rounded-full text-xs font-bold animate-pulse">
-                                                        NEW
-                                                    </span>
-                                                )}
+                                                {/* <MemberBadge member={req.member} /> - Member field missing in schema currently */}
                                             </div>
                                             <p className="text-xs text-slate-500 mb-2">
-                                                ID: <span className="font-mono">{req.id}</span>
+                                                ID: <span className="font-mono">{req.id.slice(0, 8)}</span>
                                             </p>
                                             <p className="text-sm text-slate-600 mb-2">{req.description}</p>
 
-                                            {req.doctorName && (
+                                            {/* Details based on jsonb 'details' if available */}
+                                            {req.details?.doctor_name && (
                                                 <p className="text-xs text-slate-500">
-                                                    Doctor: <span className="text-slate-700">{req.doctorName}</span>
-                                                </p>
-                                            )}
-                                            {req.hospitalName && (
-                                                <p className="text-xs text-slate-500">
-                                                    Hospital/Lab: <span className="text-slate-700">{req.hospitalName}</span>
+                                                    Doctor: <span className="text-slate-700">{req.details.doctor_name}</span>
                                                 </p>
                                             )}
 
                                             <p className="text-xs text-slate-400 mt-2">
-                                                Submitted: {new Date(req.createdAt).toLocaleDateString('en-IN', {
+                                                Submitted: {new Date(req.created_at).toLocaleDateString('en-IN', {
                                                     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                                                 })}
                                             </p>
 
                                             {/* Team Reply */}
-                                            {req.teamReply && (
-                                                <div className={`mt-4 p-3 rounded-lg text-sm ${req.status === 'rejected' || req.status === 'bill_rejected'
+                                            {req.admin_notes && (
+                                                <div className={`mt-4 p-3 rounded-lg text-sm ${req.status === 'rejected'
                                                     ? 'bg-red-50 border border-red-100 text-red-700'
                                                     : 'bg-teal-50 border border-teal-100 text-teal-800'
                                                     }`}>
                                                     <span className="font-semibold">Team Reply: </span>
-                                                    {req.teamReply}
+                                                    {req.admin_notes}
                                                 </div>
                                             )}
 
-                                            {!req.teamReply && req.status === 'pending' && (
+                                            {!req.admin_notes && req.status === 'pending' && (
                                                 <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 text-sm">
                                                     <span className="font-semibold">Status: </span>
                                                     Awaiting team response. We will update you soon.

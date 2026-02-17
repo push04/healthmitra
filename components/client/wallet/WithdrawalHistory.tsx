@@ -16,45 +16,16 @@ interface WithdrawalRecord {
     rejectionReason?: string;
 }
 
-const MOCK_WITHDRAWALS: WithdrawalRecord[] = [
-    {
-        id: 'w1',
-        requestId: 'WD-2025-0115-001',
-        requestedDate: 'Jan 15, 2025',
-        updatedDate: 'Jan 18, 2025',
-        amount: 3000,
-        bankAccount: '********7890',
-        bankName: 'HDFC Bank',
-        status: 'approved',
-        utr: 'HDFC2025011812345'
-    },
-    {
-        id: 'w2',
-        requestId: 'WD-2025-0110-003',
-        requestedDate: 'Jan 10, 2025',
-        updatedDate: 'Jan 10, 2025',
-        amount: 1500,
-        bankAccount: '********7890',
-        bankName: 'HDFC Bank',
-        status: 'pending'
-    },
-    {
-        id: 'w3',
-        requestId: 'WD-2025-0105-009',
-        requestedDate: 'Jan 05, 2025',
-        updatedDate: 'Jan 06, 2025',
-        amount: 50000,
-        bankAccount: '********7890',
-        bankName: 'HDFC Bank',
-        status: 'rejected',
-        rejectionReason: 'Amount exceeds daily limit'
-    }
-];
+interface WithdrawalHistoryProps {
+    withdrawals?: WithdrawalRecord[];
+}
 
-export default function WithdrawalHistory() {
+export default function WithdrawalHistory({ withdrawals = [] }: WithdrawalHistoryProps) {
     return (
         <div className="space-y-4">
-            {MOCK_WITHDRAWALS.map((wd) => (
+            {withdrawals.length === 0 ? (
+                <div className="p-8 text-center text-slate-400">No withdrawal history</div>
+            ) : withdrawals.map((wd) => (
                 <div key={wd.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all">
                     <div className="flex flex-col md:flex-row justify-between gap-4">
                         <div className="space-y-2">

@@ -14,17 +14,12 @@ interface Message {
     attachment?: string;
 }
 
-const MOCK_MESSAGES: Message[] = [
-    {
-        id: '1',
-        sender: 'admin',
-        text: "Your appointment has been confirmed with Dr. Sharma for Jan 20, 2025 at 10:30 AM. You will receive a video link via SMS.",
-        timestamp: "Jan 19, 02:15 PM"
-    }
-];
+interface CommunicationThreadProps {
+    initialMessages?: Message[];
+}
 
-export function CommunicationThread() {
-    const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
+export function CommunicationThread({ initialMessages = [] }: CommunicationThreadProps) {
+    const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [newItem, setNewItem] = useState("");
     const endRef = useRef<HTMLDivElement>(null);
 

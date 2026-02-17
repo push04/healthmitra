@@ -1,38 +1,28 @@
-import React from "react";
-import { notFound } from "next/navigation";
-import { ArrowLeft, Calendar, CheckCircle } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { notFound, redirect } from "next/navigation";
+import { ArrowLeft, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
 import { RequestTimeline } from "@/components/client/requests/RequestTimeline";
-
-// MOCK DATA
-const MOCK_REQUEST = {
-    id: "sr-001",
-    type: "medical_consultation",
-    status: "pending",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    details: {
-        doctorName: "Dr. Demo Physician",
-        specialization: "General Medicine",
-        preferredDate: "2024-02-01",
-        preferredTime: "10:00 AM",
-        memberName: "Test User",
-        symptoms: "General health checkup and consultation"
-    },
-    timeline: [
-        { status: 'submitted', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), completed: true, label: 'Request Submitted' },
-        { status: 'under_review', timestamp: '', completed: false, label: 'Under Review' },
-        { status: 'completed', timestamp: '', completed: false, label: 'Completed' }
-    ]
-};
 
 export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Always use mock data
-    const request = MOCK_REQUEST;
-    const details = request.details;
+    if (!user) redirect("/auth/login");
+
+    const { data: request } = await supabase.from('service_requests')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+
+    if (!request) notFound();
+
+    // Transform details from jsonb
+    const details = request.details || {};
 
     return (
         <div className="container mx-auto max-w-5xl py-6 animate-in fade-in-50">
@@ -69,7 +59,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                             <div>
                                 <h3 className="font-semibold text-slate-700 mb-2">Service Details</h3>
                                 <div className="space-y-2 text-slate-600">
-                                    <p><span className="text-slate-400">Request Date:</span> <br />{new Date(request.createdAt).toLocaleString()}</p>
+                                    <p><span className="text-slate-400">Request Date:</span> <br />{new Date(request.created_at).toLocaleString()}</p>
                                     <p><span className="text-slate-400">Doctor/Provider:</span> <br />{details.doctorName}</p>
                                     <p><span className="text-slate-400">Specialization:</span> <br />{details.specialization}</p>
                                 </div>
@@ -101,12 +91,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                     <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
                         <h3 className="font-semibold text-slate-900 mb-6">Status Timeline</h3>
                         <RequestTimeline
-                            steps={request.timeline.map((step: any, idx: number) => ({
-                                id: `step-${idx}`,
-                                label: step.label,
-                                status: step.completed ? 'completed' : (idx === 0 ? 'current' : 'pending'),
-                                date: step.timestamp ? new Date(step.timestamp).toLocaleDateString() : undefined
-                            }))}
+                            steps={[
+                                { id: 'submitted', label: 'Request Submitted', status: 'completed', date: new Date(request.created_at).toLocaleDateString() },
+                                { id: 'processing', label: 'Processing', status: request.status === 'in_progress' ? 'current' : (['completed', 'approved', 'rejected'].includes(request.status) ? 'completed' : 'pending') },
+                                { id: 'completed', label: 'Completed', status: request.status === 'completed' ? 'completed' : 'pending' }
+                            ]}
                         />
                     </div>
                 </div>

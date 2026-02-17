@@ -1,6 +1,6 @@
 'use client';
 
-import { Plan, MOCK_CATEGORIES } from '@/app/lib/mock/plans-data';
+import { Plan, PlanCategory } from '@/types/plan';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ const formatMoney = (amount: number) => {
 
 interface PlanCardProps {
     plan: Plan;
+    categories?: PlanCategory[];
     onEdit: (id: string) => void;
     onDelete: (id: string) => void;
     onToggleStatus: (id: string) => void;
@@ -23,14 +24,14 @@ interface PlanCardProps {
     onCopy: (id: string) => void;
 }
 
-export default function PlanCard({ plan, onEdit, onDelete, onToggleStatus, onViewAudit, onCopy }: PlanCardProps) {
+export default function PlanCard({ plan, categories = [], onEdit, onDelete, onToggleStatus, onViewAudit, onCopy }: PlanCardProps) {
     const statusColor =
         plan.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
             plan.status === 'inactive' ? 'bg-rose-50 text-rose-600 border-rose-200' :
                 'bg-amber-50 text-amber-600 border-amber-200';
 
     const categoryNames = plan.categoryIds
-        .map(id => MOCK_CATEGORIES.find(c => c.id === id)?.name)
+        .map(id => categories.find(c => c.id === id)?.name)
         .filter(Boolean);
 
     return (

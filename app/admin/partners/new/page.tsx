@@ -34,6 +34,7 @@ export default function AddPartnerPage() {
         setSaving(true);
         const res = await createPartner({
             name: form.name, email: form.email, phone: form.phone,
+            altPhone: form.altPhone,
             referralCode: form.referralCode, commissionPercent: form.commissionPercent,
             city: form.city, state: form.state, address: form.address, pincode: form.pincode,
             canAddSubPartners: form.canAddSubPartners, designationAccess: form.designationAccess,

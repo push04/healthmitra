@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
     Search, Loader2, Handshake, Plus, Users, IndianRupee, Shield, TrendingUp, Eye
 } from 'lucide-react';
-import { Partner } from '@/app/lib/mock/partner-data';
+import { Partner } from '@/types/partners';
 import { getPartners } from '@/app/actions/partners';
 import Link from 'next/link';
 
@@ -37,9 +37,9 @@ export default function PartnersListingPage() {
         const load = async () => {
             setLoading(true);
             const res = await getPartners({ query: search, status: statusFilter });
-            if (res.success) {
+            if (res.success && res.data) {
                 setPartners(res.data);
-                setStats(res.stats);
+                if (res.stats) setStats(res.stats);
             }
             setLoading(false);
         };

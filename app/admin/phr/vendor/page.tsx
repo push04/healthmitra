@@ -14,7 +14,7 @@ import {
     Shield, Key, Upload, Loader2, CheckCircle, AlertCircle, User, FileText, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { PatientMember, PHR_CATEGORIES, VendorAuditEntry } from '@/app/lib/mock/phr-data';
+import { PatientMember, PHR_CATEGORIES, VendorAuditEntry } from '@/types/phr';
 import { verifyPatientAccess, addVendorRecord, getVendorAuditLog } from '@/app/actions/phr';
 
 export default function VendorPortalPage() {
