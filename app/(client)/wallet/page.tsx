@@ -6,7 +6,7 @@ export default async function WalletPage() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) redirect("/auth/login");
+    if (!user) redirect("/login");
 
     const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', user.id).single();
 

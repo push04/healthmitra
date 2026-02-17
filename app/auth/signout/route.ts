@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     revalidatePath('/', 'layout')
-    return NextResponse.redirect(`${requestUrl.origin}/auth/login`, {
+    return NextResponse.redirect(`${requestUrl.origin}/login`, {
         status: 301,
     })
 }
