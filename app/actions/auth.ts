@@ -19,6 +19,14 @@ export async function login(formData: FormData) {
         return { error: error.message }
     }
 
+    const { data: userData } = await supabase.auth.getUser()
+    if (userData?.user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userData.user.id).single()
+        if (profile?.role === 'admin') {
+            redirect('/admin')
+        }
+    }
+
     revalidatePath('/', 'layout')
     redirect('/dashboard')
 }
