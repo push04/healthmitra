@@ -98,6 +98,16 @@ export async function signup(formData: FormData) {
         return { error: error.message }
     }
 
+    // Check user role for redirect
+    const supabaseClient = await createClient()
+    const { data: userData } = await supabaseClient.auth.getUser()
+    if (userData?.user) {
+        const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', userData.user.id).single()
+        if (profile?.role === 'admin') {
+            redirect('/admin')
+        }
+    }
+
     revalidatePath('/', 'layout')
     redirect('/dashboard')
 }
