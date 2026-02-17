@@ -5,6 +5,16 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
     const supabase = await createClient();
+
+    // DOUBLE CHECK: If admin lands here, kick them to /admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (profile?.role === 'admin') {
+            redirect('/admin');
+        }
+    }
+
     const response = await fetchDashboardData(supabase);
 
     if (!response.success) {
