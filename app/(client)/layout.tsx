@@ -1,17 +1,32 @@
 import { Sidebar } from "@/components/client/Sidebar";
 import { BottomNav } from "@/components/client/BottomNav";
 import { DashboardHeader } from "@/components/client/DashboardHeader";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function ClientLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    // MOCK USER DATA for Demo
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        redirect("/auth/login");
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    // User data for header
     const userData = {
-        name: 'Test User',
-        email: 'test@healthmitra.com',
-        avatar: undefined
+        name: profile?.full_name || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        avatar: profile?.avatar_url
     };
 
     return (
