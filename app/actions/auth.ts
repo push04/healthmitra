@@ -23,7 +23,7 @@ export async function login(formData: FormData) {
     if (userData?.user) {
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', userData.user.id).single()
         if (profile?.role === 'admin') {
-            redirect('/admin')
+            redirect('/admin/dashboard')
         }
     }
 
@@ -104,7 +104,7 @@ export async function signup(formData: FormData) {
     if (userData?.user) {
         const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', userData.user.id).single()
         if (profile?.role === 'admin') {
-            redirect('/admin')
+            redirect('/admin/dashboard')
         }
     }
 
