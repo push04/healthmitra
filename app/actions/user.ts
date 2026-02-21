@@ -58,15 +58,42 @@ export async function getUserInvoices() {
 
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { data, error } = await supabase.from('invoices')
+    // First try to get from invoices table
+    const { data: invoices, error } = await supabase.from('invoices')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
     if (error) {
         console.error('Error fetching invoices:', error);
-        return { success: true, data: [] };
     }
 
-    return { success: true, data };
+    // If no invoices, get from ecard_members as fallback
+    if (!invoices || invoices.length === 0) {
+        const { data: purchases } = await supabase
+            .from('ecard_members')
+            .select('*, plan:plan_id(*)')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (purchases && purchases.length > 0) {
+            const fallbackInvoices = purchases.map((p: any) => ({
+                id: p.id,
+                user_id: p.user_id,
+                plan_id: p.plan_id,
+                invoice_number: `INV-${p.id.slice(0, 8).toUpperCase()}`,
+                plan_name: p.plan?.name || 'Health Plan',
+                amount: p.plan?.price || 0,
+                gst: Math.round((p.plan?.price || 0) * 0.18),
+                total: (p.plan?.price || 0) * 1.18,
+                payment_method: 'online',
+                transaction_id: p.card_unique_id,
+                status: p.status === 'active' ? 'paid' : 'pending',
+                created_at: p.created_at,
+            }));
+            return { success: true, data: fallbackInvoices };
+        }
+    }
+
+    return { success: true, data: invoices || [] };
 }

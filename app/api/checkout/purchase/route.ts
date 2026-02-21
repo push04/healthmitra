@@ -49,6 +49,44 @@ export async function POST(request: Request) {
         const expiryDate = new Date();
         expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
+        // Ensure profile exists first - with better error handling
+        let profileExists = false;
+        try {
+            const { data: existingProfile, error: profileCheckError } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', user.id)
+                .single();
+
+            if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+                console.error('Profile check error:', profileCheckError);
+            }
+
+            profileExists = !!existingProfile;
+
+            if (!profileExists) {
+                const { error: profileInsertError } = await supabase.from('profiles').insert({
+                    id: user.id,
+                    full_name: user.email?.split('@')[0] || 'User',
+                    email: user.email,
+                    role: 'customer',
+                    status: 'active',
+                });
+
+                if (profileInsertError) {
+                    console.error('Profile insert error:', profileInsertError);
+                    // Try one more time with minimal fields
+                    if (profileInsertError.message.includes('duplicate')) {
+                        profileExists = true;
+                    }
+                } else {
+                    profileExists = true;
+                }
+            }
+        } catch (err) {
+            console.error('Profile handling error:', err);
+        }
+
         // Create membership record
         const { data: member, error: memberError } = await supabase
             .from('ecard_members')
@@ -87,7 +125,7 @@ export async function POST(request: Request) {
         const gstAmount = Math.round(plan.price * 0.18);
         const totalAmount = plan.price + gstAmount;
         
-        await supabase.from('invoices').insert({
+        const { error: invoiceError } = await supabase.from('invoices').insert({
             user_id: user.id,
             plan_id: planId,
             invoice_number: `INV-${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
@@ -99,6 +137,10 @@ export async function POST(request: Request) {
             transaction_id: transactionId,
             status: 'paid',
         });
+
+        if (invoiceError) {
+            console.error('Invoice creation error:', invoiceError);
+        }
 
         return NextResponse.json({
             success: true,

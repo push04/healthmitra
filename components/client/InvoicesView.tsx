@@ -27,16 +27,29 @@ export function InvoicesView({ invoices }: InvoicesViewProps) {
             const result = await response.json();
 
             if (result.success) {
-                const blob = new Blob([result.data.content], { type: 'text/plain' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = result.data.filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                a.remove();
-                toast.success('Download started');
+                if (result.data.type === 'html') {
+                    // Open HTML in new window for printing/saving as PDF
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                        printWindow.document.write(result.data.content);
+                        printWindow.document.close();
+                        toast.success('Invoice opened - use Print > Save as PDF');
+                    } else {
+                        toast.error('Please allow popups to download invoice');
+                    }
+                } else {
+                    // Legacy text download
+                    const blob = new Blob([result.data.content], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = result.data.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    toast.success('Download started');
+                }
             } else {
                 toast.error(result.error || 'Download failed');
             }

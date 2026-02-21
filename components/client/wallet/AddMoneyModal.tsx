@@ -59,37 +59,43 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
                 return;
             }
 
-            // Create wallet transaction record
-            const { error: txError } = await supabase
-                .from('wallet_transactions')
-                .insert({
-                    user_id: user.id,
-                    type: 'credit',
-                    amount: Number(amount),
-                    payment_method: 'test',
-                    status: 'completed',
-                    description: 'Test wallet top-up',
-                    reference_id: `TEST_${Date.now()}`,
-                });
-
-            if (txError) {
-                console.error('Transaction error:', txError);
-                toast.error('Failed to add money');
-                setIsProcessing(false);
-                return;
-            }
-
-            // Update wallet balance
-            const { error: updateError } = await supabase
+            // Check if wallet exists, if not create one
+            const { data: existingWallet } = await supabase
                 .from('wallets')
-                .update({
-                    balance: currentBalance + Number(amount),
-                    added_money: (currentBalance * 0.8) + Number(amount) // Assume 80% is added money
-                })
-                .eq('user_id', user.id);
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
 
-            if (updateError) {
-                console.error('Wallet update error:', updateError);
+            if (!existingWallet) {
+                const { error: createWalletError } = await supabase
+                    .from('wallets')
+                    .insert({
+                        user_id: user.id,
+                        balance: Number(amount),
+                    });
+
+                if (createWalletError) {
+                    console.error('Wallet creation error:', createWalletError);
+                    toast.error('Failed to create wallet: ' + createWalletError.message);
+                    setIsProcessing(false);
+                    return;
+                }
+            } else {
+                // Update wallet balance
+                const newBalance = (existingWallet.balance || 0) + Number(amount);
+                const { error: updateError } = await supabase
+                    .from('wallets')
+                    .update({
+                        balance: newBalance,
+                    })
+                    .eq('user_id', user.id);
+
+                if (updateError) {
+                    console.error('Wallet update error:', updateError);
+                    toast.error('Failed to add money: ' + updateError.message);
+                    setIsProcessing(false);
+                    return;
+                }
             }
 
             toast.success('Money added to wallet!', {
@@ -152,23 +158,19 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
                 order_id: result.data.orderId,
                 handler: async (response: any) => {
                     // Payment successful - update wallet
-                    await supabase
-                        .from('wallet_transactions')
-                        .insert({
-                            user_id: user.id,
-                            type: 'credit',
-                            amount: Number(amount),
-                            payment_method: 'razorpay',
-                            status: 'completed',
-                            description: 'Wallet top-up via Razorpay',
-                            reference_id: response.razorpay_payment_id,
-                        });
-
+                    const { data: existingWallet } = await supabase
+                        .from('wallets')
+                        .select('balance')
+                        .eq('user_id', user.id)
+                        .single();
+                    
+                    const currentBal = existingWallet?.balance || 0;
+                    const newBalance = currentBal + Number(amount);
+                    
                     await supabase
                         .from('wallets')
                         .update({
-                            balance: currentBalance + Number(amount),
-                            added_money: (currentBalance * 0.8) + Number(amount)
+                            balance: newBalance,
                         })
                         .eq('user_id', user.id);
 
