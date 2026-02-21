@@ -63,7 +63,7 @@ export function ActivityFeed({ activities = [], loading }: ActivityFeedProps) {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md h-full">
             <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-slate-800">Recent Activity</h2>
-                <Link href="#" className="text-sm font-medium text-teal-600 hover:underline">
+                <Link href="/service-requests" className="text-sm font-medium text-teal-600 hover:underline">
                     View All
                 </Link>
             </div>

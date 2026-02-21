@@ -3,6 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import { User } from '@/types/user';
 import { getUser, toggleUserStatus, changePlan, resendCredentials, activateNewPlan, getDepartments } from '@/app/actions/users';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +61,17 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         load();
     }, [id]);
 
+    const supabase = createClient();
+    const [plans, setPlans] = useState<{id: string, name: string}[]>([]);
+
+    useEffect(() => {
+        const loadPlans = async () => {
+            const { data } = await supabase.from('plans').select('id, name').eq('status', 'active');
+            if (data) setPlans(data);
+        };
+        loadPlans();
+    }, []);
+
     const handleToggleStatus = async () => {
         if (!user) return;
         const newStatus = user.status === 'active' ? 'inactive' : 'active';
@@ -74,11 +86,10 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
     const handleChangePlan = async (planId: string) => {
         if (!user) return;
-        const planNames: Record<string, string> = { plan_gold: 'Gold Health Plan', plan_silver: 'Silver Health Plan', plan_platinum: 'Platinum Health Plan' };
-        const res = await changePlan(user.id, planId, planNames[planId]);
+        const selectedPlan = plans.find(p => p.id === planId);
+        const res = await changePlan(user.id, planId, selectedPlan?.name || planId);
         if (res.success) {
-            // @ts-ignore
-            setUser({ ...user, planId, planName: planNames[planId] });
+            setUser({ ...user, planId, planName: selectedPlan?.name || planId });
             toast.success(res.message);
         }
     };
