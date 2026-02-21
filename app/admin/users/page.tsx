@@ -19,11 +19,49 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 export default function UsersListingPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
     const [query, setQuery] = useState('');
     const [deptFilter, setDeptFilter] = useState('all');
     const [stats, setStats] = useState({ total: 0, customers: 0, employees: 0, admins: 0, partners: 0 });
     const [departments, setDepartments] = useState<any[]>([]);
+
+    const handleExport = async () => {
+        setExporting(true);
+        try {
+            const response = await fetch('/api/reports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'users',
+                    filters: {
+                        role: activeTab === 'all' ? undefined : activeTab === 'customers' ? 'Customer' : activeTab === 'employees' ? 'Employee' : activeTab === 'admins' ? 'Admin' : activeTab === 'partners' ? 'Referral Partner' : undefined
+                    }
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const blob = new Blob([result.data.csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = result.data.filename || 'users.csv';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                toast.success('Export completed');
+            } else {
+                toast.error(result.error || 'Export failed');
+            }
+        } catch (error) {
+            toast.error('Something went wrong');
+        } finally {
+            setExporting(false);
+        }
+    };
 
     // Load data
     useEffect(() => {
@@ -100,8 +138,9 @@ export default function UsersListingPage() {
                     <p className="text-slate-500 text-sm mt-1">Manage all roles and permissions across the platform.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="border-teal-600 text-teal-400 hover:bg-teal-900/10" onClick={() => toast.success('Export started', { description: 'User data CSV is being prepared for download.' })}>
-                        <Download className="mr-2 h-4 w-4" /> Export
+                    <Button variant="outline" className="border-teal-600 text-teal-400 hover:bg-teal-900/10" onClick={handleExport} disabled={exporting}>
+                        {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />} 
+                        {exporting ? 'Exporting...' : 'Export'}
                     </Button>
                     <Link href="/admin/users/new">
                         <Button className="bg-teal-600 hover:bg-teal-700 text-white">

@@ -3,61 +3,79 @@ import { Footer } from "@/components/footer"
 import { Check, Star } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
-const plans = [
-    {
-        name: "Basic",
-        price: "₹2,999",
-        period: "/year",
-        description: "Essential coverage for individuals",
-        features: [
-            "Up to ₹2 Lakh Coverage",
-            "OPD Consultation (10 visits)",
-            "Basic Diagnostic Tests",
-            "Medicine Discounts (15%)",
-            "Teleconsultation Access",
-            "Email Support"
-        ],
-        popular: false
-    },
-    {
-        name: "Family",
-        price: "₹7,999",
-        period: "/year",
-        description: "Comprehensive coverage for families",
-        features: [
-            "Up to ₹5 Lakh Coverage",
-            "Cover for 4 Family Members",
-            "Unlimited OPD Consultations",
-            "All Diagnostic Tests Included",
-            "Medicine Discounts (25%)",
-            "Free Ambulance Service",
-            "24/7 Priority Support",
-            "Wellness Programs"
-        ],
-        popular: true
-    },
-    {
-        name: "Premium",
-        price: "₹14,999",
-        period: "/year",
-        description: "Maximum protection with exclusive benefits",
-        features: [
-            "Up to ₹10 Lakh Coverage",
-            "Cover for 6 Family Members",
-            "Unlimited Everything",
-            "International Coverage",
-            "Personal Health Manager",
-            "Home Healthcare Services",
-            "VIP Hospital Treatment",
-            "Mental Health Support",
-            "Annual Health Checkup"
-        ],
-        popular: false
+interface Plan {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    duration_days: number;
+    features: string[];
+    is_active: boolean;
+    is_featured: boolean;
+}
+
+async function getPublicPlans(): Promise<Plan[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('status', 'active')
+        .order('price', { ascending: true });
+
+    if (error || !data) {
+        return [];
     }
-]
+    return data as Plan[];
+}
 
-export default function PlansPage() {
+export default async function PlansPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+        redirect('/shop/plans')
+    }
+
+    const plans = await getPublicPlans()
+
+    const defaultPlans: Plan[] = plans.length > 0 ? plans : [
+        {
+            id: 'basic',
+            name: 'Basic',
+            description: 'Essential coverage for individuals',
+            price: 2999,
+            duration_days: 365,
+            features: ['Up to ₹2 Lakh Coverage', 'OPD Consultation (10 visits)', 'Basic Diagnostic Tests', 'Medicine Discounts (15%)', 'Teleconsultation Access'],
+            is_active: true,
+            is_featured: false
+        },
+        {
+            id: 'family',
+            name: 'Family',
+            description: 'Comprehensive coverage for families',
+            price: 7999,
+            duration_days: 365,
+            features: ['Up to ₹5 Lakh Coverage', 'Cover for 4 Family Members', 'Unlimited OPD Consultations', 'All Diagnostic Tests', 'Medicine Discounts (25%)', 'Free Ambulance', '24/7 Priority Support'],
+            is_active: true,
+            is_featured: true
+        },
+        {
+            id: 'premium',
+            name: 'Premium',
+            description: 'Maximum protection with exclusive benefits',
+            price: 14999,
+            duration_days: 365,
+            features: ['Up to ₹10 Lakh Coverage', 'Cover for 6 Family Members', 'Unlimited Everything', 'International Coverage', 'Personal Health Manager', 'Home Healthcare', 'VIP Hospital Treatment'],
+            is_active: true,
+            is_featured: false
+        }
+    ]
+
+    const displayPlans = plans.length > 0 ? plans : defaultPlans
+
     return (
         <>
             <Header />
@@ -77,15 +95,15 @@ export default function PlansPage() {
                 {/* Plans Grid */}
                 <section className="py-16 px-4 md:px-6">
                     <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
-                        {plans.map((plan, index) => (
+                        {displayPlans.map((plan) => (
                             <div
-                                key={index}
-                                className={`relative p-8 rounded-2xl border-2 transition-all duration-300 ${plan.popular
+                                key={plan.id}
+                                className={`relative p-8 rounded-2xl border-2 transition-all duration-300 ${plan.is_featured
                                         ? 'border-primary bg-gradient-to-b from-primary/5 to-primary/10 shadow-xl scale-105'
                                         : 'border-border bg-card hover:border-primary/50 hover:shadow-lg'
                                     }`}
                             >
-                                {plan.popular && (
+                                {plan.is_featured && (
                                     <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                                         <div className="flex items-center gap-1 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
                                             <Star className="w-4 h-4 fill-current" />
@@ -96,13 +114,13 @@ export default function PlansPage() {
                                 <div className="text-center mb-6">
                                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                                     <div className="flex items-baseline justify-center gap-1">
-                                        <span className="text-4xl font-bold text-primary">{plan.price}</span>
-                                        <span className="text-muted-foreground">{plan.period}</span>
+                                        <span className="text-4xl font-bold text-primary">₹{Number(plan.price || 0).toLocaleString()}</span>
+                                        <span className="text-muted-foreground">/year</span>
                                     </div>
                                     <p className="text-muted-foreground mt-2">{plan.description}</p>
                                 </div>
                                 <ul className="space-y-3 mb-8">
-                                    {plan.features.map((feature, idx) => (
+                                    {(plan.features || []).map((feature, idx) => (
                                         <li key={idx} className="flex items-start gap-3">
                                             <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                                             <span className="text-muted-foreground">{feature}</span>
@@ -111,8 +129,8 @@ export default function PlansPage() {
                                 </ul>
                                 <Link href="/signup" className="block">
                                     <Button
-                                        className={`w-full ${plan.popular ? 'bg-primary hover:bg-primary/90' : ''}`}
-                                        variant={plan.popular ? 'default' : 'outline'}
+                                        className={`w-full ${plan.is_featured ? 'bg-primary hover:bg-primary/90' : ''}`}
+                                        variant={plan.is_featured ? 'default' : 'outline'}
                                     >
                                         Get Started
                                     </Button>

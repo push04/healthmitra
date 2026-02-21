@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { generateReportAction } from '@/app/actions/analytics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,9 +21,38 @@ export default function ReportsPage() {
             return;
         }
         setGenerating(true);
-        await generateReportAction(reportType, dateRange);
-        setGenerating(false);
-        toast.success("Report generated and logged");
+        
+        try {
+            const response = await fetch('/api/reports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: reportType,
+                    filters: { startDate: dateRange.from, endDate: dateRange.to }
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const blob = new Blob([result.data.csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = result.data.filename || `${reportType}-report.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                toast.success('Report downloaded successfully');
+            } else {
+                toast.error(result.error || 'Failed to generate report');
+            }
+        } catch (error) {
+            toast.error('Something went wrong');
+        } finally {
+            setGenerating(false);
+        }
     };
 
     return (

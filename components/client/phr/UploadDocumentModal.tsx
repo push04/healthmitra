@@ -1,28 +1,90 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Upload, FileText, CheckCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 
 interface UploadModalProps {
     isOpen: boolean;
     onClose: () => void;
+    memberId?: string;
+    userId?: string;
 }
 
-export default function UploadDocumentModal({ isOpen, onClose }: UploadModalProps) {
+export default function UploadDocumentModal({ isOpen, onClose, memberId, userId }: UploadModalProps) {
+    const supabase = createClient();
     const [isUploading, setIsUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [category, setCategory] = useState('Prescriptions');
+    const [documentDate, setDocumentDate] = useState('');
+    const [selectedMember, setSelectedMember] = useState(memberId || '');
+    const [tags, setTags] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!isOpen) return null;
 
-    const handleUpload = () => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    };
+
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            toast.error('Please select a file to upload');
+            return;
+        }
+
         setIsUploading(true);
-        setTimeout(() => {
-            setIsUploading(false);
-            toast.success('Documents Uploaded Successfully', {
-                description: '2 files saved to "Prescriptions" folder.'
+        try {
+            const fileExt = selectedFile.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const folder = category.toLowerCase().replace(' ', '_');
+            const filePath = `phr/${folder}/${userId || 'unknown'}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('documents')
+                .upload(filePath, selectedFile, {
+                    cacheControl: '3600',
+                    upsert: false,
+                });
+
+            if (uploadError) {
+                toast.error('Upload failed: ' + uploadError.message);
+                setIsUploading(false);
+                return;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('documents')
+                .getPublicUrl(filePath);
+
+            const { error: dbError } = await supabase.from('phr_documents').insert({
+                user_id: userId,
+                member_id: selectedMember,
+                document_type: category,
+                document_url: publicUrl,
+                document_name: selectedFile.name,
+                document_date: documentDate || new Date().toISOString(),
+                tags: tags ? tags.split(',').map(t => t.trim()) : [],
             });
+
+            if (dbError) {
+                console.error('DB insert error:', dbError);
+            }
+
+            toast.success('Document uploaded successfully');
+            setSelectedFile(null);
+            setTags('');
             onClose();
-        }, 1500);
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error('Something went wrong');
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
@@ -39,7 +101,11 @@ export default function UploadDocumentModal({ isOpen, onClose }: UploadModalProp
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-slate-500">Select Category *</label>
-                            <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <select 
+                                value={category} 
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            >
                                 <option>Prescriptions</option>
                                 <option>Bills</option>
                                 <option>Test Reports</option>
@@ -48,24 +114,53 @@ export default function UploadDocumentModal({ isOpen, onClose }: UploadModalProp
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-slate-500">Document Date *</label>
-                            <input type="date" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                            <input 
+                                type="date" 
+                                value={documentDate}
+                                onChange={(e) => setDocumentDate(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" 
+                            />
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-xs font-semibold text-slate-500">Select Member</label>
-                        <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                            <option>Rajesh Kumar (Self)</option>
-                            <option>Priya Kumar</option>
+                        <select 
+                            value={selectedMember}
+                            onChange={(e) => setSelectedMember(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        >
+                            <option value="">Select member...</option>
+                            <option value="self">Self</option>
+                            {memberId && <option value={memberId}>Family Member</option>}
                         </select>
                     </div>
 
-                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 hover:bg-slate-50 transition-colors text-center cursor-pointer">
-                        <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <Upload size={20} />
-                        </div>
-                        <p className="text-sm text-slate-600 font-medium">Drag & drop files here or click to browse</p>
-                        <p className="text-xs text-slate-400 mt-1">PDF, JPG, PNG up to 10MB each</p>
+                    <div 
+                        className="border-2 border-dashed border-slate-200 rounded-xl p-8 hover:bg-slate-50 transition-colors text-center cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                        />
+                        {selectedFile ? (
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-slate-700">{selectedFile.name}</p>
+                                <p className="text-xs text-slate-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <Upload size={20} />
+                                </div>
+                                <p className="text-sm text-slate-600 font-medium">Drag & drop files here or click to browse</p>
+                                <p className="text-xs text-slate-400 mt-1">PDF, JPG, PNG up to 10MB each</p>
+                            </>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -73,6 +168,8 @@ export default function UploadDocumentModal({ isOpen, onClose }: UploadModalProp
                         <input
                             type="text"
                             placeholder="e.g. cardiologist, chest pain"
+                            value={tags}
+                            onChange={(e) => setTags(e.target.value)}
                             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                     </div>
@@ -87,9 +184,10 @@ export default function UploadDocumentModal({ isOpen, onClose }: UploadModalProp
                     </button>
                     <button
                         onClick={handleUpload}
-                        disabled={isUploading}
-                        className="px-6 py-2 text-sm font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-lg shadow-teal-200 flex items-center gap-2"
+                        disabled={isUploading || !selectedFile}
+                        className="px-6 py-2 text-sm font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-lg shadow-teal-200 flex items-center gap-2 disabled:opacity-50"
                     >
+                        {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                         {isUploading ? 'Uploading...' : 'Upload Documents'}
                     </button>
                 </div>

@@ -1,13 +1,51 @@
 'use client';
 
-import React from 'react';
-import { Search, Download, FileText, Receipt, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Download, FileText, Receipt, ShieldCheck, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface InvoicesViewProps {
     invoices: any[];
 }
 
 export function InvoicesView({ invoices }: InvoicesViewProps) {
+    const [downloading, setDownloading] = useState<string | null>(null);
+
+    const handleDownload = async (invoiceId: string, type: 'invoice' | 'receipt' | 'tax') => {
+        setDownloading(invoiceId);
+        
+        try {
+            const response = await fetch('/api/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: type === 'invoice' ? 'invoice' : 'reimbursement_receipt',
+                    data: { purchaseId: invoiceId }
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const blob = new Blob([result.data.content], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = result.data.filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                toast.success('Download started');
+            } else {
+                toast.error(result.error || 'Download failed');
+            }
+        } catch (error) {
+            toast.error('Something went wrong');
+        } finally {
+            setDownloading(null);
+        }
+    };
     return (
         <div className="space-y-6 pb-10">
             {/* Header */}
@@ -97,14 +135,29 @@ export function InvoicesView({ invoices }: InvoicesViewProps) {
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-slate-100 justify-end">
-                                <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                                    <Receipt size={16} /> Payment Receipt
+                                <button 
+                                    onClick={() => handleDownload(inv.id, 'receipt')}
+                                    disabled={downloading === inv.id}
+                                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                >
+                                    {downloading === inv.id ? <Loader2 size={16} className="animate-spin" /> : <Receipt size={16} />} 
+                                    Payment Receipt
                                 </button>
-                                <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                                    <FileText size={16} /> Tax Receipt (80D)
+                                <button 
+                                    onClick={() => handleDownload(inv.id, 'tax')}
+                                    disabled={downloading === inv.id}
+                                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                >
+                                    {downloading === inv.id ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />} 
+                                    Tax Receipt (80D)
                                 </button>
-                                <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors shadow-sm">
-                                    <Download size={16} /> Download Invoice
+                                <button 
+                                    onClick={() => handleDownload(inv.id, 'invoice')}
+                                    disabled={downloading === inv.id}
+                                    className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors shadow-sm disabled:opacity-50"
+                                >
+                                    {downloading === inv.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
+                                    Download Invoice
                                 </button>
                             </div>
                         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { User } from '@/types/user';
 import { getUser, toggleUserStatus, changePlan, resendCredentials, activateNewPlan, getDepartments } from '@/app/actions/users';
 import { Button } from '@/components/ui/button';
@@ -385,9 +385,52 @@ function Row({ label, value }: { label: string; value: string }) {
     );
 }
 
-function DocumentCard({ title, number, status }: { title: string; number?: string; status: string }) {
+function DocumentCard({ title, number, status, documentUrl, onUpload }: { title: string; number?: string; status: string; documentUrl?: string; onUpload?: (url: string) => void }) {
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('bucket', 'documents');
+            formData.append('folder', 'kyc');
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.data?.url) {
+                if (onUpload) {
+                    onUpload(result.data.url);
+                }
+                toast.success(`${title} uploaded successfully`);
+            } else {
+                toast.error(result.error || 'Upload failed');
+            }
+        } catch (error) {
+            toast.error('Upload failed');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     return (
         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileChange}
+                className="hidden"
+            />
             <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-medium text-slate-800">{title}</p>
                 <Badge className={`text-[10px] ${status === 'uploaded' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -396,10 +439,21 @@ function DocumentCard({ title, number, status }: { title: string; number?: strin
             </div>
             {number && <p className="text-xs font-mono text-slate-500">{number}</p>}
             <div className="flex gap-2 mt-3">
-                {status === 'uploaded' ? (
-                    <Button variant="outline" size="sm" className="text-xs border-slate-200 text-slate-600" onClick={() => toast.info(`Previewing ${title}`, { description: 'Document preview opened.' })}><Eye className="mr-1 h-3 w-3" /> View</Button>
+                {status === 'uploaded' && documentUrl ? (
+                    <Button variant="outline" size="sm" className="text-xs border-slate-200 text-slate-600" onClick={() => window.open(documentUrl, '_blank')}>
+                        <Eye className="mr-1 h-3 w-3" /> View
+                    </Button>
                 ) : (
-                    <Button variant="outline" size="sm" className="text-xs border-slate-200 text-slate-600" onClick={() => toast.info(`Upload ${title}`, { description: 'File upload dialog opening.' })}><Upload className="mr-1 h-3 w-3" /> Upload</Button>
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs border-slate-200 text-slate-600" 
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                    >
+                        {uploading ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Upload className="mr-1 h-3 w-3" />} 
+                        Upload
+                    </Button>
                 )}
             </div>
         </div>

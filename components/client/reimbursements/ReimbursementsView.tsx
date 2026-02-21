@@ -91,10 +91,36 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
         });
     };
 
-    const handleDownloadReceipt = (claimId: string) => {
-        toast.success('Downloading Receipt', {
-            description: `Receipt for ${claimId} is being downloaded.`
-        });
+    const handleDownloadReceipt = async (claimId: string) => {
+        try {
+            const response = await fetch('/api/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'reimbursement_receipt',
+                    data: { claimId }
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const blob = new Blob([result.data.content], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = result.data.filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                toast.success('Receipt downloaded');
+            } else {
+                toast.error(result.error || 'Download failed');
+            }
+        } catch (error) {
+            toast.error('Something went wrong');
+        }
     };
 
     return (
