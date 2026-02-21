@@ -52,7 +52,16 @@ export default function UsersListingPage() {
 
                 if (res.success && res.data) {
                     setUsers(res.data);
-                    if (res.stats) setStats(res.stats);
+                    if (res.stats) {
+                        // Convert action stats to page stats
+                        setStats({
+                            total: res.stats.total || 0,
+                            customers: res.stats.customers || 0,
+                            employees: 0, // Not tracked separately
+                            admins: res.stats.admins || 0,
+                            partners: 0 // Not tracked separately
+                        });
+                    }
                 }
             } catch (err) {
                 toast.error("Failed to fetch users");

@@ -88,14 +88,14 @@ export default function AgentDashboardPage() {
                             <TableBody>
                                 {requests.map(sr => (
                                     <TableRow key={sr.id} className="border-slate-100 hover:bg-slate-50/50">
-                                        <TableCell className="font-mono text-xs text-slate-500">{sr.requestNo}</TableCell>
+                                        <TableCell className="font-mono text-xs text-slate-500">{sr.requestId}</TableCell>
                                         <TableCell className="text-sm font-medium text-slate-800">{sr.customerName}</TableCell>
                                         <TableCell>
                                             <p className="text-sm text-slate-700">{sr.customerContact}</p>
                                             <p className="text-xs text-slate-400">{sr.customerEmail}</p>
                                         </TableCell>
                                         <TableCell className="text-sm text-slate-600 capitalize">{sr.type.replace(/_/g, ' ')}</TableCell>
-                                        <TableCell><Badge className={`text-xs ${PRIORITY_COLORS[sr.priority]}`}>{sr.priority}</Badge></TableCell>
+                                        <TableCell><Badge className={`text-xs ${sr.priority ? PRIORITY_COLORS[sr.priority] : ''}`}>{sr.priority || 'medium'}</Badge></TableCell>
                                         <TableCell><Badge className={`text-xs ${STATUS_COLORS[sr.status]}`}>{sr.status.replace(/_/g, ' ')}</Badge></TableCell>
                                         <TableCell className="text-xs text-slate-500">{fmt(sr.requestedAt)}</TableCell>
                                         <TableCell className="text-xs text-slate-500 max-w-[200px] truncate">{sr.description}</TableCell>

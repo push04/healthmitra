@@ -32,7 +32,7 @@ export default function SignupForm() {
             } else {
                 toast.success("Account created!", { description: "You might need to verify your email." });
             }
-        } catch (e) {
+        } catch {
             toast.error("Something went wrong");
         } finally {
             setLoading(false);

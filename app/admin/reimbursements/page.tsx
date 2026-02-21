@@ -20,11 +20,20 @@ export default function ReimbursementsPage() {
     const [selectedClaim, setSelectedClaim] = useState<ReimbursementClaim | null>(null);
     const [isProcessOpen, setIsProcessOpen] = useState(false);
     const [audit, setAudit] = useState({ approvedAmount: 0, notes: '', action: 'approve' });
+    const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, total: 0 });
 
     const loadData = async () => {
         setLoading(true);
         const res = await getClaims();
-        if (res.success) setClaims(res.data || []);
+        if (res.success && res.data) {
+            setClaims(res.data);
+            // Calculate stats from real data
+            const pending = res.data.filter((c: ReimbursementClaim) => c.status === 'pending').reduce((sum: number, c: ReimbursementClaim) => sum + c.amount, 0);
+            const approved = res.data.filter((c: ReimbursementClaim) => c.status === 'approved').reduce((sum: number, c: ReimbursementClaim) => sum + (c.approvedAmount || c.amount), 0);
+            const rejected = res.data.filter((c: ReimbursementClaim) => c.status === 'rejected').reduce((sum: number, c: ReimbursementClaim) => sum + c.amount, 0);
+            const total = pending + approved + rejected;
+            setStats({ pending, approved, rejected, total });
+        }
         setLoading(false);
     };
 
@@ -58,10 +67,10 @@ export default function ReimbursementsPage() {
 
             {/* STATS */}
             <div className="grid grid-cols-4 gap-4">
-                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Pending Amount</p><h3 className="text-2xl font-bold text-slate-900">₹45,600</h3></CardContent></Card>
-                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Approved (This Month)</p><h3 className="text-2xl font-bold text-slate-900">₹2,45,800</h3></CardContent></Card>
-                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Rejected</p><h3 className="text-2xl font-bold text-slate-900">₹12,300</h3></CardContent></Card>
-                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Total Processed</p><h3 className="text-2xl font-bold text-slate-900">₹3.1L</h3></CardContent></Card>
+                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Pending Amount</p><h3 className="text-2xl font-bold text-slate-900">₹{stats.pending.toLocaleString()}</h3></CardContent></Card>
+                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Approved (This Month)</p><h3 className="text-2xl font-bold text-slate-900">₹{stats.approved.toLocaleString()}</h3></CardContent></Card>
+                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Rejected</p><h3 className="text-2xl font-bold text-slate-900">₹{stats.rejected.toLocaleString()}</h3></CardContent></Card>
+                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Total Processed</p><h3 className="text-2xl font-bold text-slate-900">₹{stats.total >= 100000 ? `${(stats.total / 100000).toFixed(1)}L` : stats.total.toLocaleString()}</h3></CardContent></Card>
             </div>
 
             {/* LIST */}

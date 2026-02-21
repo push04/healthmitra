@@ -96,7 +96,7 @@ export default function ServiceRequestDetailPage({ params }: { params: Promise<{
                         <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-900"><ArrowLeft className="h-5 w-5" /></Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Request #{request.requestNo}</h1>
+                        <h1 className="text-2xl font-bold text-slate-900">Request #{request.requestId}</h1>
                         <p className="text-sm text-slate-500">{request.description}</p>
                     </div>
                 </div>
@@ -165,7 +165,7 @@ export default function ServiceRequestDetailPage({ params }: { params: Promise<{
                                             <UserCheck className="h-4 w-4 text-blue-600" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-slate-800">Assigned to {request.assignedTo?.name}</p>
+                                            <p className="text-sm font-medium text-slate-800">Assigned to {request.assignedToName}</p>
                                             <p className="text-xs text-slate-500">{formatDate(request.assignedAt)}</p>
                                         </div>
                                     </div>
@@ -208,11 +208,10 @@ export default function ServiceRequestDetailPage({ params }: { params: Promise<{
                             <CardTitle className="text-base text-slate-700">Assignment</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {request.assignedTo ? (
+                            {request.assignedToId ? (
                                 <div className="p-3 bg-teal-50 rounded-lg border border-teal-100">
                                     <p className="text-xs text-teal-600 uppercase tracking-wider">Currently Assigned</p>
-                                    <p className="font-semibold text-teal-800 mt-1">{request.assignedTo.name}</p>
-                                    <p className="text-xs text-teal-600 mt-0.5">{request.assignedTo.email}</p>
+                                    <p className="font-semibold text-teal-800 mt-1">{request.assignedToName || 'Agent'}</p>
                                 </div>
                             ) : (
                                 <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 text-center">

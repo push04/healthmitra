@@ -1,28 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone, Mail, MessageCircle, HelpCircle, Plus, X, Search, ChevronDown, ChevronUp, Send, Upload, Clock, CheckCircle, AlertCircle, Ticket, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { createSupportTicket } from '@/app/actions/support';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { SupportTicket } from '@/types/support';
 
-// FAQ data
-const FAQ_CATEGORIES = [
-    { name: 'Plans & Coverage', count: 12 },
-    { name: 'E-Cards', count: 8 },
-    { name: 'Reimbursements', count: 15 },
-    { name: 'Wallet & Payments', count: 10 },
-    { name: 'Service Requests', count: 14 },
-    { name: 'Account & Profile', count: 9 },
+// Default FAQ categories (fallback if DB is empty)
+const DEFAULT_FAQ_CATEGORIES = [
+    { name: 'Plans & Coverage', count: 0 },
+    { name: 'E-Cards', count: 0 },
+    { name: 'Reimbursements', count: 0 },
+    { name: 'Wallet & Payments', count: 0 },
+    { name: 'Service Requests', count: 0 },
+    { name: 'Account & Profile', count: 0 },
 ];
 
-const FAQS = [
-    { q: 'How do I download my E-Card?', a: 'To download your E-Card, go to E-Cards section, click on the member\'s card, and use the "Download" or "Share" button. You can download as PDF or image format.', popular: true },
-    { q: 'How long does reimbursement approval take?', a: 'Reimbursement claims are typically reviewed within 3-5 business days. Complex cases may take up to 7 days. You\'ll receive SMS and email updates on status changes.', popular: true },
-    { q: 'Can I withdraw money from my wallet?', a: 'Yes, you can withdraw money that came from approved reimbursements (Bill Refunds). Money added via "Add Money" is for paying services only and is non-withdrawable.', popular: true },
-    { q: 'How do I add family members to my plan?', a: 'Go to My Purchases, select your plan, and click "Manage Members". You can add up to 4 members (Self, Spouse, Child 1, Child 2) with their complete details.', popular: true },
-    { q: 'What documents are needed for reimbursement?', a: 'Required documents vary by claim type: Medicine bills need pharmacy invoice and prescription. Diagnostic tests need lab reports. OPD needs consultation receipt. Hospital claims need discharge summary and itemized bill.', popular: false },
-    { q: 'How do I contact emergency support?', a: 'Call our 24/7 helpline at 1800-XXX-XXXX. You can also use the WhatsApp chat feature for immediate assistance during emergencies.', popular: false },
+// Default FAQs (fallback)
+const DEFAULT_FAQS = [
+    { q: 'How do I download my E-Card?', a: 'To download your E-Card, go to E-Cards section, click on the member\'s card, and use the "Download" or "Share" button.', popular: true },
+    { q: 'How long does reimbursement approval take?', a: 'Reimbursement claims are typically reviewed within 3-5 business days.', popular: true },
+    { q: 'Can I withdraw money from my wallet?', a: 'Yes, you can withdraw money from approved reimbursements (Bill Refunds).', popular: true },
+    { q: 'How do I add family members to my plan?', a: 'Go to My Purchases, select your plan, and click "Manage Members".', popular: true },
 ];
 
 const TICKET_CATEGORIES = [
@@ -37,8 +38,6 @@ const TICKET_CATEGORIES = [
 
 type TabType = 'tickets' | 'faq' | 'contact';
 
-import { SupportTicket } from '@/types/support';
-
 interface SupportClientProps {
     initialTickets: SupportTicket[];
 }
@@ -50,6 +49,55 @@ export default function SupportClient({ initialTickets }: SupportClientProps) {
     const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
     const [faqSearch, setFaqSearch] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    
+    // Real data from DB
+    const [faqCategories, setFaqCategories] = useState(DEFAULT_FAQ_CATEGORIES);
+    const [faqs, setFaqs] = useState(DEFAULT_FAQS);
+
+    // Fetch FAQs from Supabase
+    useEffect(() => {
+        const fetchFAQs = async () => {
+            const supabase = createClient();
+            const { data } = await supabase
+                .from('cms_content')
+                .select('key, value')
+                .like('key', 'faq_%')
+                .eq('status', 'active')
+                .limit(20);
+
+            if (data && data.length > 0) {
+                const parsedFaqs = data.map((item: any) => {
+                    try {
+                        return JSON.parse(item.value);
+                    } catch {
+                        return null;
+                    }
+                }).filter(Boolean);
+
+                if (parsedFaqs.length > 0) {
+                    setFaqs(parsedFaqs);
+                    
+                    // Group by category
+                    const categoryCounts: Record<string, number> = {};
+                    parsedFaqs.forEach((f: any) => {
+                        const cat = f.category || 'General';
+                        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+                    });
+                    
+                    const categories = Object.entries(categoryCounts).map(([name, count]) => ({
+                        name,
+                        count
+                    }));
+                    
+                    if (categories.length > 0) {
+                        setFaqCategories(categories);
+                    }
+                }
+            }
+        };
+        
+        fetchFAQs();
+    }, []);
 
     // New ticket form
     const [ticketForm, setTicketForm] = useState({
@@ -87,7 +135,7 @@ export default function SupportClient({ initialTickets }: SupportClientProps) {
         }
     };
 
-    const filteredFaqs = FAQS.filter(faq =>
+    const filteredFaqs = faqs.filter((faq: any) =>
         faq.q.toLowerCase().includes(faqSearch.toLowerCase()) ||
         faq.a.toLowerCase().includes(faqSearch.toLowerCase())
     );
@@ -101,7 +149,7 @@ export default function SupportClient({ initialTickets }: SupportClientProps) {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">Support & Help</h1>
-                    <p className="text-slate-500">We're here to help you 24/7</p>
+                    <p className="text-slate-500">We&apos;re here to help you 24/7</p>
                 </div>
                 <button
                     onClick={() => setIsNewTicketOpen(true)}
@@ -200,7 +248,7 @@ export default function SupportClient({ initialTickets }: SupportClientProps) {
                                                     </p>
                                                     <div className="p-3 bg-white rounded-lg border border-slate-200">
                                                         <p className="text-xs text-slate-400 mb-1">Last Update from Support:</p>
-                                                        <p className="text-sm text-slate-700">"{ticket.lastMessage}"</p>
+                                                        <p className="text-sm text-slate-700">&quot;{ticket.lastMessage}&quot;</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -235,8 +283,8 @@ export default function SupportClient({ initialTickets }: SupportClientProps) {
                                                     <p className="text-xs text-slate-500 mb-2">
                                                         Ticket ID: {ticket.id} • Created: {ticket.createdAt} • Resolved: {ticket.resolvedAt}
                                                     </p>
-                                                    <p className="text-sm text-slate-600">
-                                                        <strong>Resolution:</strong> "{ticket.resolution}"
+                                                        <p className="text-sm text-slate-600">
+                                                        <strong>Resolution:</strong> &quot;{ticket.resolution}&quot;
                                                     </p>
                                                 </div>
                                                 <button onClick={() => toast.info(`Ticket ${ticket.id}`, { description: `Resolution: ${ticket.resolution}` })} className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
@@ -300,7 +348,7 @@ export default function SupportClient({ initialTickets }: SupportClientProps) {
                             <div>
                                 <h4 className="font-semibold text-slate-800 mb-4">Browse by Category</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {FAQ_CATEGORIES.map(cat => (
+                                    {faqCategories.map(cat => (
                                         <button key={cat.name} onClick={() => toast.info(`${cat.name}`, { description: `${cat.count} FAQs in this category.` })} className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left hover:border-teal-300 hover:bg-teal-50 transition-all">
                                             <p className="font-medium text-slate-700 text-sm">{cat.name}</p>
                                             <p className="text-xs text-slate-500">{cat.count} FAQs</p>

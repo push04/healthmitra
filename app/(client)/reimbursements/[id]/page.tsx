@@ -31,12 +31,11 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
 
     if (!claim) notFound();
 
-    // Transform to match UI expectation if needed or use directly
-    // Mock timeline for now as backend might not support it yet
+    // Real timeline based on claim status
     const timeline = [
         { status: 'Claim Submitted', date: new Date(claim.created_at).toLocaleDateString('en-IN'), isCompleted: true },
-        { status: 'Under Review', date: claim.status !== 'pending' ? 'Completed' : 'Pending', isCompleted: claim.status !== 'pending' },
-        { status: 'Decision Pending', date: ['approved', 'rejected'].includes(claim.status) ? 'Completed' : 'Pending', isCompleted: ['approved', 'rejected'].includes(claim.status) }
+        { status: 'Under Review', date: claim.status !== 'submitted' ? new Date(claim.updated_at || claim.created_at).toLocaleDateString('en-IN') : 'In Progress', isCompleted: claim.status !== 'submitted' },
+        { status: 'Decision Made', date: ['approved', 'rejected'].includes(claim.status) ? new Date(claim.updated_at || claim.created_at).toLocaleDateString('en-IN') : 'Pending', isCompleted: ['approved', 'rejected'].includes(claim.status) }
     ];
 
     const documents = claim.documents || [];

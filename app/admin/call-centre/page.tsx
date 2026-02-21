@@ -144,18 +144,18 @@ export default function AdminCallCentrePage() {
                                 <TableBody>
                                     {requests.map(sr => (
                                         <TableRow key={sr.id} className="border-slate-100 hover:bg-slate-50/50">
-                                            <TableCell className="font-mono text-xs text-slate-500">{sr.requestNo}</TableCell>
+                                            <TableCell className="font-mono text-xs text-slate-500">{sr.requestId}</TableCell>
                                             <TableCell>
                                                 <p className="text-sm font-medium text-slate-800">{sr.customerName}</p>
                                                 <p className="text-xs text-slate-400">{sr.customerContact}</p>
                                             </TableCell>
                                             <TableCell className="text-sm text-slate-600 capitalize">{sr.type.replace(/_/g, ' ')}</TableCell>
-                                            <TableCell><Badge className={`text-xs ${PRIORITY_COLORS[sr.priority]}`}>{sr.priority}</Badge></TableCell>
+                                            <TableCell><Badge className={`text-xs ${sr.priority ? PRIORITY_COLORS[sr.priority] : ''}`}>{sr.priority || 'medium'}</Badge></TableCell>
                                             <TableCell><Badge className={`text-xs ${STATUS_COLORS[sr.status]}`}>{sr.status.replace(/_/g, ' ')}</Badge></TableCell>
-                                            <TableCell className="text-sm text-slate-600">{sr.assignedTo?.name || <span className="text-slate-400">Unassigned</span>}</TableCell>
+                                            <TableCell className="text-sm text-slate-600">{sr.assignedToName || <span className="text-slate-400">Unassigned</span>}</TableCell>
                                             <TableCell className="text-xs text-slate-500">{fmt(sr.requestedAt)}</TableCell>
                                             <TableCell>
-                                                {!sr.assignedTo && (
+                                                {!sr.assignedToId && (
                                                     <Select onValueChange={v => handleAssign(sr.id, v)}>
                                                         <SelectTrigger className="w-[130px] h-8 text-xs bg-white border-slate-200"><SelectValue placeholder="Assign..." /></SelectTrigger>
                                                         <SelectContent className="bg-white border-slate-200 text-slate-700">

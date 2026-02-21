@@ -14,7 +14,7 @@ export default function AboutPage() {
                             About <span className="text-primary">HealthMitra</span>
                         </h1>
                         <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                            Your trusted partner in healthcare management. We're on a mission to make quality healthcare accessible, affordable, and hassle-free for everyone.
+                            Your trusted partner in healthcare management. We&apos;re on a mission to make quality healthcare accessible, affordable, and hassle-free for everyone.
                         </p>
                     </div>
                 </section>
@@ -33,7 +33,7 @@ export default function AboutPage() {
                             <Award className="w-12 h-12 text-primary mb-4" />
                             <h2 className="text-2xl font-bold mb-4">Our Vision</h2>
                             <p className="text-muted-foreground">
-                                To become India's most trusted healthcare platform, bridging the gap between patients and quality medical services while ensuring transparency, affordability, and excellence in every interaction.
+                                To become India&apos;s most trusted healthcare platform, bridging the gap between patients and quality medical services while ensuring transparency, affordability, and excellence in every interaction.
                             </p>
                         </div>
                     </div>

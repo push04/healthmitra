@@ -2,6 +2,71 @@
 
 import { createClient } from '@/lib/supabase/server';
 
+interface PlanData {
+    id: string;
+    name: string;
+}
+
+interface ECardMember {
+    plan_id: string | null;
+}
+
+interface InvoiceData {
+    amount: number;
+    created_at: string;
+}
+
+interface ProfileData {
+    created_at: string;
+}
+
+interface AuditLogData {
+    id: string;
+    admin_id: string | null;
+    action: string;
+    details: Record<string, unknown> | null;
+    created_at: string;
+    admin?: {
+        full_name: string | null;
+    } | null;
+}
+
+interface ActivityItem {
+    id: string;
+    user: string;
+    action: string;
+    time: string;
+    details: string;
+}
+
+interface RevenueItem {
+    name: string;
+    revenue: number;
+}
+
+interface PlanSaleItem {
+    name: string;
+    value: number;
+}
+
+interface CustomerGrowthItem {
+    name: string;
+    customers: number;
+}
+
+interface ReportFilters {
+    startDate?: string;
+    endDate?: string;
+    [key: string]: unknown;
+}
+
+interface DashboardMetrics {
+    totalRevenue: number;
+    activePlans: number;
+    newCustomers: number;
+    pendingTasks: number;
+}
+
 export async function getDashboardStats() {
     const supabase = await createClient();
 
@@ -11,11 +76,13 @@ export async function getDashboardStats() {
     // Count members per plan
     const { data: members } = await supabase.from('ecard_members').select('plan_id');
     const planCounts: Record<string, number> = {};
-    members?.forEach((m: any) => {
-        planCounts[m.plan_id] = (planCounts[m.plan_id] || 0) + 1;
+    members?.forEach((m: ECardMember) => {
+        if (m.plan_id) {
+            planCounts[m.plan_id] = (planCounts[m.plan_id] || 0) + 1;
+        }
     });
 
-    const planSales = plans?.map((p: any) => ({
+    const planSales: PlanSaleItem[] = plans?.map((p: PlanData) => ({
         name: p.name,
         value: planCounts[p.id] || 0
     })) || [];
@@ -27,26 +94,41 @@ export async function getDashboardStats() {
         .eq('status', 'paid')
         .order('created_at', { ascending: true });
 
+    // Total revenue calculation
+    const totalRevenue = invoices?.reduce((sum, inv) => sum + Number(inv.amount), 0) || 0;
+
     // Group invoices by month for revenue chart
     const revenueByMonth: Record<string, number> = {};
-    invoices?.forEach((inv: any) => {
+    invoices?.forEach((inv: InvoiceData) => {
         const month = new Date(inv.created_at).toLocaleString('en', { month: 'short' });
         revenueByMonth[month] = (revenueByMonth[month] || 0) + Number(inv.amount);
     });
-    const revenueChart = Object.entries(revenueByMonth).map(([name, revenue]) => ({ name, revenue }));
+    const revenueChart: RevenueItem[] = Object.entries(revenueByMonth).map(([name, revenue]) => ({ name, revenue }));
 
     // Customer growth by month (real profile creation dates)
     const { data: profiles } = await supabase.from('profiles').select('created_at').eq('role', 'user');
     const growthByMonth: Record<string, number> = {};
     let cumulative = 0;
-    profiles?.forEach((p: any) => {
+    profiles?.forEach((p: ProfileData) => {
         const month = new Date(p.created_at).toLocaleString('en', { month: 'short' });
         growthByMonth[month] = (growthByMonth[month] || 0) + 1;
     });
-    const customerGrowth = Object.entries(growthByMonth).map(([name, count]) => {
+    const customerGrowth: CustomerGrowthItem[] = Object.entries(growthByMonth).map(([name, count]) => {
         cumulative += count;
         return { name, customers: cumulative };
     });
+
+    // Get metrics from database
+    const { count: totalCustomers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'user');
+    const { count: activePlansCount } = await supabase.from('ecard_members').select('*', { count: 'exact', head: true }).eq('status', 'active');
+    const { count: pendingTasksCount } = await supabase.from('service_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+
+    const metrics: DashboardMetrics = {
+        totalRevenue,
+        activePlans: activePlansCount || 0,
+        newCustomers: totalCustomers || 0,
+        pendingTasks: pendingTasksCount || 0
+    };
 
     // Activities from audit logs
     const { data: activities } = await supabase
@@ -58,10 +140,11 @@ export async function getDashboardStats() {
     return {
         success: true,
         data: {
+            metrics,
             revenueChart: revenueChart.length > 0 ? revenueChart : [],
             planSales: planSales.length > 0 ? planSales : [],
             customerGrowth: customerGrowth.length > 0 ? customerGrowth : [],
-            activities: activities?.map((a: any) => ({
+            activities: activities?.map((a: AuditLogData): ActivityItem => ({
                 id: a.id,
                 user: a.admin?.full_name || 'System',
                 action: a.action,
@@ -104,7 +187,7 @@ export async function getCustomerMetrics() {
     };
 }
 
-export async function generateReportAction(type: string, filters: any) {
+export async function generateReportAction(type: string, filters: ReportFilters) {
     const supabase = await createClient();
     await supabase.from('audit_logs').insert({
         action: `generate_report_${type}`,

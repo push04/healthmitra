@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Edit2, Camera, Save, CreditCard, Shield, Ruler, Scale, Building2, AlertCircle, Lock, Eye, EyeOff, Upload, CheckCircle, Bell, Globe, Moon, Sun, FileText, X, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateUserProfile } from '@/app/actions/user';
+import { createClient } from '@/lib/supabase/client';
 
 interface ProfileViewProps {
     profile: any;
@@ -100,20 +101,53 @@ export default function ProfileView({ profile }: ProfileViewProps) {
 
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Mock uploaded documents
-    const [documents, setDocuments] = useState({
-        aadhaar_front: { name: 'aadhaar_front.jpg', size: '1.5 MB', verified: true },
-        aadhaar_back: { name: 'aadhaar_back.jpg', size: '1.3 MB', verified: true },
-        pan_card: { name: 'pan_card.jpg', size: '850 KB', verified: true },
-        cancelled_cheque: null as { name: string; size: string; verified: boolean } | null,
+    // Real uploaded documents from PHR
+    const [documents, setDocuments] = useState<{
+        aadhaar_front: { name: string; size: string; verified: boolean } | null;
+        aadhaar_back: { name: string; size: string; verified: boolean } | null;
+        pan_card: { name: string; size: string; verified: boolean } | null;
+        cancelled_cheque: { name: string; size: string; verified: boolean } | null;
+    }>({
+        aadhaar_front: null,
+        aadhaar_back: null,
+        pan_card: null,
+        cancelled_cheque: null,
     });
 
-    // Mock login history
-    const loginHistory = [
-        { device: 'Windows - Chrome', time: 'Jan 28, 2026 10:30 AM', current: true },
-        { device: 'Android - Mobile App', time: 'Jan 27, 2026 08:15 PM', current: false },
-        { device: 'Windows - Chrome', time: 'Jan 26, 2026 02:45 PM', current: false },
-    ];
+    // Real login history - fetch from auth logs or empty
+    const [loginHistory, setLoginHistory] = useState<{ device: string; time: string; current: boolean }[]>([]);
+
+    // Load real documents from PHR table
+    useEffect(() => {
+        const loadDocuments = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: phrDocs } = await supabase
+                .from('phr_documents')
+                .select('*')
+                .eq('user_id', user.id)
+                .in('category', ['aadhaar', 'pan', 'bank']);
+
+            if (phrDocs && phrDocs.length > 0) {
+                const docs: typeof documents = { aadhaar_front: null, aadhaar_back: null, pan_card: null, cancelled_cheque: null };
+                phrDocs.forEach((doc: any) => {
+                    if (doc.category === 'aadhaar' && doc.name?.includes('front')) {
+                        docs.aadhaar_front = { name: doc.name || '', size: String(doc.file_size || ''), verified: doc.is_verified || false };
+                    } else if (doc.category === 'aadhaar' && doc.name?.includes('back')) {
+                        docs.aadhaar_back = { name: doc.name || '', size: String(doc.file_size || ''), verified: doc.is_verified || false };
+                    } else if (doc.category === 'pan') {
+                        docs.pan_card = { name: doc.name || '', size: String(doc.file_size || ''), verified: doc.is_verified || false };
+                    } else if (doc.category === 'bank') {
+                        docs.cancelled_cheque = { name: doc.name || '', size: String(doc.file_size || ''), verified: doc.is_verified || false };
+                    }
+                });
+                setDocuments(docs);
+            }
+        };
+        loadDocuments();
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;

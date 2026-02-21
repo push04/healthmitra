@@ -22,6 +22,7 @@ export default function CouponsPage() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [showAnalytics, setShowAnalytics] = useState(false);
+    const [stats, setStats] = useState({ revenue: 0, discounts: 0, activeUsers: 0, avgOrder: 0 });
 
     // Wizard State
     const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -31,7 +32,20 @@ export default function CouponsPage() {
     const loadData = async () => {
         setLoading(true);
         const res = await getCoupons();
-        if (res.success) setCoupons(res.data || []);
+        if (res.success && res.data) {
+            setCoupons(res.data);
+            // Calculate stats from real coupon data
+            const activeCoupons = res.data.filter((c: Coupon) => c.status === 'active');
+            const totalUses = activeCoupons.reduce((sum: number, c: Coupon) => sum + (c.currentUses || 0), 0);
+            const totalDiscounts = activeCoupons.reduce((sum: number, c: Coupon) => sum + (c.totalDiscountGiven || 0), 0);
+            const totalRevenue = activeCoupons.reduce((sum: number, c: Coupon) => sum + (c.revenueGenerated || 0), 0);
+            setStats({
+                revenue: totalRevenue,
+                discounts: totalDiscounts,
+                activeUsers: totalUses,
+                avgOrder: totalUses > 0 ? Math.round(totalRevenue / totalUses) : 0
+            });
+        }
         setLoading(false);
     };
 
@@ -85,10 +99,10 @@ export default function CouponsPage() {
 
             {showAnalytics && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-top-4">
-                    <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div><p className="text-sm text-slate-500">Total Revenue Generated</p><h3 className="text-2xl font-bold text-slate-800">₹2,28,500</h3></div><TrendingUp className="h-8 w-8 text-green-600/20" /></CardContent></Card>
-                    <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div><p className="text-sm text-slate-500">Total Discounts Given</p><h3 className="text-2xl font-bold text-slate-800">₹45,600</h3></div><Percent className="h-8 w-8 text-pink-600/20" /></CardContent></Card>
-                    <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div><p className="text-sm text-slate-500">Active Coupons Users</p><h3 className="text-2xl font-bold text-slate-800">1,245</h3></div><Users className="h-8 w-8 text-blue-600/20" /></CardContent></Card>
-                    <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div><p className="text-sm text-slate-500">Avg. Order Value</p><h3 className="text-2xl font-bold text-slate-800">₹1,575</h3></div><IndianRupee className="h-8 w-8 text-amber-600/20" /></CardContent></Card>
+                    <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div><p className="text-sm text-slate-500">Total Revenue Generated</p><h3 className="text-2xl font-bold text-slate-800">₹{stats.revenue.toLocaleString()}</h3></div><TrendingUp className="h-8 w-8 text-green-600/20" /></CardContent></Card>
+                    <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div><p className="text-sm text-slate-500">Total Discounts Given</p><h3 className="text-2xl font-bold text-slate-800">₹{stats.discounts.toLocaleString()}</h3></div><Percent className="h-8 w-8 text-pink-600/20" /></CardContent></Card>
+                    <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div><p className="text-sm text-slate-500">Active Coupons Users</p><h3 className="text-2xl font-bold text-slate-800">{stats.activeUsers.toLocaleString()}</h3></div><Users className="h-8 w-8 text-blue-600/20" /></CardContent></Card>
+                    <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div><p className="text-sm text-slate-500">Avg. Order Value</p><h3 className="text-2xl font-bold text-slate-800">₹{stats.avgOrder.toLocaleString()}</h3></div><IndianRupee className="h-8 w-8 text-amber-600/20" /></CardContent></Card>
                 </div>
             )}
 

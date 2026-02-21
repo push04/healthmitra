@@ -1,29 +1,63 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { ServiceRequest, Agent } from '@/types/service-requests';
+import { ServiceRequest, SRType, SRStatus, Agent } from '@/types/service-requests';
 
-// --- AGENT LOGIN ---
+interface ProfileData {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    role: string;
+}
 
-export async function agentLogin(email: string, password: string) {
+interface ServiceRequestRow {
+    id: string;
+    request_id: string | null;
+    user_id: string | null;
+    type: string;
+    status: string;
+    description: string | null;
+    priority: string | null;
+    admin_notes: string | null;
+    assigned_to: string | null;
+    created_at: string;
+    assigned_at: string | null;
+    completed_at: string | null;
+    franchise_id: string | null;
+    guest_name?: string;
+    guest_email?: string;
+    guest_phone?: string;
+    user?: {
+        full_name: string | null;
+        email: string | null;
+        phone: string | null;
+    } | null;
+    assignee?: {
+        id: string;
+        full_name: string | null;
+        email: string | null;
+        phone: string | null;
+    } | null;
+}
+
+export async function agentLogin(email: string, _password: string) {
     const supabase = await createClient();
-    // Assuming agents are users with role 'admin' or 'agent'
     const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('email', email)
         .single();
 
-    // Verify password via Auth signin usually, but if just checking profile existence for now:
     if (error || !profile) return { success: false, error: 'Invalid credentials.' };
 
-    // Check role
-    if (profile.role !== 'admin' && profile.role !== 'agent' && profile.role !== 'employee') return { success: false, error: 'Not authorized as agent.' };
+    const profileData = profile as ProfileData;
+    if (profileData.role !== 'admin' && profileData.role !== 'agent' && profileData.role !== 'employee') return { success: false, error: 'Not authorized as agent.' };
 
     return {
         success: true,
-        message: `Welcome, ${profile.full_name}!`,
-        data: { agentId: profile.id, name: profile.full_name }
+        message: `Welcome, ${profileData.full_name}!`,
+        data: { agentId: profileData.id, name: profileData.full_name }
     };
 }
 
@@ -43,31 +77,24 @@ export async function getAgentAssignedRequests(agentId: string) {
 
     if (error) return { success: false, data: [] };
 
-    const requests: ServiceRequest[] = data.map((item: any) => ({
+    const requests: ServiceRequest[] = data.map((item: ServiceRequestRow): ServiceRequest => ({
         id: item.id,
         requestId: item.request_id || item.id,
-        requestNo: item.request_id || 0,
-        userId: item.user_id,
+        userId: item.user_id || undefined,
         customerName: item.user?.full_name || item.guest_name || 'Unknown',
         customerEmail: item.user?.email || item.guest_email || '',
         customerContact: item.user?.phone || item.guest_phone || '',
-        type: item.type,
-        status: item.status,
+        type: item.type as SRType,
+        status: item.status as SRStatus,
         description: item.description || '',
-        priority: item.priority || 'medium',
-        notes: item.admin_notes,
-        assignedToId: item.assigned_to,
-        assignedTo: item.assignee ? {
-            id: item.assignee.id,
-            name: item.assignee.full_name,
-            email: item.assignee.email,
-            phone: item.assignee.phone,
-            status: 'available'
-        } : undefined,
+        priority: item.priority as ServiceRequest['priority'],
+        notes: item.admin_notes ?? undefined,
+        assignedToId: item.assigned_to || undefined,
+        assignedToName: item.assignee?.full_name ?? undefined,
         requestedAt: item.created_at,
-        assignedAt: item.assigned_at,
-        completedAt: item.completed_at,
-        franchiseId: item.franchise_id,
+        assignedAt: item.assigned_at || undefined,
+        completedAt: item.completed_at || undefined,
+        franchiseId: item.franchise_id || undefined,
     }));
 
     return { success: true, data: requests };
@@ -106,31 +133,24 @@ export async function getCallCentreRequests(filters: CCFilters = {}) {
     const { data, error, count } = await query.order('created_at', { ascending: false });
     if (error) return { success: false, error: error.message };
 
-    const requests: ServiceRequest[] = data.map((item: any) => ({
+    const requests: ServiceRequest[] = data.map((item: ServiceRequestRow): ServiceRequest => ({
         id: item.id,
         requestId: item.request_id || item.id,
-        requestNo: item.request_id || 0,
-        userId: item.user_id,
+        userId: item.user_id || undefined,
         customerName: item.user?.full_name || item.guest_name || 'Unknown',
         customerEmail: item.user?.email || item.guest_email || '',
         customerContact: item.user?.phone || item.guest_phone || '',
-        type: item.type,
-        status: item.status,
+        type: item.type as SRType,
+        status: item.status as SRStatus,
         description: item.description || '',
-        priority: item.priority || 'medium',
-        notes: item.admin_notes,
-        assignedToId: item.assigned_to,
-        assignedTo: item.assignee ? {
-            id: item.assignee.id,
-            name: item.assignee.full_name,
-            email: item.assignee.email,
-            phone: item.assignee.phone,
-            status: 'available'
-        } : undefined,
+        priority: item.priority as ServiceRequest['priority'],
+        notes: item.admin_notes ?? undefined,
+        assignedToId: item.assigned_to || undefined,
+        assignedToName: item.assignee?.full_name ?? undefined,
         requestedAt: item.created_at,
-        assignedAt: item.assigned_at,
-        completedAt: item.completed_at,
-        franchiseId: item.franchise_id,
+        assignedAt: item.assigned_at || undefined,
+        completedAt: item.completed_at || undefined,
+        franchiseId: item.franchise_id || undefined,
     }));
 
     // Stats
@@ -151,19 +171,15 @@ export async function getAgents() {
     const supabase = await createClient();
     const { data } = await supabase.from('profiles').select('*').in('role', ['admin', 'agent', 'employee']);
 
-    // For assigned count, we would need a join or separate query. For now, 0.
-    // Optimization: supabase.rpc or specific query.
+    const agentStatus: Agent['status'] = 'available';
 
     return {
-        success: true, data: data?.map((a: any) => ({
+        success: true, data: data?.map((a: ProfileData): Agent => ({
             id: a.id,
-            name: a.full_name,
-            email: a.email,
-            phone: a.phone || '',
-            itemRole: 'Agent',
-            status: 'available' as any, // Cast to match Agent status type
-            assignedCount: 0, // Placeholder
-            completedCount: 0 // Placeholder
+            name: a.full_name ?? '',
+            email: a.email ?? '',
+            phone: a.phone ?? '',
+            status: agentStatus,
         })) || []
     };
 }

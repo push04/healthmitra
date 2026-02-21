@@ -23,7 +23,7 @@ function LoginFormContent() {
                 toast.error("Login Failed", { description: result.error });
             }
             // Success assumes redirect happens in action
-        } catch (e) {
+        } catch {
             toast.error("Something went wrong");
         } finally {
             setLoading(false);

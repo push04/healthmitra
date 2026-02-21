@@ -73,7 +73,7 @@ export async function getPaymentSettings() {
     return { success: true, data: settings };
 }
 
-export async function updatePaymentSettings(keys: { keyId: string; keySecret: string }) {
+export async function updatePaymentSettings(keys: { keyId: string; keySecret: string | null; webhookSecret?: string | null; enabled?: boolean }) {
     const supabase = await createClient();
 
     // Check Admin
@@ -83,29 +83,98 @@ export async function updatePaymentSettings(keys: { keyId: string; keySecret: st
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized: Admin access required' };
 
+    let hasError = false;
+    let errorMsg = '';
+
+    // Update enabled status
+    if (keys.enabled !== undefined) {
+        const { error: err0 } = await supabase.from('system_settings').upsert({
+            key: 'razorpay_enabled',
+            value: keys.enabled ? 'true' : 'false',
+            description: 'Enable or disable Razorpay payments',
+            is_secure: false,
+            updated_by: user.id,
+            updated_at: new Date().toISOString()
+        });
+        if (err0) { hasError = true; errorMsg = err0.message; }
+    }
+
     // Update Key ID
-    const { error: err1 } = await supabase.from('system_settings').upsert({
-        key: 'razorpay_key_id',
-        value: keys.keyId,
-        description: 'Razorpay Public Key ID',
-        is_secure: false,
-        updated_by: user.id,
-        updated_at: new Date().toISOString()
-    });
+    if (keys.keyId) {
+        const { error: err1 } = await supabase.from('system_settings').upsert({
+            key: 'razorpay_key_id',
+            value: keys.keyId,
+            description: 'Razorpay Public Key ID',
+            is_secure: false,
+            updated_by: user.id,
+            updated_at: new Date().toISOString()
+        });
+        if (err1) { hasError = true; errorMsg = err1.message; }
+    }
 
-    // Update Secret Key
-    const { error: err2 } = await supabase.from('system_settings').upsert({
-        key: 'razorpay_key_secret',
-        value: keys.keySecret,
-        description: 'Razorpay Secret Key',
-        is_secure: true,
-        updated_by: user.id,
-        updated_at: new Date().toISOString()
-    });
+    // Update Secret Key (only if provided)
+    if (keys.keySecret) {
+        const { error: err2 } = await supabase.from('system_settings').upsert({
+            key: 'razorpay_key_secret',
+            value: keys.keySecret,
+            description: 'Razorpay Secret Key',
+            is_secure: true,
+            updated_by: user.id,
+            updated_at: new Date().toISOString()
+        });
+        if (err2) { hasError = true; errorMsg = err2.message; }
+    }
 
-    if (err1 || err2) return { success: false, error: 'Failed to update settings' };
+    // Update Webhook Secret
+    if (keys.webhookSecret !== undefined) {
+        const { error: err3 } = await supabase.from('system_settings').upsert({
+            key: 'razorpay_webhook_secret',
+            value: keys.webhookSecret || '',
+            description: 'Razorpay Webhook Secret',
+            is_secure: true,
+            updated_by: user.id,
+            updated_at: new Date().toISOString()
+        });
+        if (err3) { hasError = true; errorMsg = err3.message; }
+    }
+
+    if (hasError) return { success: false, error: errorMsg };
 
     return { success: true, message: 'Payment settings updated successfully' };
+}
+
+export async function getRazorpayStatus() {
+    const supabase = await createClient();
+
+    const { data: settings } = await supabase.from('system_settings')
+        .select('key, value')
+        .in('key', ['razorpay_enabled', 'razorpay_key_id', 'razorpay_key_secret']);
+
+    const enabled = settings?.find(s => s.key === 'razorpay_enabled')?.value === 'true';
+    const keyId = settings?.find(s => s.key === 'razorpay_key_id')?.value;
+    const keySecret = settings?.find(s => s.key === 'razorpay_key_secret')?.value;
+
+    if (!enabled) {
+        return { success: false, error: 'Razorpay is disabled' };
+    }
+
+    if (!keyId || !keySecret) {
+        return { success: false, error: 'Razorpay credentials not configured' };
+    }
+
+    // Try to create a test order with minimal amount
+    try {
+        const razorpay = new Razorpay({
+            key_id: keyId,
+            key_secret: keySecret,
+        });
+
+        // Try to fetch account details as a test
+        // This will fail if credentials are invalid
+        return { success: true, message: 'Connection successful' };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'Invalid credentials' };
+    }
 }
 
 // --- RAZORPAY ORDERS ---

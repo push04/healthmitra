@@ -13,13 +13,18 @@ import { toast } from 'sonner';
 
 export default function ReportsPage() {
     const [reportType, setReportType] = useState('sales');
+    const [dateRange, setDateRange] = useState({ from: '', to: '' });
     const [generating, setGenerating] = useState(false);
 
     const handleGenerate = async () => {
+        if (!dateRange.from || !dateRange.to) {
+            toast.error("Please select date range");
+            return;
+        }
         setGenerating(true);
-        await generateReportAction(reportType, { from: '2023-01-01', to: '2023-12-31' }); // Mock
+        await generateReportAction(reportType, dateRange);
         setGenerating(false);
-        toast.success("Report generated and downloaded");
+        toast.success("Report generated and logged");
     };
 
     return (
@@ -64,11 +69,21 @@ export default function ReportsPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>From Date</Label>
-                                <Input type="date" className="bg-white border-slate-200 text-slate-900 accent-purple-600" />
+                                <Input 
+                                    type="date" 
+                                    className="bg-white border-slate-200 text-slate-900 accent-purple-600"
+                                    value={dateRange.from}
+                                    onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>To Date</Label>
-                                <Input type="date" className="bg-white border-slate-200 text-slate-900 accent-purple-600" />
+                                <Input 
+                                    type="date" 
+                                    className="bg-white border-slate-200 text-slate-900 accent-purple-600"
+                                    value={dateRange.to}
+                                    onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+                                />
                             </div>
                         </div>
 

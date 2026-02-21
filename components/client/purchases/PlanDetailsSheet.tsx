@@ -31,10 +31,10 @@ export function PlanDetailsSheet({ plan, isOpen, onClose, documents = [], claims
     if (!plan) return null;
 
     const isExpired = plan.status === 'expired';
-    // Calculate specific days
-    const totalDays = 716; // Mock total for visual
-    const daysElapsed = totalDays - plan.daysRemaining;
-    const elapsedPercent = (daysElapsed / totalDays) * 100;
+    // Calculate days based on plan validity (default 365 days if not available)
+    const totalDays = plan.daysRemaining > 0 ? plan.daysRemaining + (plan.daysRemaining < 365 ? 365 - plan.daysRemaining : 0) : 365;
+    const daysElapsed = Math.max(0, totalDays - plan.daysRemaining);
+    const elapsedPercent = totalDays > 0 ? (daysElapsed / totalDays) * 100 : 0;
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>

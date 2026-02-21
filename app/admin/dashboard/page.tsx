@@ -60,10 +60,34 @@ export default function AdminDashboard() {
 
             {/* METRICS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard title="Total Revenue" value="₹12.45L" change="+15%" icon={CreditCard} trend="up" />
-                <MetricCard title="Active Plans" value="324" change="+8%" icon={ShoppingCart} trend="up" />
-                <MetricCard title="New Customers" value="45" change="+22%" icon={Users} trend="up" />
-                <MetricCard title="Pending Tasks" value="28" change="-5%" icon={Activity} trend="down" />
+                <MetricCard 
+                    title="Total Revenue" 
+                    value={data.metrics?.totalRevenue ? `₹${(data.metrics.totalRevenue / 100000).toFixed(2)}L` : '₹0'} 
+                    change="+15%" 
+                    icon={CreditCard} 
+                    trend="up" 
+                />
+                <MetricCard 
+                    title="Active Plans" 
+                    value={String(data.metrics?.activePlans || 0)} 
+                    change="+8%" 
+                    icon={ShoppingCart} 
+                    trend="up" 
+                />
+                <MetricCard 
+                    title="New Customers" 
+                    value={String(data.metrics?.newCustomers || 0)} 
+                    change="+22%" 
+                    icon={Users} 
+                    trend="up" 
+                />
+                <MetricCard 
+                    title="Pending Tasks" 
+                    value={String(data.metrics?.pendingTasks || 0)} 
+                    change="-5%" 
+                    icon={Activity} 
+                    trend={data.metrics?.pendingTasks > 0 ? 'down' : 'up'} 
+                />
             </div>
 
             {/* CHARTS ROW 1 */}

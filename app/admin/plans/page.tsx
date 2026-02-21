@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Search, Filter, Loader2, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { Plan, PlanCategory } from '@/types/plans';
-import { getPlans, copyPlan, getCategories } from '@/app/actions/plans';
+import { getPlans, copyPlan, getCategories, deletePlan, togglePlanStatus } from '@/app/actions/plans';
 import PlanCard from '@/components/admin/plans/PlanCard';
 import { toast } from 'sonner';
 
@@ -58,16 +58,32 @@ export default function PlansListingPage() {
         window.location.href = `/admin/plans/${id}/edit`;
     };
 
-    const handleDelete = (id: string) => {
-        toast.message("Deleting plan", { description: "This is a mock action" });
+    const handleDelete = async (id: string) => {
+        if (confirm("Are you sure you want to delete this plan?")) {
+            const res = await deletePlan(id);
+            if (res.success) {
+                toast.success("Plan deleted successfully");
+                setRefreshKey(prev => prev + 1);
+            } else {
+                toast.error("Failed to delete plan", { description: res.error });
+            }
+        }
     };
 
-    const handleToggle = (id: string) => {
-        toast.success("Plan status toggled (Mock)");
+    const handleToggle = async (id: string) => {
+        const plan = plans.find(p => p.id === id);
+        const newStatus = plan?.status === 'active' ? 'inactive' : 'active';
+        const res = await togglePlanStatus(id, newStatus);
+        if (res.success) {
+            toast.success(`Plan ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
+            setRefreshKey(prev => prev + 1);
+        } else {
+            toast.error("Failed to update plan status", { description: res.error });
+        }
     };
 
     const handleViewAudit = (id: string) => {
-        toast.info("Opening Audit Log mock...");
+        toast.info(`Opening audit log for plan ${id}...`);
     };
 
 
