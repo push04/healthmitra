@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { QuickStats } from "@/components/client/QuickStats";
 import { QuickActions } from "@/components/client/QuickActions";
 import { ActivityFeed } from "@/components/client/ActivityFeed";
@@ -94,12 +95,12 @@ export function DashboardView({ initialData }: DashboardViewProps) {
                         Your health coverage is active. You have <span className="font-bold text-white">{data.notifications.filter(n => !n.isRead).length} new notifications</span>.
                     </p>
                     <div className="flex gap-3 flex-wrap">
-                        <button className="btn-premium px-6 py-3 bg-white text-teal-700 font-bold rounded-xl shadow-lg hover:bg-teal-50 hover:scale-105 transition-all active:scale-95">
+                        <Link href="/service-requests/new" className="btn-premium px-6 py-3 bg-white text-teal-700 font-bold rounded-xl shadow-lg hover:bg-teal-50 hover:scale-105 transition-all active:scale-95">
                             Book Service
-                        </button>
-                        <button className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white font-semibold rounded-xl hover:bg-white/20 transition-all">
-                            View Plan
-                        </button>
+                        </Link>
+                        <Link href={data.activePlan?.id && data.activePlan?.id !== 'no-plan' ? '/my-purchases' : '/plans'} className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white font-semibold rounded-xl hover:bg-white/20 transition-all">
+                            {data.activePlan?.id && data.activePlan?.id !== 'no-plan' ? 'View Plan' : 'Browse Plans'}
+                        </Link>
                     </div>
                 </div>
             </div>

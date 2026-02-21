@@ -416,9 +416,11 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                     <ShoppingBag className="mx-auto h-16 w-16 text-slate-300 mb-4" />
                     <h3 className="text-xl font-semibold text-slate-800">No purchases yet</h3>
                     <p className="text-slate-500 mt-2">You haven't purchased any plans or services.</p>
-                    <Button className="mt-6 bg-teal-600 hover:bg-teal-700">
-                        Browse Plans <ChevronRight size={14} className="ml-1" />
-                    </Button>
+                    <Link href="/plans">
+                        <Button className="mt-6 bg-teal-600 hover:bg-teal-700">
+                            Browse Plans <ChevronRight size={14} className="ml-1" />
+                        </Button>
+                    </Link>
                 </div>
             )}
 
