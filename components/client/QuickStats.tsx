@@ -205,8 +205,8 @@ export function QuickStats({
                     </div>
                 </Link>
 
-                {/* Members Card */}
-                <Link href="/e-cards" className="group relative flex flex-col justify-between rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
+                {/* Family Members Card */}
+                <Link href="/my-purchases" className="group relative flex flex-col justify-between rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
                     <div>
                         <Users className="mb-3 h-10 w-10 text-sky-600" />
                         <h3 className="font-semibold text-slate-700">Family Members</h3>

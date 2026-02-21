@@ -83,6 +83,23 @@ export async function POST(request: Request) {
             payment_method: paymentMethod || 'test',
         });
 
+        // Create invoice record for automatic invoicing
+        const gstAmount = Math.round(plan.price * 0.18);
+        const totalAmount = plan.price + gstAmount;
+        
+        await supabase.from('invoices').insert({
+            user_id: user.id,
+            plan_id: planId,
+            invoice_number: `INV-${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+            plan_name: plan.name,
+            amount: plan.price,
+            gst: gstAmount,
+            total: totalAmount,
+            payment_method: paymentMethod || 'test',
+            transaction_id: transactionId,
+            status: 'paid',
+        });
+
         return NextResponse.json({
             success: true,
             data: {

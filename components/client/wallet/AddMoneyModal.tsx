@@ -1,40 +1,209 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Wallet, Smartphone, Globe, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
+import { loadRazorpay } from '@/lib/razorpay';
 
 interface AddMoneyModalProps {
     isOpen: boolean;
     onClose: () => void;
     currentBalance: number;
+    onSuccess?: () => void;
 }
 
-export default function AddMoneyModal({ isOpen, onClose, currentBalance }: AddMoneyModalProps) {
+export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSuccess }: AddMoneyModalProps) {
     const [amount, setAmount] = useState('');
     const [selectedMethod, setSelectedMethod] = useState<string>('upi');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+    const [razorpayKeyId, setRazorpayKeyId] = useState('');
+    const supabase = createClient();
+
+    useEffect(() => {
+        const fetchRazorpaySettings = async () => {
+            const { data } = await supabase
+                .from('system_settings')
+                .select('key, value')
+                .in('key', ['razorpay_enabled', 'razorpay_key_id']);
+            
+            if (data) {
+                const enabled = data.find(s => s.key === 'razorpay_enabled')?.value === 'true';
+                const keyId = data.find(s => s.key === 'razorpay_key_id')?.value || '';
+                setRazorpayEnabled(enabled);
+                setRazorpayKeyId(keyId);
+            }
+        };
+        if (isOpen) fetchRazorpaySettings();
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
     const quickAmounts = [500, 1000, 2000, 5000, 10000];
 
-    const handlePayment = () => {
+    const handleTestPayment = async () => {
         if (!amount || Number(amount) <= 0) {
             toast.error('Please enter a valid amount');
             return;
         }
 
         setIsProcessing(true);
-        // Simulate Payment Gateway
-        setTimeout(() => {
-            setIsProcessing(false);
+        
+        try {
+            // Get current user
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                toast.error('Please login to add money');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Create wallet transaction record
+            const { error: txError } = await supabase
+                .from('wallet_transactions')
+                .insert({
+                    user_id: user.id,
+                    type: 'credit',
+                    amount: Number(amount),
+                    payment_method: 'test',
+                    status: 'completed',
+                    description: 'Test wallet top-up',
+                    reference_id: `TEST_${Date.now()}`,
+                });
+
+            if (txError) {
+                console.error('Transaction error:', txError);
+                toast.error('Failed to add money');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Update wallet balance
+            const { error: updateError } = await supabase
+                .from('wallets')
+                .update({
+                    balance: currentBalance + Number(amount),
+                    added_money: (currentBalance * 0.8) + Number(amount) // Assume 80% is added money
+                })
+                .eq('user_id', user.id);
+
+            if (updateError) {
+                console.error('Wallet update error:', updateError);
+            }
+
             toast.success('Money added to wallet!', {
                 description: `₹${Number(amount).toLocaleString('en-US')} credited successfully.`
             });
+            
+            if (onSuccess) onSuccess();
             onClose();
             setAmount('');
-        }, 2000);
+        } catch (error) {
+            console.error('Error:', error);
+            toast.error('Something went wrong');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleRazorpayPayment = async () => {
+        if (!amount || Number(amount) <= 0) {
+            toast.error('Please enter a valid amount');
+            return;
+        }
+
+        setIsProcessing(true);
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                toast.error('Please login to add money');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Create order via API
+            const response = await fetch('/api/wallet/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: Number(amount),
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                toast.error(result.error || 'Failed to create payment order');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Load Razorpay
+            const razorpay = await loadRazorpay(result.data.keyId);
+
+            const options = {
+                key: result.data.keyId,
+                amount: result.data.amount,
+                currency: result.data.currency,
+                name: 'HealthMitra',
+                description: 'Wallet Top-up',
+                order_id: result.data.orderId,
+                handler: async (response: any) => {
+                    // Payment successful - update wallet
+                    await supabase
+                        .from('wallet_transactions')
+                        .insert({
+                            user_id: user.id,
+                            type: 'credit',
+                            amount: Number(amount),
+                            payment_method: 'razorpay',
+                            status: 'completed',
+                            description: 'Wallet top-up via Razorpay',
+                            reference_id: response.razorpay_payment_id,
+                        });
+
+                    await supabase
+                        .from('wallets')
+                        .update({
+                            balance: currentBalance + Number(amount),
+                            added_money: (currentBalance * 0.8) + Number(amount)
+                        })
+                        .eq('user_id', user.id);
+
+                    toast.success('Money added to wallet!', {
+                        description: `₹${Number(amount).toLocaleString('en-US')} credited successfully.`
+                    });
+                    
+                    if (onSuccess) onSuccess();
+                    onClose();
+                    setAmount('');
+                },
+                prefill: {
+                    name: user.email?.split('@')[0] || '',
+                    email: user.email || '',
+                },
+                theme: {
+                    color: '#0d9488',
+                },
+            };
+
+            razorpay.open(options);
+        } catch (error) {
+            console.error('Payment error:', error);
+            toast.error('Payment failed');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handlePayment = () => {
+        if (razorpayEnabled && razorpayKeyId) {
+            handleRazorpayPayment();
+        } else {
+            handleTestPayment();
+        }
     };
 
     return (
@@ -48,6 +217,20 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance }: AddMo
                 </div>
 
                 <div className="p-6 space-y-6">
+                    {/* Payment Mode Indicator */}
+                    <div className={`p-3 rounded-lg ${razorpayEnabled ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+                        <div className="flex items-center gap-2">
+                            {razorpayEnabled ? (
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                            ) : (
+                                <span className="text-amber-600 text-sm font-medium">TEST MODE</span>
+                            )}
+                            <span className={`text-sm ${razorpayEnabled ? 'text-green-700' : 'text-amber-700'}`}>
+                                {razorpayEnabled ? 'Live Payment - Real money will be deducted' : 'Test Mode - No real payment'}
+                            </span>
+                        </div>
+                    </div>
+
                     <div className="text-center">
                         <p className="text-sm text-slate-500 mb-1">Current Balance</p>
                         <p className="text-2xl font-bold text-slate-800">₹ {currentBalance.toLocaleString('en-US')}</p>
@@ -84,37 +267,38 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance }: AddMo
                             ))}
                         </div>
 
-                        <div className="space-y-3 pt-2">
-                            <label className="text-sm font-semibold text-slate-700">Select Payment Method *</label>
-                            <div className="space-y-2">
-                                {[
-                                    { id: 'upi', label: 'UPI', icon: Smartphone },
-                                    { id: 'card', label: 'Credit/Debit Card', icon: CreditCard },
-                                    { id: 'netbanking', label: 'Net Banking', icon: Globe },
-                                    { id: 'wallet', label: 'Wallet', icon: Wallet },
-                                ].map((method) => (
-                                    <label
-                                        key={method.id}
-                                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedMethod === method.id
-                                            ? 'border-emerald-500 bg-emerald-50/50 ring-1 ring-emerald-500'
-                                            : 'border-slate-200 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="payment_method"
-                                            className="accent-emerald-600"
-                                            checked={selectedMethod === method.id}
-                                            onChange={() => setSelectedMethod(method.id)}
-                                        />
-                                        <div className={`p-2 rounded-lg ${selectedMethod === method.id ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
-                                            <method.icon size={18} />
-                                        </div>
-                                        <span className="text-sm font-medium text-slate-700">{method.label}</span>
-                                    </label>
-                                ))}
+                        {razorpayEnabled && (
+                            <div className="space-y-3 pt-2">
+                                <label className="text-sm font-semibold text-slate-700">Select Payment Method *</label>
+                                <div className="space-y-2">
+                                    {[
+                                        { id: 'upi', label: 'UPI', icon: Smartphone },
+                                        { id: 'card', label: 'Credit/Debit Card', icon: CreditCard },
+                                        { id: 'netbanking', label: 'Net Banking', icon: Globe },
+                                    ].map((method) => (
+                                        <label
+                                            key={method.id}
+                                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedMethod === method.id
+                                                ? 'border-emerald-500 bg-emerald-50/50 ring-1 ring-emerald-500'
+                                                : 'border-slate-200 hover:bg-slate-50'
+                                                }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="payment_method"
+                                                className="accent-emerald-600"
+                                                checked={selectedMethod === method.id}
+                                                onChange={() => setSelectedMethod(method.id)}
+                                            />
+                                            <div className={`p-2 rounded-lg ${selectedMethod === method.id ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                                                <method.icon size={18} />
+                                            </div>
+                                            <span className="text-sm font-medium text-slate-700">{method.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-100">
@@ -136,8 +320,10 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance }: AddMo
                     >
                         {isProcessing ? (
                             <>Processing <Loader2 size={16} className="animate-spin" /></>
+                        ) : razorpayEnabled ? (
+                            `Pay ₹${Number(amount || 0).toLocaleString('en-US')}`
                         ) : (
-                            'Proceed to Pay'
+                            'Add Money (Test)'
                         )}
                     </button>
                 </div>
