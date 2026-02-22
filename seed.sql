@@ -150,12 +150,12 @@ VALUES
 
 
 -------------------------------------------------------------------------------
--- 10. PAYMENTS (Mock Data)
+-- 10. PAYMENTS (Real data only - no mock data)
+-- Payments will be created automatically when users make purchases
 -------------------------------------------------------------------------------
-INSERT INTO public.payments (user_id, amount, status, razorpay_order_id, purpose, created_at)
-VALUES 
-('22222222-2222-2222-2222-000000000001', 4999.00, 'captured', 'order_mock_12345', 'plan_purchase', NOW() - INTERVAL '60 days'),
-('22222222-2222-2222-2222-000000000002', 2000.00, 'captured', 'order_mock_67890', 'wallet_topup', NOW() - INTERVAL '10 days');
+-- INSERT INTO public.payments (user_id, amount, status, razorpay_order_id, purpose, created_at)
+-- VALUES 
+-- (example: actual payment records will be created during checkout);
 
 
 -------------------------------------------------------------------------------
