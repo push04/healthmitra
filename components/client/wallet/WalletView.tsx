@@ -11,9 +11,10 @@ interface WalletViewProps {
     wallet: any;
     stats: any;
     billRefunds?: any[];
+    userName?: string;
 }
 
-export function WalletView({ wallet, stats, billRefunds = [] }: WalletViewProps) {
+export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: WalletViewProps) {
     const [isAddMoneyOpen, setIsAddMoneyOpen] = useState(false);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
 
@@ -255,7 +256,8 @@ export function WalletView({ wallet, stats, billRefunds = [] }: WalletViewProps)
             <WithdrawalModal
                 isOpen={isWithdrawOpen}
                 onClose={() => setIsWithdrawOpen(false)}
-                currentBalance={billRefundBalance} // Only bill refund balance is withdrawable
+                currentBalance={billRefundBalance}
+                userName={userName}
             />
         </div>
     );

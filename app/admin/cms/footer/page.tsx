@@ -13,14 +13,33 @@ import { Save, Loader2, Plus, Trash2, Link as LinkIcon, Facebook, Twitter, Insta
 import { toast } from 'sonner';
 
 export default function FooterPage() {
-    const [footer, setFooter] = useState<FooterSection | null>(null);
+    const [footer, setFooter] = useState<FooterSection>({
+        companyName: '',
+        aboutText: '',
+        address: '',
+        phone: '',
+        email: '',
+        workingHours: '',
+        socialLinks: { facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '' },
+        quickLinks: [],
+        legalLinks: { privacyPolicy: '', termsConditions: '' },
+        newsletter: { title: '', description: '', enabled: false }
+    });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         const load = async () => {
             const res = await getFooter();
-            if (res.success && res.data) setFooter(res.data);
+            if (res.success && res.data) {
+                setFooter({
+                    ...res.data,
+                    socialLinks: res.data.socialLinks || { facebook: '', twitter: '', instagram: '', linkedin: '', youtube: '' },
+                    quickLinks: res.data.quickLinks || [],
+                    legalLinks: res.data.legalLinks || { privacyPolicy: '', termsConditions: '' },
+                    newsletter: res.data.newsletter || { title: '', description: '', enabled: false }
+                });
+            }
             setLoading(false);
         };
         load();
@@ -35,16 +54,14 @@ export default function FooterPage() {
     };
 
     const updateField = (key: keyof FooterSection, value: any) => {
-        if (!footer) return;
         setFooter({ ...footer, [key]: value });
     };
 
     const updateSocial = (key: string, value: string) => {
-        if (!footer) return;
         setFooter({ ...footer, socialLinks: { ...footer.socialLinks, [key]: value } });
     };
 
-    if (loading || !footer) return <div className="p-8"><Loader2 className="animate-spin" /></div>;
+    if (loading) return <div className="p-8"><Loader2 className="animate-spin" /></div>;
 
     return (
         <div className="space-y-6 animate-in fade-in">
@@ -149,7 +166,7 @@ export default function FooterPage() {
                     <Card className="bg-white border-slate-200 shadow-sm">
                         <CardHeader className="flex flex-row justify-between items-center">
                             <CardTitle>Quick Links</CardTitle>
-                            <Button variant="outline" size="sm" onClick={() => setFooter(prev => prev ? ({ ...prev, quickLinks: [...prev.quickLinks, { id: Date.now().toString(), text: 'New Link', url: '/', openInNewTab: false }] }) : null)}>
+                            <Button variant="outline" size="sm" onClick={() => setFooter(prev => ({ ...prev, quickLinks: [...prev.quickLinks, { id: Date.now().toString(), text: 'New Link', url: '/', openInNewTab: false }] }))}>
                                 <Plus className="mr-2 h-4 w-4" /> Add Link
                             </Button>
                         </CardHeader>

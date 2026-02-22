@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-    Search, Loader2, Plus, Building2, MapPin, Shield, CheckCircle, AlertCircle, Clock, Eye
+    Search, Loader2, Plus, Building2, MapPin, Shield, CheckCircle, Clock, Eye, Users, TrendingUp, Phone, Mail
 } from 'lucide-react';
 import { Franchise } from '@/types/franchise';
-import { getFranchises } from '@/app/actions/franchise';
+import { getFranchises, getFranchiseStats } from '@/app/actions/franchise';
 import Link from 'next/link';
 
 const KYC_STYLES: Record<string, string> = {
@@ -26,16 +27,26 @@ const VERIFY_STYLES: Record<string, string> = {
     suspended: 'bg-red-100 text-red-700 border-red-200',
 };
 
+const STATUS_STYLES: Record<string, string> = {
+    active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    inactive: 'bg-slate-100 text-slate-500 border-slate-200',
+};
+
 export default function AdminFranchisesPage() {
     const [franchises, setFranchises] = useState<Franchise[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [stats, setStats] = useState({ total: 0, active: 0, verified: 0, totalMembers: 0, totalSales: 0 });
 
     useEffect(() => {
         const fetch = async () => {
             setLoading(true);
-            const res = await getFranchises(search || undefined);
-            if (res.success && res.data) setFranchises(res.data);
+            const [franchisesRes, statsRes] = await Promise.all([
+                getFranchises(search || undefined),
+                getFranchiseStats()
+            ]);
+            if (franchisesRes.success && franchisesRes.data) setFranchises(franchisesRes.data);
+            if (statsRes.success && statsRes.data) setStats(statsRes.data);
             setLoading(false);
         };
         const timeout = setTimeout(fetch, 300);
@@ -58,31 +69,80 @@ export default function AdminFranchisesPage() {
                 </Link>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: 'Total Franchises', value: franchises.length, color: 'bg-slate-50 border-slate-200 text-slate-900', icon: Building2 },
-                    { label: 'Active', value: franchises.filter(f => f.status === 'active').length, color: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: CheckCircle },
-                    { label: 'KYC Pending', value: franchises.filter(f => f.kycStatus !== 'verified').length, color: 'bg-amber-50 border-amber-200 text-amber-700', icon: Clock },
-                    { label: 'Total Partners', value: franchises.reduce((a, f) => a + f.totalPartners, 0), color: 'bg-blue-50 border-blue-200 text-blue-700', icon: Shield },
-                ].map(s => (
-                    <div key={s.label} className={`p-4 rounded-xl border ${s.color} shadow-sm`}>
+            {/* Stats Dashboard */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <Card className="bg-white border-slate-200 shadow-sm">
+                    <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <div className="text-2xl font-bold">{s.value}</div>
-                                <div className="text-xs uppercase tracking-wider opacity-70">{s.label}</div>
+                                <p className="text-slate-500 text-sm">Total Franchises</p>
+                                <h3 className="text-2xl font-bold text-slate-900">{stats.total}</h3>
                             </div>
-                            <s.icon className="h-5 w-5 opacity-40" />
+                            <div className="bg-teal-50 p-3 rounded-full">
+                                <Building2 className="h-6 w-6 text-teal-600" />
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    </CardContent>
+                </Card>
+                <Card className="bg-white border-slate-200 shadow-sm">
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-500 text-sm">Active</p>
+                                <h3 className="text-2xl font-bold text-emerald-600">{stats.active}</h3>
+                            </div>
+                            <div className="bg-emerald-50 p-3 rounded-full">
+                                <CheckCircle className="h-6 w-6 text-emerald-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-white border-slate-200 shadow-sm">
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-500 text-sm">Verified</p>
+                                <h3 className="text-2xl font-bold text-blue-600">{stats.verified}</h3>
+                            </div>
+                            <div className="bg-blue-50 p-3 rounded-full">
+                                <Shield className="h-6 w-6 text-blue-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-white border-slate-200 shadow-sm">
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-500 text-sm">Total Members</p>
+                                <h3 className="text-2xl font-bold text-slate-900">{stats.totalMembers}</h3>
+                            </div>
+                            <div className="bg-purple-50 p-3 rounded-full">
+                                <Users className="h-6 w-6 text-purple-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-white border-slate-200 shadow-sm">
+                    <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-500 text-sm">Total Sales</p>
+                                <h3 className="text-2xl font-bold text-amber-600">{stats.totalSales}</h3>
+                            </div>
+                            <div className="bg-amber-50 p-3 rounded-full">
+                                <TrendingUp className="h-6 w-6 text-amber-600" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Search */}
             <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input placeholder="Search by name, email, city, or referral code..." className="pl-9 bg-white border-slate-200 text-slate-900" value={search} onChange={e => setSearch(e.target.value)} />
+                    <Input placeholder="Search by name, city, or referral code..." className="pl-9 bg-white border-slate-200 text-slate-900" value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
             </div>
 
@@ -100,13 +160,13 @@ export default function AdminFranchisesPage() {
                         <TableHeader>
                             <TableRow className="bg-slate-50 border-slate-200">
                                 <TableHead className="text-slate-600 font-semibold">Franchise</TableHead>
-                                <TableHead className="text-slate-600 font-semibold">City</TableHead>
+                                <TableHead className="text-slate-600 font-semibold">Location</TableHead>
                                 <TableHead className="text-slate-600 font-semibold">Contact</TableHead>
-                                <TableHead className="text-slate-600 font-semibold">Commission</TableHead>
+                                <TableHead className="text-slate-600 font-semibold">Status</TableHead>
                                 <TableHead className="text-slate-600 font-semibold">KYC</TableHead>
                                 <TableHead className="text-slate-600 font-semibold">Verification</TableHead>
                                 <TableHead className="text-slate-600 font-semibold text-center">Partners</TableHead>
-                                <TableHead className="text-slate-600 font-semibold">Revenue</TableHead>
+                                <TableHead className="text-slate-600 font-semibold">Sales</TableHead>
                                 <TableHead className="text-slate-600 font-semibold text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -124,9 +184,15 @@ export default function AdminFranchisesPage() {
                                             <MapPin className="h-3 w-3 text-slate-400" /> {f.city}, {f.state}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-sm text-slate-600">{f.contact}</TableCell>
                                     <TableCell>
-                                        <span className="text-sm font-semibold text-teal-600">{f.commissionPercent}%</span>
+                                        <div className="text-sm text-slate-600">
+                                            <div className="flex items-center gap-1">
+                                                <Phone className="h-3 w-3 text-slate-400" /> {f.contact}
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge className={`text-xs border ${STATUS_STYLES[f.status]}`}>{f.status}</Badge>
                                     </TableCell>
                                     <TableCell>
                                         <Badge className={`text-xs border ${KYC_STYLES[f.kycStatus]}`}>{f.kycStatus}</Badge>
@@ -136,7 +202,7 @@ export default function AdminFranchisesPage() {
                                     </TableCell>
                                     <TableCell className="text-center text-sm font-medium text-slate-700">{f.totalPartners}</TableCell>
                                     <TableCell>
-                                        <span className="text-sm font-medium text-slate-700">₹{(f.totalRevenue / 100000).toFixed(1)}L</span>
+                                        <span className="text-sm font-medium text-slate-700">{f.totalRevenue}</span>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Link href={`/admin/franchises/${f.id}`}>

@@ -11,6 +11,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface NotificationsPanelProps {
     notifications?: Notification[];
@@ -79,13 +80,23 @@ export function NotificationsPanel({ notifications = [], loading, onMarkRead }: 
             </div>
 
             {!notifications || notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center flex-1">
-                    <div className="relative">
-                        <Bell className="size-16 text-slate-200" />
+                <div className="flex flex-col items-center justify-center py-10 text-center flex-1">
+                    <div className="relative mb-4">
+                        <div className="rounded-full bg-emerald-50 p-4">
+                            <Bell className="size-10 text-emerald-500" />
+                        </div>
                         <CheckCircle className="absolute bottom-0 right-0 size-6 text-green-500 bg-white rounded-full border-2 border-white" />
                     </div>
-                    <p className="mt-4 text-lg font-medium text-slate-600">You're all caught up!</p>
-                    <p className="text-sm text-slate-400">No new notifications</p>
+                    <p className="text-lg font-semibold text-slate-700">You're all caught up!</p>
+                    <p className="text-sm text-slate-500 mt-1 mb-4">No new notifications at the moment</p>
+                    <div className="flex flex-col gap-2 w-full max-w-[200px]">
+                        <Link 
+                            href="/service-requests/new" 
+                            className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 transition-colors"
+                        >
+                            Need Help?
+                        </Link>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-3">

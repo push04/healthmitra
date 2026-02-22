@@ -18,7 +18,7 @@ export async function fetchDashboardData(supabaseClient: any): Promise<ApiRespon
     ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('wallets').select('*').eq('user_id', user.id).single(),
-        supabase.from('members').select('*, plans(*)').eq('user_id', user.id),
+        supabase.from('ecard_members').select('*, plans(*)').eq('user_id', user.id),
         supabase.from('service_requests').select('*, assignee:assigned_to(full_name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
         supabase.from('reimbursement_claims').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
         supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),

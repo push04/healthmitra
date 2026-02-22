@@ -22,9 +22,11 @@ function LoginFormContent() {
             if (result?.error) {
                 toast.error("Login Failed", { description: result.error });
             }
-            // Success assumes redirect happens in action
-        } catch {
-            toast.error("Something went wrong");
+        } catch (err: any) {
+            if (err?.message?.includes('redirect')) {
+                return;
+            }
+            toast.error("Login Failed", { description: "Please check your credentials and try again." });
         } finally {
             setLoading(false);
         }

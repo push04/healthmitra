@@ -29,5 +29,11 @@ export default async function WalletPage() {
         thisMonthCount: txs.filter((t: any) => t.type === 'debit' && t.created_at >= startOfMonth).length
     };
 
-    return <WalletView wallet={wallet || { id: '', balance: 0, currency: 'INR', status: 'inactive' }} stats={stats} />;
+    const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
+
+    return <WalletView 
+        wallet={wallet || { id: '', balance: 0, currency: 'INR', status: 'inactive' }} 
+        stats={stats} 
+        userName={profile?.full_name || ''}
+    />;
 }

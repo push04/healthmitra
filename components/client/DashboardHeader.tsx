@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
     Bell,
     Menu,
@@ -9,7 +10,10 @@ import {
     Settings,
     HelpCircle,
     LogOut,
-    Stethoscope
+    Stethoscope,
+    Check,
+    X,
+    ExternalLink
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -28,8 +32,11 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "./Sidebar";
+import { createClient } from "@/lib/supabase/client";
 
 
 interface DashboardHeaderProps {
@@ -40,8 +47,23 @@ interface DashboardHeaderProps {
     } | null;
 }
 
+interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    type: string;
+    is_read: boolean;
+    action_url: string | null;
+    created_at: string;
+}
+
 export function DashboardHeader({ user }: DashboardHeaderProps) {
     const pathname = usePathname();
+    const router = useRouter();
+    const supabase = createClient();
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [loadingNotifications, setLoadingNotifications] = useState(false);
 
     const userName = user?.name || "User";
     const userEmail = user?.email || "";
@@ -51,6 +73,102 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         .join("")
         .toUpperCase()
         .slice(0, 2);
+
+    useEffect(() => {
+        if (user) {
+            loadNotifications();
+        }
+    }, [user]);
+
+    const loadNotifications = async () => {
+        if (!user?.email) return;
+        
+        setLoadingNotifications(true);
+        
+        // Get user ID from profiles
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', user.email)
+            .single();
+
+        if (profile) {
+            // Fetch notifications
+            const { data: notifs } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('recipient_id', profile.id)
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (notifs) {
+                setNotifications(notifs);
+                setUnreadCount(notifs.filter(n => !n.is_read).length);
+            }
+        }
+        
+        setLoadingNotifications(false);
+    };
+
+    const markAsRead = async (notificationId: string) => {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', user?.email || '')
+            .single();
+
+        if (!profile) return;
+
+        await supabase
+            .from('notifications')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .eq('id', notificationId)
+            .eq('recipient_id', profile.id);
+
+        setNotifications(prev => 
+            prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+    };
+
+    const markAllAsRead = async () => {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', user?.email || '')
+            .single();
+
+        if (!profile) return;
+
+        await supabase
+            .from('notifications')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .eq('recipient_id', profile.id)
+            .eq('is_read', false);
+
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        setUnreadCount(0);
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push('/login');
+        router.refresh();
+    };
+
+    const formatTime = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = now.getTime() - date.getTime();
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        return `${days}d ago`;
+    };
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-lg md:px-6">
@@ -121,10 +239,80 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                 </div>
 
                 {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative text-slate-600 hover:bg-slate-100">
-                    <Bell className="size-5" />
-                    <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
-                </Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="relative text-slate-600 hover:bg-slate-100">
+                            <Bell className="size-5" />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white ring-2 ring-white">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-80">
+                        <div className="flex items-center justify-between px-3 py-2 border-b">
+                            <span className="font-semibold">Notifications</span>
+                            {unreadCount > 0 && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 text-xs text-teal-600 hover:text-teal-700"
+                                    onClick={markAllAsRead}
+                                >
+                                    Mark all read
+                                </Button>
+                            )}
+                        </div>
+                        <ScrollArea className="h-[300px]">
+                            {loadingNotifications ? (
+                                <div className="flex items-center justify-center p-4">
+                                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-teal-600 border-t-transparent" />
+                                </div>
+                            ) : notifications.length === 0 ? (
+                                <div className="p-4 text-center text-sm text-slate-500">
+                                    No notifications yet
+                                </div>
+                            ) : (
+                                notifications.map((notif) => (
+                                    <DropdownMenuItem 
+                                        key={notif.id} 
+                                        className={cn(
+                                            "flex flex-col items-start gap-1 p-3 cursor-pointer",
+                                            !notif.is_read && "bg-teal-50"
+                                        )}
+                                        onClick={() => !notif.is_read && markAsRead(notif.id)}
+                                    >
+                                        <div className="flex items-start justify-between w-full gap-2">
+                                            <span className={cn("font-medium text-sm", !notif.is_read && "text-teal-700")}>
+                                                {notif.title}
+                                            </span>
+                                            <span className="text-xs text-slate-400 shrink-0">
+                                                {formatTime(notif.created_at)}
+                                            </span>
+                                        </div>
+                                        <span className="text-xs text-slate-600 line-clamp-2">
+                                            {notif.message}
+                                        </span>
+                                        {notif.action_url && (
+                                            <span className="text-xs text-teal-600 flex items-center gap-1">
+                                                <ExternalLink className="h-3 w-3" /> View Details
+                                            </span>
+                                        )}
+                                    </DropdownMenuItem>
+                                ))
+                            )}
+                        </ScrollArea>
+                        <div className="border-t p-2">
+                            <Link 
+                                href="/notifications" 
+                                className="flex w-full items-center justify-center p-2 text-sm text-teal-600 hover:text-teal-700"
+                            >
+                                View all notifications
+                            </Link>
+                        </div>
+                    </DropdownMenuContent>
+                </DropdownMenu>
 
                 {/* User Menu */}
                 <DropdownMenu>
@@ -147,32 +335,28 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <Link href="/profile">
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem>
                                 <User className="mr-2 h-4 w-4" />
-                                <span>My Profile</span>
+                                Profile
                             </DropdownMenuItem>
                         </Link>
                         <Link href="/settings">
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem>
                                 <Settings className="mr-2 h-4 w-4" />
-                                <span>Settings</span>
+                                Settings
                             </DropdownMenuItem>
                         </Link>
                         <Link href="/support">
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem>
                                 <HelpCircle className="mr-2 h-4 w-4" />
-                                <span>Help & Support</span>
+                                Help & Support
                             </DropdownMenuItem>
                         </Link>
                         <DropdownMenuSeparator />
-                        <form action="/auth/signout" method="post">
-                            <button type="submit" className="w-full flex items-center">
-                                <DropdownMenuItem className="w-full text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer">
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Log out</span>
-                                </DropdownMenuItem>
-                            </button>
-                        </form>
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Log out
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>

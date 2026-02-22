@@ -18,7 +18,10 @@ import {
     HeartPulse,
     Building2,
     Handshake,
-    Headphones
+    Headphones,
+    Wallet,
+    Mail,
+    Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +38,9 @@ export const ADMIN_NAV_ITEMS = [
     { icon: Handshake, label: 'Partner Management', href: '/admin/partners' },
     { icon: Headphones, label: 'Call Centre', href: '/admin/call-centre' },
     { icon: CreditCard, label: 'Reimbursements', href: '/admin/reimbursements' },
+    { icon: Wallet, label: 'Withdrawals', href: '/admin/withdrawals' },
+    { icon: Mail, label: 'Contact Messages', href: '/admin/contact-messages' },
+    { icon: Bell, label: 'Notifications', href: '/admin/notifications' },
     { icon: BarChart3, label: 'Reports', href: '/admin/reports' },
     { icon: ClipboardCheck, label: 'Audit Trail', href: '/admin/audit' },
     { icon: Settings, label: 'Settings', href: '/admin/settings' },

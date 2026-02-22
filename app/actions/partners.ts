@@ -1,12 +1,42 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { Partner, SubPartner, PartnerCommission } from '@/types/partners';
 
 // --- PARTNER LISTING ---
 
+export async function getPartnerStats() {
+    const supabase = await createAdminClient();
+    
+    const { count: total } = await supabase
+        .from('franchises')
+        .select('*', { count: 'exact', head: true });
+
+    const { count: active } = await supabase
+        .from('franchises')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
+    const { data: partners } = await supabase
+        .from('franchises')
+        .select('total_commission, total_sales');
+
+    const totalCommission = partners?.reduce((sum, p) => sum + (p.total_commission || 0), 0) || 0;
+    const totalRevenue = partners?.reduce((sum, p) => sum + (p.total_sales || 0), 0) || 0;
+
+    return {
+        success: true,
+        data: {
+            total: total || 0,
+            active: active || 0,
+            totalCommission,
+            totalRevenue
+        }
+    };
+}
+
 export async function partnerLogin(email: string, password: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -37,7 +67,7 @@ export async function partnerLogin(email: string, password: string) {
 }
 
 export async function getPartners(filters: { query?: string; status?: string } = {}) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     let query = supabase.from('franchises').select('*');
 
@@ -93,7 +123,7 @@ export async function getPartners(filters: { query?: string; status?: string } =
 // --- SINGLE PARTNER ---
 
 export async function getPartner(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: partner, error } = await supabase.from('franchises').select('*').eq('id', id).single();
 
     if (error || !partner) return { success: false, error: 'Partner not found' };
@@ -154,7 +184,7 @@ export async function getPartner(id: string) {
 // --- CREATE / UPDATE PARTNER ---
 
 export async function createPartner(data: Partial<Partner>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('franchises').insert({
         franchise_name: data.name,
         contact_email: data.email,
@@ -178,7 +208,7 @@ export async function createPartner(data: Partial<Partner>) {
 }
 
 export async function updatePartner(id: string, data: Partial<Partner>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('franchises').update({
         franchise_name: data.name,
         contact_email: data.email,
@@ -203,7 +233,7 @@ export async function updatePartner(id: string, data: Partial<Partner>) {
 // --- SUB-PARTNERS ---
 
 export async function getSubPartners(partnerId: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data } = await supabase.from('franchise_partners').select('*').eq('franchise_id', partnerId);
 
     if (!data) return { success: true, data: [] };
@@ -227,7 +257,7 @@ export async function getSubPartners(partnerId: string) {
 }
 
 export async function addSubPartner(partnerId: string, data: Partial<SubPartner>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('franchise_partners').insert({
         franchise_id: partnerId,
         partner_name: data.name,
@@ -243,7 +273,7 @@ export async function addSubPartner(partnerId: string, data: Partial<SubPartner>
 // --- PARTNER PORTAL ACTIONS ---
 
 export async function getCurrentPartner() {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user || !user.email) return { success: false, error: 'Not authenticated' };
@@ -257,7 +287,7 @@ export async function getCurrentPartner() {
 }
 
 export async function getPartnerCommissions(partnerId: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     // Assuming 'partner_commissions' table exists
     const { data, error } = await supabase.from('partner_commissions').select('*').eq('partner_id', partnerId).order('sale_date', { ascending: false });
 

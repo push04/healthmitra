@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Building, AlertCircle, Loader2, FileText, Upload, Receipt, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
+import { createWithdrawalRequest } from '@/app/actions/withdrawals';
 
 interface WithdrawalModalProps {
     isOpen: boolean;
     onClose: () => void;
     currentBalance: number;
+    userName?: string;
 }
 
 // BILL TYPES for bill-based withdrawal
@@ -19,7 +22,7 @@ const BILL_TYPES = [
     { value: 'other', label: 'Other Medical Bill' },
 ];
 
-export default function WithdrawalModal({ isOpen, onClose, currentBalance }: WithdrawalModalProps) {
+export default function WithdrawalModal({ isOpen, onClose, currentBalance, userName = '' }: WithdrawalModalProps) {
     const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [billType, setBillType] = useState('');
@@ -29,11 +32,15 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance }: Wit
 
     // Bank Details State
     const [bankDetails, setBankDetails] = useState({
-        accountName: 'Rajesh Kumar',
+        accountName: userName,
         accountNumber: '',
         ifsc: '',
         bankName: ''
     });
+
+    useEffect(() => {
+        setBankDetails(prev => ({ ...prev, accountName: userName }));
+    }, [userName]);
 
     // Daily withdrawal limit tracking (mock - would be from API)
     const [todayWithdrawals] = useState(2); // Simulating 2 withdrawals today
@@ -45,10 +52,9 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance }: Wit
     const minBalance = 1;
     const maxWithdrawal = currentBalance - minBalance;
 
-    const handleWithdrawal = () => {
+    const handleWithdrawal = async () => {
         const withdrawAmount = Number(amount);
 
-        // Check daily limit
         if (remainingWithdrawals <= 0) {
             toast.error('Daily Limit Reached', {
                 description: 'You have reached the maximum of 5 withdrawals per day. Try again tomorrow.'
@@ -56,7 +62,6 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance }: Wit
             return;
         }
 
-        // Validate bill details
         if (!billType) {
             toast.error('Please select a bill type');
             return;
@@ -88,13 +93,38 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance }: Wit
         }
 
         setIsProcessing(true);
-        setTimeout(() => {
+
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
             setIsProcessing(false);
+            toast.error('Please login to request withdrawal');
+            return;
+        }
+
+        const result = await createWithdrawalRequest(
+            user.id,
+            bankDetails.accountName,
+            user.email || '',
+            withdrawAmount,
+            bankDetails.bankName || 'Bank',
+            bankDetails.accountNumber,
+            bankDetails.ifsc
+        );
+
+        setIsProcessing(false);
+
+        if (result.success) {
             toast.success('Withdrawal Request Submitted', {
-                description: `Bill verified. Amount ₹${withdrawAmount.toLocaleString('en-IN')} will be credited within 3-5 business days.`
+                description: `Amount ₹${withdrawAmount.toLocaleString('en-IN')} will be credited within 3-5 business days.`
             });
             onClose();
-        }, 2000);
+        } else {
+            toast.error('Failed to submit withdrawal request', {
+                description: result.error || 'Please try again'
+            });
+        }
     };
 
     return (

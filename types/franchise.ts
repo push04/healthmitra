@@ -9,7 +9,7 @@ export interface Franchise {
     contact: string;
     altContact: string;
     email: string;
-    password: string;
+    password?: string;
     referralCode: string;
     website: string;
     gst: string;
@@ -19,7 +19,7 @@ export interface Franchise {
     address: string;
     city: string;
     state: string;
-    payoutDelay: number; // days
+    payoutDelay: number;
     status: 'active' | 'inactive';
     createdAt: string;
     totalPartners: number;

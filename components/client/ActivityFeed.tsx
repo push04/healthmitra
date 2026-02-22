@@ -69,10 +69,26 @@ export function ActivityFeed({ activities = [], loading }: ActivityFeedProps) {
             </div>
 
             {!activities || activities.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Activity className="mb-4 size-16 text-slate-200" />
-                    <p className="text-lg font-medium text-slate-500">No recent activity</p>
-                    <p className="text-sm text-slate-400">Your activities will appear here</p>
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="mb-4 rounded-full bg-teal-50 p-4">
+                        <Activity className="size-10 text-teal-500" />
+                    </div>
+                    <p className="text-lg font-semibold text-slate-700">No recent activity</p>
+                    <p className="text-sm text-slate-500 mt-1 mb-4">Your service requests and activities will appear here</p>
+                    <div className="flex gap-2">
+                        <Link 
+                            href="/service-requests/new" 
+                            className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 transition-colors"
+                        >
+                            Book a Service
+                        </Link>
+                        <Link 
+                            href="/my-purchases" 
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                            View Plans
+                        </Link>
+                    </div>
                 </div>
             ) : (
                 <div className="relative space-y-0">

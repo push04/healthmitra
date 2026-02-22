@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { ServiceRequest, SRType, SRStatus, Agent } from '@/types/service-requests';
 
 interface ProfileData {
@@ -9,6 +9,43 @@ interface ProfileData {
     email: string | null;
     phone: string | null;
     role: string;
+}
+
+export async function getCallCentreStats() {
+    const supabase = await createAdminClient();
+    
+    const { count: totalRequests } = await supabase
+        .from('service_requests')
+        .select('*', { count: 'exact', head: true });
+
+    const { count: pendingRequests } = await supabase
+        .from('service_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+    const { count: completedToday } = await supabase
+        .from('service_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'completed')
+        .gte('completed_at', new Date().toISOString().split('T')[0]);
+
+    const { data: agents } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('role', ['admin', 'agent', 'employee']);
+
+    const activeAgents = agents?.filter((a: any) => a.role === 'agent').length || 0;
+
+    return {
+        success: true,
+        data: {
+            totalRequests: totalRequests || 0,
+            pendingRequests: pendingRequests || 0,
+            completedToday: completedToday || 0,
+            activeAgents,
+            totalAgents: agents?.length || 0
+        }
+    };
 }
 
 interface ServiceRequestRow {
@@ -168,7 +205,7 @@ export async function getCallCentreRequests(filters: CCFilters = {}) {
 // --- AGENT MANAGEMENT ---
 
 export async function getAgents() {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data } = await supabase.from('profiles').select('*').in('role', ['admin', 'agent', 'employee']);
 
     const agentStatus: Agent['status'] = 'available';
@@ -209,4 +246,93 @@ export async function assignRequestToAgent(requestId: string, agentId: string) {
 
     if (error) return { success: false, error: error.message };
     return { success: true, message: 'Request assigned successfully' };
+}
+
+// --- CREATE AGENT ---
+
+export async function createAgent(data: { name: string; email: string; phone: string; role: string }) {
+    const supabase = await createClient();
+    const adminSupabase = await createAdminClient();
+    
+    // First check if user exists with this email
+    const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', data.email)
+        .single();
+
+    if (existingProfile) {
+        // Update existing profile to be an agent
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: 'agent' })
+            .eq('id', existingProfile.id);
+
+        if (updateError) {
+            return { success: false, error: updateError.message };
+        }
+
+        // Check if already in call_centre_agents
+        const { data: existingAgent } = await supabase
+            .from('call_centre_agents')
+            .select('id')
+            .eq('user_id', existingProfile.id)
+            .single();
+
+        if (!existingAgent) {
+            const { error: agentError } = await supabase.from('call_centre_agents').insert({
+                user_id: existingProfile.id,
+                agent_name: data.name,
+                agent_email: data.email,
+                agent_phone: data.phone,
+                role: data.role,
+                status: 'active',
+                is_available: true
+            });
+
+            if (agentError) {
+                return { success: false, error: agentError.message };
+            }
+        }
+
+        return { success: true, message: 'Agent added successfully (existing user)' };
+    }
+
+    // Create a new user with admin API using service role key
+    const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
+        email: data.email,
+        email_confirm: true,
+        user_metadata: {
+            full_name: data.name,
+            phone: data.phone,
+            role: 'agent'
+        }
+    });
+
+    if (authError) {
+        console.log('Admin create failed:', authError.message);
+        return { 
+            success: false, 
+            error: 'Cannot create user. Please ensure SUPABASE_SERVICE_ROLE_KEY is configured. Error: ' + authError.message 
+        };
+    }
+
+    // Then create agent profile
+    if (authData.user) {
+        const { error: profileError } = await supabase.from('call_centre_agents').insert({
+            user_id: authData.user.id,
+            agent_name: data.name,
+            agent_email: data.email,
+            agent_phone: data.phone,
+            role: data.role,
+            status: 'active',
+            is_available: true
+        });
+
+        if (profileError) {
+            return { success: false, error: profileError.message };
+        }
+    }
+
+    return { success: true, message: 'Agent created successfully' };
 }

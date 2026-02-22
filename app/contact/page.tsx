@@ -2,9 +2,11 @@
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { Mail, Phone, MapPin, Clock, Send } from "lucide-react"
+import { Mail, Phone, MapPin, Clock, Send, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({
@@ -15,13 +17,32 @@ export default function ContactPage() {
         message: ''
     })
     const [submitted, setSubmitted] = useState(false)
+    const [loading, setLoading] = useState(false)
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        // Simulate form submission
-        setSubmitted(true)
-        setTimeout(() => setSubmitted(false), 3000)
-        setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
+        setLoading(true)
+        
+        const supabase = createClient()
+        const { error } = await supabase.from('contact_messages').insert({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            subject: formData.subject,
+            message: formData.message,
+            status: 'pending'
+        })
+
+        setLoading(false)
+        
+        if (error) {
+            toast.error('Failed to send message. Please try again.')
+        } else {
+            setSubmitted(true)
+            toast.success('Message sent successfully! We\'ll get back to you soon.')
+            setTimeout(() => setSubmitted(false), 5000)
+            setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
+        }
     }
 
     return (
@@ -182,9 +203,9 @@ export default function ContactPage() {
                                         />
                                     </div>
 
-                                    <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
-                                        <Send className="w-4 h-4 mr-2" />
-                                        Send Message
+                                    <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
+                                        {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                                        {loading ? 'Sending...' : 'Send Message'}
                                     </Button>
                                 </form>
                             </div>

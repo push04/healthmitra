@@ -1,9 +1,42 @@
 'use server';
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+
+export async function getPHRStats() {
+    const supabase = await createAdminClient();
+    
+    const { count: totalMembers } = await supabase
+        .from('ecard_members')
+        .select('*', { count: 'exact', head: true });
+
+    const { count: totalRecords } = await supabase
+        .from('phr_documents')
+        .select('*', { count: 'exact', head: true });
+
+    const { data: categories } = await supabase
+        .from('phr_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+
+    const { count: thisMonthRecords } = await supabase
+        .from('phr_documents')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
+
+    return {
+        success: true,
+        data: {
+            totalMembers: totalMembers || 0,
+            totalRecords: totalRecords || 0,
+            thisMonthRecords: thisMonthRecords || 0,
+            categories: categories || []
+        }
+    };
+}
 
 export async function getPHRDocuments() {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { success: false, error: 'Not authenticated' };
@@ -35,7 +68,7 @@ export async function uploadPHRDocument(formData: any) {
     // For simplicity given the scope, we'll assume metadata insertion.
     // Real implementation would require Supabase Storage handling.
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
@@ -53,7 +86,7 @@ export async function uploadPHRDocument(formData: any) {
     return { success: true, data };
 }
 export async function verifyPatientAccess(data: { type: 'otp' | 'abha', value: string }) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // In a real scenario, this would verify OTP against a temporal store or check ABHA integration.
     // For this implementation, we will mock the verification success for specific inputs
@@ -107,7 +140,7 @@ export async function verifyPatientAccess(data: { type: 'otp' | 'abha', value: s
 }
 
 export async function addVendorRecord(memberId: string, data: { category: string, notes: string, addedBy: string, vendorName: string }) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Get member details to find the user_id
     const { data: member } = await supabase.from('ecard_members').select('user_id').eq('id', memberId).single();
@@ -142,7 +175,7 @@ export async function addVendorRecord(memberId: string, data: { category: string
 }
 
 export async function getVendorAuditLog() {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     // Fetch logs related to vendor actions
     const { data: logs, error } = await supabase.from('audit_logs')
         .select('*')
@@ -166,37 +199,53 @@ export async function getVendorAuditLog() {
 }
 
 export async function getPatients(query?: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     let dbQuery = supabase.from('ecard_members').select('*, plans(name)');
 
     if (query) {
-        dbQuery = dbQuery.or(`full_name.ilike.%${query}%,email.ilike.%${query}%,member_id_code.ilike.%${query}%`);
+        dbQuery = dbQuery.or(`full_name.ilike.%${query}%,email.ilike.%${query}%,member_id_code.ilike.%${query}%,contact_number.ilike.%${query}%`);
     }
 
     const { data, error } = await dbQuery.order('created_at', { ascending: false });
 
     if (error) return { success: false, error: error.message };
 
+    // Get record counts for all members
+    const memberIds = data.map((m: any) => m.id);
+    let recordCounts: Record<string, number> = {};
+    
+    if (memberIds.length > 0) {
+        const { data: records } = await supabase
+            .from('phr_documents')
+            .select('member_id');
+        
+        if (records) {
+            records.forEach((r: any) => {
+                recordCounts[r.member_id] = (recordCounts[r.member_id] || 0) + 1;
+            });
+        }
+    }
+
     const patients = data.map((m: any) => ({
         id: m.id,
         name: m.full_name,
         email: m.email || '',
         phone: m.contact_number || '',
-        relation: m.relation,
+        relation: m.relation || 'Self',
         age: m.dob ? new Date().getFullYear() - new Date(m.dob).getFullYear() : 0,
         gender: m.gender || 'Unknown',
-        abhaId: m.card_unique_id, // Using this as proxy for now
+        abhaId: m.card_unique_id,
         planName: m.plans?.name || 'Basic Plan',
-        recordCount: 0, // Need subquery or separate fetch for count
-        lastUpdated: new Date(m.updated_at).toLocaleDateString()
+        recordCount: recordCounts[m.id] || 0,
+        lastUpdated: new Date(m.updated_at).toLocaleDateString('en-IN')
     }));
 
     return { success: true, data: patients };
 }
 
 export async function getPatientPHR(memberId: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Fetch member details
     const { data: member, error: memberError } = await supabase.from('ecard_members')

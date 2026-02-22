@@ -4,41 +4,210 @@ import { useState, useEffect } from 'react';
 import { getDashboardStats } from '@/app/actions/analytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowUpRight, ArrowDownRight, Users, CreditCard, Activity, ShoppingCart } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+    Users, CreditCard, Activity, ShoppingCart, Plus, Loader2, 
+    TrendingUp, TrendingDown, FileText, DollarSign, UserCheck,
+    Clock, CheckCircle, XCircle, AlertCircle, Shield, Building2
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
+
+interface DashboardData {
+    metrics: {
+        totalRevenue: number;
+        activePlans: number;
+        newCustomers: number;
+        pendingTasks: number;
+        totalMembers: number;
+        activeMembers: number;
+        pendingClaims: number;
+        activeFranchises: number;
+        totalPlans: number;
+        pendingRequests: number;
+    };
+    activities: Array<{
+        id: string;
+        user: string;
+        action: string;
+        time: string;
+        details: string;
+    }>;
+    planSales: Array<{ name: string; value: number }>;
+    revenueChart: Array<{ name: string; revenue: number }>;
+    customerGrowth: Array<{ name: string; customers: number }>;
+}
 
 export default function AdminDashboard() {
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [creatingUser, setCreatingUser] = useState(false);
+    const [newUser, setNewUser] = useState({ full_name: '', email: '', phone: '', role: 'user', password: '' });
 
     useEffect(() => {
-        getDashboardStats().then(res => {
-            if (res.success) setData(res.data);
-            setLoading(false);
-        });
+        loadDashboardData();
     }, []);
 
-    if (loading) return <div className="p-8 text-slate-800">Loading Dashboard...</div>;
+    const loadDashboardData = async () => {
+        setLoading(true);
+        try {
+            const supabase = createClient();
+            
+            // Fetch all stats in parallel
+            const [
+                profilesRes, membersRes, plansRes, requestsRes, 
+                claimsRes, franchisesRes, activitiesRes
+            ] = await Promise.all([
+                supabase.from('profiles').select('id, role, created_at'),
+                supabase.from('ecard_members').select('id, status, plan_id'),
+                supabase.from('plans').select('id, name, is_active'),
+                supabase.from('service_requests').select('id, status'),
+                supabase.from('reimbursement_claims').select('id, status'),
+                supabase.from('franchises').select('id, status'),
+                supabase.from('audit_logs').select('*').limit(5).order('created_at', { ascending: false })
+            ]);
 
-    const MetricCard = ({ title, value, change, icon: Icon, trend }: any) => (
-        <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <p className="text-sm font-medium text-slate-500">{title}</p>
-                        <h3 className="text-2xl font-bold text-slate-800 mt-2">{value}</h3>
+            const profiles = profilesRes.data || [];
+            const members = membersRes.data || [];
+            const plans = plansRes.data || [];
+            const requests = requestsRes.data || [];
+            const claims = claimsRes.data || [];
+            const franchises = franchisesRes.data || [];
+            const activities = activitiesRes.data || [];
+
+            // Calculate metrics
+            const totalCustomers = profiles.filter(p => p.role === 'user').length;
+            const activeMembers = members.filter(m => m.status === 'active').length;
+            const pendingTasks = requests.filter(r => r.status === 'pending').length;
+            const pendingClaims = claims.filter(c => c.status === 'submitted' || c.status === 'under-review').length;
+            const activeFranchises = franchises.filter(f => f.status === 'active').length;
+
+            // Plan distribution
+            const planCounts: Record<string, number> = {};
+            members.forEach(m => {
+                if (m.plan_id) planCounts[m.plan_id] = (planCounts[m.plan_id] || 0) + 1;
+            });
+            const planSales = plans.map(p => ({
+                name: p.name,
+                value: planCounts[p.id] || 0
+            })).filter(p => p.value > 0);
+
+            // Revenue from payments table
+            const { data: payments } = await supabase
+                .from('payments')
+                .select('amount')
+                .eq('status', 'captured');
+            const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+            
+            setData({
+                metrics: {
+                    totalRevenue,
+                    activePlans: activeMembers,
+                    newCustomers: totalCustomers,
+                    pendingTasks,
+                    totalMembers: members.length,
+                    activeMembers,
+                    pendingClaims,
+                    activeFranchises,
+                    totalPlans: plans.filter((p: any) => p.is_active === true || p.is_active === 'active').length,
+                    pendingRequests: pendingTasks
+                },
+                activities: activities.map((a: any) => ({
+                    id: a.id,
+                    user: a.action || 'System',
+                    action: a.action || 'Activity',
+                    time: getRelativeTime(a.created_at),
+                    details: typeof a.details === 'object' ? JSON.stringify(a.details).substring(0, 50) : a.details || ''
+                })),
+                planSales,
+                revenueChart: [],
+                customerGrowth: []
+            });
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+        setLoading(false);
+    };
+
+    const getRelativeTime = (dateStr: string) => {
+        const now = new Date();
+        const date = new Date(dateStr);
+        const diffMs = now.getTime() - date.getTime();
+        const diffMin = Math.floor(diffMs / 60000);
+        if (diffMin < 1) return 'Just now';
+        if (diffMin < 60) return `${diffMin}m ago`;
+        const diffHrs = Math.floor(diffMin / 60);
+        if (diffHrs < 24) return `${diffHrs}h ago`;
+        const diffDays = Math.floor(diffHrs / 24);
+        return `${diffDays}d ago`;
+    };
+
+    const handleCreateUser = async () => {
+        if (!newUser.full_name || !newUser.email || !newUser.password) {
+            toast.error('Please fill in all required fields');
+            return;
+        }
+        
+        setCreatingUser(true);
+        const supabase = createClient();
+        
+        const { error } = await supabase.auth.signUp({
+            email: newUser.email,
+            password: newUser.password,
+            options: {
+                data: {
+                    full_name: newUser.full_name,
+                    phone: newUser.phone,
+                    role: newUser.role
+                }
+            }
+        });
+
+        if (error) {
+            toast.error(error.message);
+        } else {
+            toast.success('User created successfully!');
+            setIsUserModalOpen(false);
+            setNewUser({ full_name: '', email: '', phone: '', role: 'user', password: '' });
+        }
+        setCreatingUser(false);
+    };
+
+    const formatCurrency = (amount: number) => {
+        if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)}Cr`;
+        if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
+        if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+        return `₹${amount}`;
+    };
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        </div>
+    );
+
+    const MetricCard = ({ title, value, subtitle, icon: Icon, color, href }: any) => (
+        <Link href={href || '#'}>
+            <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
+                <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-slate-500">{title}</p>
+                            <h3 className="text-2xl font-bold text-slate-800 mt-1">{value}</h3>
+                            {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+                        </div>
+                        <div className={`p-2.5 rounded-lg ${color}`}>
+                            <Icon className="h-5 w-5" />
+                        </div>
                     </div>
-                    <div className={`p-2 rounded-lg ${trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                        <Icon className="h-5 w-5" />
-                    </div>
-                </div>
-                <div className="flex items-center mt-4 text-xs">
-                    {trend === 'up' ? <ArrowUpRight className="h-4 w-4 text-emerald-600 mr-1" /> : <ArrowDownRight className="h-4 w-4 text-rose-600 mr-1" />}
-                    <span className={trend === 'up' ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>{change}</span>
-                    <span className="text-slate-400 ml-1">vs last month</span>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </Link>
     );
 
     return (
@@ -46,119 +215,279 @@ export default function AdminDashboard() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
-                    <p className="text-slate-500">Welcome back, Admin!</p>
+                    <p className="text-slate-500">Welcome back! Here's what's happening today.</p>
                 </div>
-                <Select defaultValue="30days">
-                    <SelectTrigger className="w-[180px] bg-white border-slate-200 text-slate-800"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-white border-slate-200 text-slate-800">
-                        <SelectItem value="30days">Last 30 Days</SelectItem>
-                        <SelectItem value="90days">Last Quarter</SelectItem>
-                        <SelectItem value="year">Last Year</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                    <Button onClick={() => setIsUserModalOpen(true)} className="bg-teal-600 hover:bg-teal-700">
+                        <Plus className="mr-2 h-4 w-4" /> Add User
+                    </Button>
+                    <Button variant="outline" onClick={loadDashboardData} className="bg-white border-slate-200 text-slate-700">
+                        <Loader2 className="mr-2 h-4 w-4" /> Refresh
+                    </Button>
+                </div>
             </div>
 
-            {/* METRICS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Create User Modal */}
+            <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
+                <DialogContent className="bg-white border-slate-200 text-slate-900 max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Create New User</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="full_name">Full Name *</Label>
+                            <Input id="full_name" value={newUser.full_name} onChange={e => setNewUser({...newUser, full_name: e.target.value})} placeholder="Enter full name" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email *</Label>
+                            <Input id="email" type="email" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="Enter email address" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Phone</Label>
+                            <Input id="phone" value={newUser.phone} onChange={e => setNewUser({...newUser, phone: e.target.value})} placeholder="Enter phone number" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="role">Role</Label>
+                            <Select value={newUser.role} onValueChange={v => setNewUser({...newUser, role: v})}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="agent">Call Centre Agent</SelectItem>
+                                    <SelectItem value="employee">Employee</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password *</Label>
+                            <Input id="password" type="password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} placeholder="Enter password" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsUserModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateUser} disabled={creatingUser} className="bg-teal-600 hover:bg-teal-700">
+                            {creatingUser ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : 'Create User'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* PRIMARY METRICS ROW */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <MetricCard 
                     title="Total Revenue" 
-                    value={data.metrics?.totalRevenue ? `₹${(data.metrics.totalRevenue / 100000).toFixed(2)}L` : '₹0'} 
-                    change="+15%" 
-                    icon={CreditCard} 
-                    trend="up" 
+                    value={formatCurrency(data?.metrics?.totalRevenue || 0)} 
+                    subtitle="From all payments"
+                    icon={DollarSign} 
+                    color="bg-emerald-100 text-emerald-600"
+                    href="/admin/reimbursements"
+                />
+                <MetricCard 
+                    title="Active Members" 
+                    value={data?.metrics?.activeMembers || 0} 
+                    subtitle={`of ${data?.metrics?.totalMembers || 0} total`}
+                    icon={UserCheck} 
+                    color="bg-teal-100 text-teal-600"
+                    href="/admin/customers"
+                />
+                <MetricCard 
+                    title="Pending Requests" 
+                    value={data?.metrics?.pendingRequests || 0} 
+                    subtitle="Awaiting action"
+                    icon={Clock} 
+                    color="bg-amber-100 text-amber-600"
+                    href="/admin/service-requests"
+                />
+                <MetricCard 
+                    title="Pending Claims" 
+                    value={data?.metrics?.pendingClaims || 0} 
+                    subtitle="Reimbursement claims"
+                    icon={FileText} 
+                    color="bg-rose-100 text-rose-600"
+                    href="/admin/reimbursements"
+                />
+            </div>
+
+            {/* SECONDARY METRICS ROW */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <MetricCard 
+                    title="Total Customers" 
+                    value={data?.metrics?.newCustomers || 0} 
+                    subtitle="Registered users"
+                    icon={Users} 
+                    color="bg-blue-100 text-blue-600"
+                    href="/admin/users"
                 />
                 <MetricCard 
                     title="Active Plans" 
-                    value={String(data.metrics?.activePlans || 0)} 
-                    change="+8%" 
-                    icon={ShoppingCart} 
-                    trend="up" 
+                    value={data?.metrics?.totalPlans || 0} 
+                    subtitle="Available plans"
+                    icon={Shield} 
+                    color="bg-purple-100 text-purple-600"
+                    href="/admin/plans"
                 />
                 <MetricCard 
-                    title="New Customers" 
-                    value={String(data.metrics?.newCustomers || 0)} 
-                    change="+22%" 
-                    icon={Users} 
-                    trend="up" 
+                    title="Franchises" 
+                    value={data?.metrics?.activeFranchises || 0} 
+                    subtitle="Active partners"
+                    icon={Building2} 
+                    color="bg-indigo-100 text-indigo-600"
+                    href="/admin/franchises"
                 />
                 <MetricCard 
-                    title="Pending Tasks" 
-                    value={String(data.metrics?.pendingTasks || 0)} 
-                    change="-5%" 
+                    title="Service Requests" 
+                    value={data?.metrics?.pendingTasks || 0} 
+                    subtitle="In progress"
                     icon={Activity} 
-                    trend={data.metrics?.pendingTasks > 0 ? 'down' : 'up'} 
+                    color="bg-cyan-100 text-cyan-600"
+                    href="/admin/service-requests"
                 />
             </div>
 
-            {/* CHARTS ROW 1 */}
+            {/* DETAILED SECTIONS ROW */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 bg-white border-slate-200 shadow-sm">
-                    <CardHeader><CardTitle className="text-lg text-slate-800">Revenue Trend</CardTitle></CardHeader>
-                    <CardContent className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={data.revenueChart}>
-                                <defs>
-                                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#0d9488" stopOpacity={0.2} />
-                                        <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                                <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val / 1000}k`} />
-                                <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} itemStyle={{ color: '#1e293b' }} />
-                                <Area type="monotone" dataKey="revenue" stroke="#0d9488" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                {/* Plan Distribution */}
+                <Card className="bg-white border-slate-200 shadow-sm">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg text-slate-800">Plan Distribution</CardTitle>
+                            <Link href="/admin/plans" className="text-sm text-teal-600 hover:underline">View All</Link>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {data?.planSales && data.planSales.length > 0 ? (
+                            <div className="space-y-3">
+                                {data.planSales.slice(0, 5).map((plan, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-sm font-bold">
+                                                {plan.value}
+                                            </div>
+                                            <span className="text-sm font-medium text-slate-700">{plan.name}</span>
+                                        </div>
+                                        <span className="text-xs text-slate-400">members</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-slate-400">
+                                <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No plan sales yet</p>
+                                <Link href="/admin/plans" className="text-xs text-teal-600 hover:underline mt-2 inline-block">
+                                    Add Plans →
+                                </Link>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
+                {/* Quick Actions */}
                 <Card className="bg-white border-slate-200 shadow-sm">
-                    <CardHeader><CardTitle className="text-lg text-slate-800">Plan Sales</CardTitle></CardHeader>
-                    <CardContent className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data.planSales} layout="vertical">
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={true} vertical={false} />
-                                <XAxis type="number" stroke="#64748b" fontSize={12} hide />
-                                <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={12} width={100} tickLine={false} axisLine={false} />
-                                <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', color: '#1e293b' }} />
-                                <Bar dataKey="value" fill="#f472b6" radius={[0, 4, 4, 0]} barSize={24} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-lg text-slate-800">Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <Link href="/admin/users/new" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                            <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                <Users className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-700">Add New User</p>
+                                <p className="text-xs text-slate-400">Create a new user account</p>
+                            </div>
+                        </Link>
+                        <Link href="/admin/plans/new" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                            <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
+                                <Shield className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-700">Create Plan</p>
+                                <p className="text-xs text-slate-400">Add a new health plan</p>
+                            </div>
+                        </Link>
+                        <Link href="/admin/service-requests" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                            <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
+                                <Clock className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-700">View Requests</p>
+                                <p className="text-xs text-slate-400">{data?.metrics?.pendingRequests || 0} pending</p>
+                            </div>
+                        </Link>
+                        <Link href="/admin/reimbursements" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                            <div className="p-2 rounded-lg bg-rose-100 text-rose-600">
+                                <FileText className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-700">Process Claims</p>
+                                <p className="text-xs text-slate-400">{data?.metrics?.pendingClaims || 0} pending</p>
+                            </div>
+                        </Link>
+                    </CardContent>
+                </Card>
+
+                {/* Recent Activity */}
+                <Card className="bg-white border-slate-200 shadow-sm">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg text-slate-800">Recent Activity</CardTitle>
+                            <Link href="/admin/audit" className="text-sm text-teal-600 hover:underline">View All</Link>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {data?.activities && data.activities.length > 0 ? (
+                            data.activities.slice(0, 5).map((act, idx) => (
+                                <div key={idx} className="flex gap-3 items-start">
+                                    <div className="mt-1.5 h-2 w-2 rounded-full bg-teal-500 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-slate-700 truncate">{act.user}</p>
+                                        <p className="text-xs text-slate-400">{act.time}</p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-8 text-slate-400">
+                                <Activity className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">No recent activity</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
 
-            {/* CHARTS ROW 2 & ACTIVITY */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 bg-white border-slate-200 shadow-sm">
-                    <CardHeader><CardTitle className="text-lg text-slate-800">Customer Growth (Retention)</CardTitle></CardHeader>
-                    <CardContent className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={data.customerGrowth}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                                <XAxis dataKey="month" stroke="#64748b" />
-                                <YAxis stroke="#64748b" />
-                                <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }} />
-                                <Area type="monotone" dataKey="retained" stackId="1" stroke="#818cf8" fill="#818cf8" fillOpacity={0.6} />
-                                <Area type="monotone" dataKey="new" stackId="1" stroke="#34d399" fill="#34d399" fillOpacity={0.6} />
-                            </AreaChart>
-                        </ResponsiveContainer>
+            {/* STATUS CARDS ROW */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 rounded-full bg-emerald-100">
+                            <CheckCircle className="h-6 w-6 text-emerald-600" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-emerald-700">Active Members</p>
+                            <p className="text-2xl font-bold text-emerald-800">{data?.metrics?.activeMembers || 0}</p>
+                        </div>
                     </CardContent>
                 </Card>
-
-                <Card className="bg-white border-slate-200 shadow-sm">
-                    <CardHeader><CardTitle className="text-lg text-slate-800">Recent Activity</CardTitle></CardHeader>
-                    <CardContent className="space-y-6">
-                        {data.activities.map((act: any) => (
-                            <div key={act.id} className="flex gap-4">
-                                <div className={`mt-1 h-2 w-2 rounded-full ring-4 ring-opacity-20 flex-shrink-0 ${act.type === 'purchase' ? 'bg-emerald-500 ring-emerald-200' : act.type === 'claim' ? 'bg-rose-500 ring-rose-200' : 'bg-blue-500 ring-blue-200'}`} />
-                                <div>
-                                    <p className="text-sm text-slate-700 font-medium mb-1">{act.message}</p>
-                                    <p className="text-xs text-slate-400">{act.time}</p>
-                                </div>
-                            </div>
-                        ))}
+                <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 rounded-full bg-amber-100">
+                            <Clock className="h-6 w-6 text-amber-600" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-amber-700">Pending Tasks</p>
+                            <p className="text-2xl font-bold text-amber-800">{data?.metrics?.pendingTasks || 0}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="p-3 rounded-full bg-blue-100">
+                            <TrendingUp className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-blue-700">Total Customers</p>
+                            <p className="text-2xl font-bold text-blue-800">{data?.metrics?.newCustomers || 0}</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

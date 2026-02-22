@@ -29,11 +29,12 @@ export default function SignupForm() {
             const result = await signup(formData);
             if (result?.error) {
                 toast.error("Signup Failed", { description: result.error });
-            } else {
-                toast.success("Account created!", { description: "You might need to verify your email." });
             }
-        } catch {
-            toast.error("Something went wrong");
+        } catch (err: any) {
+            if (err?.message?.includes('redirect')) {
+                return;
+            }
+            toast.error("Signup Failed", { description: "Please try again." });
         } finally {
             setLoading(false);
         }

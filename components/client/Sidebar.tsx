@@ -13,14 +13,16 @@ import {
     User,
     HelpCircle,
     LogOut,
-    FileText, // Added new icon
-    FolderHeart, // Added new icon
-    Settings // Added new icon
+    FileText,
+    FolderHeart,
+    Settings,
+    Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const NAV_ITEMS = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
+    { icon: Bell, label: 'Notifications', href: '/notifications' },
     { icon: FileText, label: 'Service Requests', href: '/service-requests' },
     { icon: ShoppingBag, label: 'My Purchases', href: '/my-purchases' },
     { icon: Wallet, label: 'My Wallet', href: '/wallet' },

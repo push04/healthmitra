@@ -18,3 +18,23 @@ export interface WalletStats {
     thisMonthSpend: number;
 }
 
+export type WithdrawalStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+
+export interface WithdrawalRequest {
+    id: string;
+    userId: string;
+    customerName: string;
+    customerEmail: string;
+    
+    amount: number;
+    status: WithdrawalStatus;
+    
+    bankName: string;
+    bankAccount: string;
+    ifscCode: string;
+    
+    createdAt: string;
+    processedAt?: string;
+    adminNotes?: string;
+}
+

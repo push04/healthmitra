@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { User, UserType } from '@/types/user';
 
 // --- USER ACTIONS ---
@@ -103,19 +103,55 @@ export async function getUser(id: string) {
 }
 
 export async function createUser(data: Partial<User>) {
-    const supabase = await createClient();
+    const adminSupabase = await createAdminClient();
 
-    // Use Supabase admin to create auth user, then profile is auto-created via trigger
-    // For now, directly insert into profiles if auth admin API is not available
-    const { error } = await supabase.from('profiles').insert({
+    // Check if user already exists in profiles
+    const { data: existingProfile } = await adminSupabase
+        .from('profiles')
+        .select('id')
+        .eq('email', data.email)
+        .single();
+
+    if (existingProfile) {
+        return { success: false, error: 'User with this email already exists' };
+    }
+
+    // Create auth user with admin API
+    const tempPassword = Math.random().toString(36).slice(-8) + 'A1!';
+    const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
+        email: data.email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+            full_name: data.name,
+            phone: data.phone,
+        }
+    });
+
+    if (authError) {
+        return { success: false, error: authError.message };
+    }
+
+    if (!authData.user) {
+        return { success: false, error: 'Failed to create auth user' };
+    }
+
+    // Create profile with the auth user's id
+    const { error: profileError } = await adminSupabase.from('profiles').insert({
+        id: authData.user.id,
         email: data.email,
         full_name: data.name,
         phone: data.phone,
-        role: data.type === 'Admin' ? 'admin' : 'user',
+        role: data.type === 'Admin' ? 'admin' : data.type === 'Employee' ? 'employee' : 'user',
         status: 'active',
     });
 
-    if (error) return { success: false, error: error.message };
+    if (profileError) {
+        // If profile creation fails, clean up the auth user
+        await adminSupabase.auth.admin.deleteUser(authData.user.id);
+        return { success: false, error: profileError.message };
+    }
+
     return { success: true, message: 'User created successfully' };
 }
 

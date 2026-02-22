@@ -6,7 +6,7 @@ import {
 } from "@/types/dashboard";
 import {
     ShieldCheck, CreditCard, Wallet, Clock, Plus, Gift,
-    Stethoscope, Users, Receipt
+    Stethoscope, Users, Receipt, Heart, Phone, Calendar, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -149,59 +149,50 @@ export function QuickStats({
                 </Link>
             </div>
 
-            {/* Row 2: Vouchers, Services, Members, Reimbursement */}
+            {/* Row 2: Coverage, Quick Book, Emergency, Family */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6 stagger-children">
-                {/* Vouchers Card */}
-                <Link href="/service-requests?type=voucher" className="group relative flex flex-col justify-between rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
+                {/* Total Coverage Card */}
+                <Link href="/my-purchases" className="group relative flex flex-col justify-between rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-red-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
                     <div>
-                        <Gift className="mb-3 h-10 w-10 text-purple-600" />
-                        <h3 className="font-semibold text-slate-700">Vouchers</h3>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-purple-600">
-                                {vouchers?.available || 0}
+                        <Heart className="mb-3 h-10 w-10 text-rose-600" />
+                        <h3 className="font-semibold text-slate-700">Total Coverage</h3>
+                        <div className="mt-2 flex items-baseline gap-1">
+                            <span className="text-2xl font-bold text-rose-600">
+                                ₹{(plan?.coverageAmount || 0).toLocaleString("en-IN")}
                             </span>
-                            <span className="text-xs text-slate-500">available</span>
                         </div>
+                        <p className="text-xs text-slate-500 mt-1">Health protection</p>
                     </div>
-                    <div className="mt-2 space-y-1">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-slate-500">Used:</span>
-                            <span className="font-medium text-slate-700">{vouchers?.used || 0}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                            <span className="text-slate-500">Worth:</span>
-                            <span className="font-medium text-purple-600">₹{vouchers?.totalValue?.toLocaleString("en-IN") || 0}</span>
-                        </div>
-                    </div>
-                    <div className="mt-2 text-xs font-medium text-purple-700 group-hover:underline">
-                        Redeem Voucher →
+                    <div className="mt-2 text-xs font-medium text-rose-700 group-hover:underline">
+                        View Coverage →
                     </div>
                 </Link>
 
-                {/* Services Card */}
-                <Link href="/service-requests" className="group relative flex flex-col justify-between rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
+                {/* Quick Book Service Card */}
+                <Link href="/service-requests/new" className="group relative flex flex-col justify-between rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
                     <div>
-                        <Stethoscope className="mb-3 h-10 w-10 text-blue-600" />
-                        <h3 className="font-semibold text-slate-700">Services</h3>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-blue-600">
-                                {services?.activeServices || 0}
-                            </span>
-                            <span className="text-xs text-slate-500">active</span>
-                        </div>
+                        <Calendar className="mb-3 h-10 w-10 text-blue-600" />
+                        <h3 className="font-semibold text-slate-700">Book Service</h3>
+                        <p className="mt-2 text-sm text-slate-500">Request a new service</p>
                     </div>
-                    <div className="mt-2 space-y-1">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-slate-500">Completed:</span>
-                            <span className="font-medium text-slate-700">{services?.completedThisMonth || 0}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                            <span className="text-slate-500">Pending:</span>
-                            <span className="font-medium text-amber-600">{services?.pendingApproval || 0}</span>
-                        </div>
+                    <div className="mt-2">
+                        <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+                            <Stethoscope className="mr-1 h-3 w-3" /> New Request
+                        </Button>
                     </div>
-                    <div className="mt-2 text-xs font-medium text-blue-700 group-hover:underline">
-                        Book Service →
+                </Link>
+
+                {/* Emergency Support Card */}
+                <Link href="/support" className="group relative flex flex-col justify-between rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-orange-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
+                    <div>
+                        <Phone className="mb-3 h-10 w-10 text-red-600" />
+                        <h3 className="font-semibold text-slate-700">Emergency</h3>
+                        <p className="mt-2 text-sm text-slate-500">24/7 Support Available</p>
+                    </div>
+                    <div className="mt-2">
+                        <Button size="sm" variant="outline" className="w-full border-red-200 text-red-700 hover:bg-red-100">
+                            <Phone className="mr-1 h-3 w-3" /> Call Now
+                        </Button>
                     </div>
                 </Link>
 
@@ -209,7 +200,7 @@ export function QuickStats({
                 <Link href="/my-purchases" className="group relative flex flex-col justify-between rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
                     <div>
                         <Users className="mb-3 h-10 w-10 text-sky-600" />
-                        <h3 className="font-semibold text-slate-700">Family Members</h3>
+                        <h3 className="font-semibold text-slate-700">Family</h3>
                         <div className="mt-2 flex items-baseline gap-2">
                             <span className="text-2xl font-bold text-sky-600">
                                 {members?.totalMembers || 0}
@@ -225,32 +216,6 @@ export function QuickStats({
                     </div>
                     <div className="mt-2 text-xs font-medium text-sky-700 group-hover:underline">
                         Manage Members →
-                    </div>
-                </Link>
-
-                {/* Reimbursement Summary Card */}
-                <Link href="/reimbursements" className="group relative flex flex-col justify-between rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-red-50 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer min-h-[160px]">
-                    <div>
-                        <Receipt className="mb-3 h-10 w-10 text-rose-600" />
-                        <h3 className="font-semibold text-slate-700">Reimbursements</h3>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-rose-600">
-                                ₹{reimbursement?.totalClaimed?.toLocaleString("en-IN") || 0}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="mt-2 space-y-1">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-emerald-600">Approved:</span>
-                            <span className="font-medium text-emerald-700">{reimbursement?.approved || 0}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                            <span className="text-amber-600">Pending:</span>
-                            <span className="font-medium text-amber-700">{reimbursement?.pending || 0}</span>
-                        </div>
-                    </div>
-                    <div className="mt-2 text-xs font-medium text-rose-700 group-hover:underline">
-                        Submit Claim →
                     </div>
                 </Link>
             </div>

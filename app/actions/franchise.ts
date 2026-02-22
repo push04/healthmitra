@@ -1,20 +1,53 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { Franchise, FranchiseModule, DEFAULT_MODULES } from '@/types/franchise';
 
+export async function getFranchiseStats() {
+    const supabase = await createAdminClient();
+    
+    const { count: total } = await supabase
+        .from('franchises')
+        .select('*', { count: 'exact', head: true });
 
+    const { count: active } = await supabase
+        .from('franchises')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
+    const { count: verified } = await supabase
+        .from('franchises')
+        .select('*', { count: 'exact', head: true })
+        .eq('verification_status', 'verified');
+
+    const { data: franchises } = await supabase
+        .from('franchises')
+        .select('total_members, total_sales');
+
+    const totalMembers = franchises?.reduce((sum, f) => sum + (f.total_members || 0), 0) || 0;
+    const totalSales = franchises?.reduce((sum, f) => sum + (f.total_sales || 0), 0) || 0;
+
+    return {
+        success: true,
+        data: {
+            total: total || 0,
+            active: active || 0,
+            verified: verified || 0,
+            totalMembers,
+            totalSales
+        }
+    };
+}
 
 export async function getFranchises(query?: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     let dbQuery = supabase
         .from('franchises')
         .select('*');
 
     if (query) {
-        // Simple search
-        dbQuery = dbQuery.or(`franchise_name.ilike.%${query}%,city.ilike.%${query}%`);
+        dbQuery = dbQuery.or(`franchise_name.ilike.%${query}%,city.ilike.%${query}%,code.ilike.%${query}%`);
     }
 
     const { data, error } = await dbQuery.order('created_at', { ascending: false });
@@ -24,29 +57,37 @@ export async function getFranchises(query?: string) {
         return { success: false, error: error.message };
     }
 
-    // Map to Franchise type
+    const { data: partnersData } = await supabase
+        .from('franchise_partners')
+        .select('franchise_id');
+
+    const partnerCounts: Record<string, number> = {};
+    partnersData?.forEach((p: any) => {
+        partnerCounts[p.franchise_id] = (partnerCounts[p.franchise_id] || 0) + 1;
+    });
+
     const franchises = data.map((f: any) => ({
         id: f.id,
         name: f.franchise_name,
-        startDate: new Date(f.created_at).toISOString().split('T')[0], // Mock start date
-        endDate: '', // Not in DB
+        startDate: new Date(f.created_at).toISOString().split('T')[0],
+        endDate: '',
         contact: f.contact_phone || '',
-        altContact: '',
+        altContact: f.alt_phone || '',
         email: f.contact_email || '',
         referralCode: f.code,
-        website: '',
+        website: f.website || '',
         gst: f.gst_number || '',
         commissionPercent: f.commission_percentage || 10,
-        kycStatus: f.verification_status === 'verified' ? 'verified' : 'pending',
+        kycStatus: (f.verification_status === 'verified' ? 'verified' : f.verification_status === 'submitted' ? 'submitted' : 'pending') as 'pending' | 'submitted' | 'verified' | 'rejected',
         verificationStatus: f.verification_status || 'unverified',
         address: f.address || '',
         city: f.city || '',
         state: f.state || '',
         payoutDelay: 0,
-        status: f.status,
+        status: f.status || 'active',
         createdAt: f.created_at,
-        totalPartners: 0, // Need join/count
-        totalRevenue: 0 // Need join/count
+        totalPartners: partnerCounts[f.id] || 0,
+        totalRevenue: f.total_sales || 0
     }));
 
     return { success: true, data: franchises };
