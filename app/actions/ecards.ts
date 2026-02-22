@@ -27,8 +27,10 @@ export async function getECards() {
         valid_till: m.valid_till,
         status: m.status,
         plan_name: m.plans?.name || 'Unknown Plan',
-        coverage_amount: m.plans?.coverage_amount || 0,
-        emergency_contact: m.contact_number || '+91 1800 123 4567' // Fallback or fetch from profile?
+        plan_price: m.plans?.price || 0,
+        plan_features: m.plans?.features || [],
+        coverage_amount: m.plans?.coverage_amount || m.coverage_amount || 0,
+        emergency_contact: m.contact_number || '+91 1800 123 4567'
     }));
 
     return { success: true, data: cards };

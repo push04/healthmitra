@@ -44,8 +44,8 @@ export default function ECardFlip({ card }: ECardFlipProps) {
     }
 
     // Calculate coverage display
-    const coverageAmount = card.coverageAmount || 500000;
-    const formattedCoverage = `₹${(coverageAmount / 100000).toFixed(0)},00,000`;
+    const coverageAmount = card.coverageAmount ?? 0;
+    const formattedCoverage = coverageAmount > 0 ? `₹${(coverageAmount / 100000).toFixed(0)},00,000` : '₹0';
 
     return (
         <div className="w-full perspective-1000 group">
@@ -207,14 +207,19 @@ export default function ECardFlip({ card }: ECardFlipProps) {
                         {/* Plan Name & Premium */}
                         <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-4 rounded-xl border border-teal-100 mb-4">
                             <p className="font-bold text-teal-800 text-lg">{card.planName}</p>
-                            <p className="text-sm text-teal-600 mt-1">Annual Premium: <span className="font-bold">₹12,500</span></p>
+                            <p className="text-sm text-teal-600 mt-1">Annual Premium: <span className="font-bold">₹{card.planPrice ? card.planPrice.toLocaleString('en-IN') : 'N/A'}</span></p>
                         </div>
 
                         {/* Key Benefits */}
                         <div className="flex-1 overflow-auto">
                             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">KEY BENEFITS:</p>
                             <ul className="space-y-1.5 text-sm text-slate-600">
-                                {[
+                                {(card.planFeatures && card.planFeatures.length > 0) ? card.planFeatures.map((benefit, idx) => (
+                                    <li key={idx} className="flex gap-2 items-start">
+                                        <span className="text-green-500 font-bold flex-shrink-0">✓</span>
+                                        <span>{benefit}</span>
+                                    </li>
+                                )) : [
                                     'Cashless hospitalization at 1000+ hospitals',
                                     'OPD coverage up to ₹25,000/year',
                                     'Diagnostic tests up to ₹15,000/year',

@@ -12,6 +12,7 @@ export interface ECardMember {
     photoUrl?: string;
     planId: string;
     planName: string;
+    planPrice?: number;
     validFrom: string;
     validTill: string;
     policyNo: string;

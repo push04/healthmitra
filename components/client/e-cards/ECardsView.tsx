@@ -24,6 +24,7 @@ export function ECardsView({ initialCards, availableMembers }: ECardsViewProps) 
         memberId: c.member_id,
         planId: c.plan_id,
         planName: c.plan_name || "Health Plan",
+        planPrice: c.plan_price,
         validFrom: c.valid_from || new Date().toISOString(),
         validTill: c.valid_till || "2025-12-31",
         policyNo: c.policy_number,
@@ -33,7 +34,7 @@ export function ECardsView({ initialCards, availableMembers }: ECardsViewProps) 
         status: (c.status as any) || 'pending',
         cardUniqueId: c.card_unique_id || `HM-${c.id.substr(0, 8).toUpperCase()}`,
         planDescription: "Comprehensive health coverage",
-        planFeatures: ["Cashless Hospitalization", "24/7 Support"]
+        planFeatures: Array.isArray(c.plan_features) ? c.plan_features : ["Cashless Hospitalization", "24/7 Support"]
     })));
     const [isWizardOpen, setIsWizardOpen] = useState(false);
 
