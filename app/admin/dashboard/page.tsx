@@ -288,7 +288,7 @@ export default function AdminDashboard() {
                     subtitle={`of ${data?.metrics?.totalMembers || 0} total`}
                     icon={UserCheck} 
                     color="bg-teal-100 text-teal-600"
-                    href="/admin/customers"
+                    href="/admin/users"
                 />
                 <MetricCard 
                     title="Pending Requests" 
