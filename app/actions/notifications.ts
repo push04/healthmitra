@@ -42,7 +42,7 @@ export async function getUnreadCount(userId: string): Promise<{ success: boolean
         .eq('recipient_id', userId)
         .eq('is_read', false);
 
-    if (error) return { success: true, count: 0 };
+    if (error) return { success: false, count: 0 };
 
     return { success: true, count: count || 0 };
 }
@@ -111,7 +111,7 @@ export async function sendBulkNotification(data: {
     senderId: string;
     recipientRole?: string;
 }): Promise<{ success: boolean; count?: number; error?: string }> {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Get all users (excluding sender)
     let query = supabase.from('profiles').select('id').neq('id', data.senderId);
@@ -129,7 +129,7 @@ export async function sendBulkNotification(data: {
     }
 
     // Insert notifications for all users
-    const notifications = users.map(user => ({
+    const notifications = users.map((user: { id: string }) => ({
         recipient_id: user.id,
         sender_id: data.senderId,
         title: data.title,

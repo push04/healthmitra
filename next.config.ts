@@ -1,13 +1,15 @@
+import path from 'path';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
+  turbopack: {
+    root: path.resolve(__dirname),
   },
   images: {
-    domains: ['fbqwsfkpytexbdsfgqbr.supabase.co', 'vnjcaluifbmlbupamqwc.supabase.co'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'fbqwsfkpytexbdsfgqbr.supabase.co' },
+      { protocol: 'https', hostname: 'vnjcaluifbmlbupamqwc.supabase.co' },
+    ],
   },
 };
 

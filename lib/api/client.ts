@@ -1,7 +1,8 @@
 import { ApiResponse, DashboardData } from "@/types/dashboard";
+import { createClient } from "@/lib/supabase/client";
 
-export async function fetchDashboardData(supabaseClient: any): Promise<ApiResponse<DashboardData>> {
-    const supabase = supabaseClient;
+export async function fetchDashboardData(): Promise<ApiResponse<DashboardData>> {
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { success: false, error: 'Not authenticated', data: null as any };
@@ -14,15 +15,13 @@ export async function fetchDashboardData(supabaseClient: any): Promise<ApiRespon
         requestsRes,
         claimsRes,
         notifsRes,
-        activityRes
     ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('wallets').select('*').eq('user_id', user.id).single(),
         supabase.from('ecard_members').select('*, plans(*)').eq('user_id', user.id),
         supabase.from('service_requests').select('*, assignee:assigned_to(full_name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
         supabase.from('reimbursement_claims').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-        supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
-        supabase.from('audit_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10) // Approx for activity
+        supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(10),
     ]);
 
     const profile = profileRes.data || { full_name: user.email?.split('@')[0], email: user.email, phone: '' };
@@ -69,7 +68,7 @@ export async function fetchDashboardData(supabaseClient: any): Promise<ApiRespon
             user: {
                 id: user.id,
                 name: profile.full_name,
-                email: user.email,
+                email: user.email ?? '',
                 phone: profile.phone,
                 avatar: profile.avatar_url || '',
             },
@@ -137,21 +136,27 @@ export async function createServiceRequest(supabaseClient: any, data: any) {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return { error: 'Not authenticated' };
 
-    const { data: req, error } = await supabaseClient.from('service_requests').insert({
+    const insertPayload: any = {
         ...data,
         user_id: user.id,
         status: 'pending',
-        priority: 'medium'
-    }).select().single();
+        priority: 'medium',
+    };
+    if (data.request_id_display) {
+        insertPayload.request_id_display = data.request_id_display;
+    }
+
+    const { data: req, error } = await supabaseClient.from('service_requests').insert(insertPayload).select().single();
 
     return { data: req, error };
 }
 
-export async function createClaim(supabaseClient: any, data: any) {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+export async function createClaim(data: any) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Not authenticated' };
 
-    const { data: claim, error } = await supabaseClient.from('reimbursement_claims').insert({
+    const { data: claim, error } = await supabase.from('reimbursement_claims').insert({
         ...data,
         user_id: user.id,
         status: 'pending'
@@ -160,6 +165,7 @@ export async function createClaim(supabaseClient: any, data: any) {
     return { data: claim, error };
 }
 
-export async function markNotificationAsRead(supabaseClient: any, id: string) {
-    await supabaseClient.from('notifications').update({ is_read: true }).eq('id', id);
+export async function markNotificationAsRead(id: string) {
+    const supabase = createClient();
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
 }

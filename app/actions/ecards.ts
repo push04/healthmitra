@@ -30,7 +30,7 @@ export async function getECards() {
         plan_price: m.plans?.price || 0,
         plan_features: m.plans?.features || [],
         coverage_amount: m.plans?.coverage_amount || m.coverage_amount || 0,
-        emergency_contact: m.contact_number || '+91 1800 123 4567'
+        emergency_contact: m.contact_number || null
     }));
 
     return { success: true, data: cards };

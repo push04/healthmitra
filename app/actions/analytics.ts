@@ -101,21 +101,23 @@ export async function getDashboardStats() {
 
         const revenueByMonth: Record<string, number> = {};
         invoices?.forEach((inv: InvoiceData) => {
-            const month = new Date(inv.created_at).toLocaleString('en', { month: 'short' });
-            revenueByMonth[month] = (revenueByMonth[month] || 0) + Number(inv.amount);
+            const d = new Date(inv.created_at);
+            const key = `${d.toLocaleString('en', { month: 'short' })} ${d.getFullYear()}`;
+            revenueByMonth[key] = (revenueByMonth[key] || 0) + Number(inv.amount);
         });
         revenueChart = Object.entries(revenueByMonth).map(([name, revenue]) => ({ name, revenue }));
     } catch (e) {
-        console.log('Invoices table not available');
+        console.error('Invoices table error:', e);
     }
 
     // Customer growth by month (real profile creation dates)
-    const { data: profiles } = await supabase.from('profiles').select('created_at').eq('role', 'user');
+    const { data: profiles } = await supabase.from('profiles').select('created_at').in('role', ['user', 'customer']);
     const growthByMonth: Record<string, number> = {};
     let cumulative = 0;
     profiles?.forEach((p: ProfileData) => {
-        const month = new Date(p.created_at).toLocaleString('en', { month: 'short' });
-        growthByMonth[month] = (growthByMonth[month] || 0) + 1;
+        const d = new Date(p.created_at);
+        const key = `${d.toLocaleString('en', { month: 'short' })} ${d.getFullYear()}`;
+        growthByMonth[key] = (growthByMonth[key] || 0) + 1;
     });
     const customerGrowth: CustomerGrowthItem[] = Object.entries(growthByMonth).map(([name, count]) => {
         cumulative += count;
@@ -123,7 +125,7 @@ export async function getDashboardStats() {
     });
 
     // Get metrics from database
-    const { count: totalCustomers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'user');
+    const { count: totalCustomers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['user', 'customer']);
     const { count: activePlansCount } = await supabase.from('ecard_members').select('*', { count: 'exact', head: true }).eq('status', 'active');
     const { count: pendingTasksCount } = await supabase.from('service_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
 
@@ -151,7 +153,7 @@ export async function getDashboardStats() {
             details: typeof a.details === 'object' ? JSON.stringify(a.details) : a.details || ''
         })) || [];
     } catch (e) {
-        console.log('Audit logs table not available');
+        console.error('Audit logs table error:', e);
     }
 
     return {
@@ -182,22 +184,22 @@ function getRelativeTime(dateStr: string): string {
 export async function getCustomerMetrics() {
     const supabase = await createClient();
 
-    const { count: totalCustomers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'user');
+    const { count: totalCustomers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['user', 'customer']);
     const { count: activePlans } = await supabase.from('ecard_members').select('*', { count: 'exact', head: true }).eq('status', 'active');
 
     const { count: totalMembers } = await supabase.from('ecard_members').select('*', { count: 'exact', head: true });
     const retention = totalMembers && totalMembers > 0 ? Math.round(((activePlans || 0) / totalMembers) * 100) : 0;
 
-    const { data: allProfiles } = await supabase.from('profiles').select('created_at').eq('role', 'user');
+    const { data: allProfiles } = await supabase.from('profiles').select('created_at').in('role', ['user', 'customer']);
     const inactive = (totalMembers || 0) - (activePlans || 0);
 
     const clv = (totalRev: number) => totalRev > 0 ? Math.round(totalRev / (totalCustomers || 1)) : 0;
     
-    const { data: payments } = await supabase.from('payments').select('amount').eq('status', 'captured');
+    const { data: payments } = await supabase.from('payments').select('amount').in('status', ['captured', 'completed']);
     const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
 
     // Get real acquisition data from profiles (count by source/referral)
-    const { data: profilesData } = await supabase.from('profiles').select('id, created_at').eq('role', 'user');
+    const { data: profilesData } = await supabase.from('profiles').select('id, created_at').in('role', ['user', 'customer']);
     
     // Real acquisition data - based on profile creation (placeholder - add source field to profiles to track properly)
     const acquisition = [

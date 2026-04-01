@@ -23,7 +23,7 @@ function LoginFormContent() {
                 toast.error("Login Failed", { description: result.error });
             }
         } catch (err: any) {
-            if (err?.message?.includes('redirect')) {
+            if (err?.digest?.includes('NEXT_REDIRECT') || err?.message?.includes('NEXT_REDIRECT')) {
                 return;
             }
             toast.error("Login Failed", { description: "Please check your credentials and try again." });

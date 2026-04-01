@@ -37,54 +37,30 @@ export async function POST(request: Request) {
         if (razorpayEnabled && paymentMethod === 'razorpay') {
             // Real payment via Razorpay
             transactionId = razorpayPaymentId || `RAZORPAY_${Date.now()}`;
-            status = 'completed';
+            status = 'captured';
         } else {
             // Test payment (no real payment)
             transactionId = `TEST_${Date.now()}`;
-            status = 'completed';
+            status = 'captured';
         }
 
         // Calculate dates
         const startDate = new Date();
         const expiryDate = new Date();
-        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        const planDurationDays = plan.duration_days || 365;
+        expiryDate.setDate(expiryDate.getDate() + planDurationDays);
 
-        // Ensure profile exists first - with better error handling
-        let profileExists = false;
+        // Ensure profile exists — use upsert to avoid race conditions
         try {
-            const { data: existingProfile, error: profileCheckError } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('id', user.id)
-                .single();
-
-            if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-                console.error('Profile check error:', profileCheckError);
-            }
-
-            profileExists = !!existingProfile;
-
-            if (!profileExists) {
-                const { error: profileInsertError } = await supabase.from('profiles').insert({
-                    id: user.id,
-                    full_name: user.email?.split('@')[0] || 'User',
-                    email: user.email,
-                    role: 'customer',
-                    status: 'active',
-                });
-
-                if (profileInsertError) {
-                    console.error('Profile insert error:', profileInsertError);
-                    // Try one more time with minimal fields
-                    if (profileInsertError.message.includes('duplicate')) {
-                        profileExists = true;
-                    }
-                } else {
-                    profileExists = true;
-                }
-            }
+            await supabase.from('profiles').upsert({
+                id: user.id,
+                full_name: user.email?.split('@')[0] || 'User',
+                email: user.email,
+                role: 'customer',
+                status: 'active',
+            }, { onConflict: 'id', ignoreDuplicates: true });
         } catch (err) {
-            console.error('Profile handling error:', err);
+            console.error('Profile upsert error:', err);
         }
 
         // Create membership record
@@ -96,8 +72,8 @@ export async function POST(request: Request) {
                 full_name: user.email?.split('@')[0] || 'User',
                 relation: 'Self',
                 status: 'active',
-                valid_from: startDate.toISOString(),
-                valid_till: expiryDate.toISOString(),
+                valid_from: startDate.toISOString().split('T')[0],
+                valid_till: expiryDate.toISOString().split('T')[0],
                 coverage_amount: plan.coverage_amount || plan.price * 100,
                 card_unique_id: `HM${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
             })

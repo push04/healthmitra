@@ -33,7 +33,7 @@ export default function ShopPlansPage() {
             const { data, error } = await supabase
                 .from('plans')
                 .select('*')
-                .eq('is_active', true)
+                .eq('status', 'active')
                 .order('price', { ascending: true });
 
             if (error) {

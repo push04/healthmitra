@@ -51,7 +51,7 @@ export async function createSupportTicket(data: CreateTicketInput) {
         user_id: user.id,
         type: 'other',
         status: 'pending',
-        request_id_display: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
+        request_id_display: `TKT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
         details: {
             subject,
             description,

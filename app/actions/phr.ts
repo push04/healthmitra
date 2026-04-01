@@ -92,27 +92,6 @@ export async function verifyPatientAccess(data: { type: 'otp' | 'abha', value: s
     // For this implementation, we will mock the verification success for specific inputs
     // but fetch REAL data from ecard_members to ensure the flow works.
 
-    // Demo bypass
-    if (data.type === 'otp' && data.value === '123456') {
-        // Fetch a random member to simulate success
-        const { data: member } = await supabase.from('ecard_members').select('*').limit(1).single();
-
-        if (member) {
-            return {
-                success: true,
-                message: 'Patient verified successfully',
-                data: {
-                    id: member.id,
-                    name: member.full_name,
-                    email: member.email || 'N/A',
-                    phone: member.contact_number || 'N/A',
-                    planName: 'HealthMitra Plan', // Join with plans if needed
-                    memberId: member.member_id_code
-                }
-            };
-        }
-    }
-
     // Attempt to find by ABHA (using card_unique_id or other field as proxy)
     if (data.type === 'abha') {
         const { data: member } = await supabase.from('ecard_members')
@@ -130,7 +109,12 @@ export async function verifyPatientAccess(data: { type: 'otp' | 'abha', value: s
                     email: member.email || 'N/A',
                     phone: member.contact_number || 'N/A',
                     planName: 'HealthMitra Plan',
-                    memberId: member.member_id_code
+                    memberId: member.member_id_code,
+                    relation: member.relation || 'Self',
+                    age: member.dob ? new Date().getFullYear() - new Date(member.dob).getFullYear() : 0,
+                    gender: (member.gender || 'Other') as 'Male' | 'Female' | 'Other',
+                    recordCount: 0,
+                    lastUpdated: new Date().toLocaleDateString('en-IN'),
                 }
             };
         }
@@ -187,11 +171,13 @@ export async function getVendorAuditLog() {
     // Map to UI type
     const auditEntries = logs.map(log => ({
         id: log.id,
+        vendorId: log.admin_id || '',
         vendorName: log.details?.vendor || 'Unknown Vendor',
-        action: 'add_record',
-        memberName: log.details?.memberId || 'Unknown Member', // Ideally fetch name
+        action: 'add_record' as const,
+        memberId: log.details?.memberId || '',
+        memberName: log.details?.memberId || 'Unknown Member',
         recordName: log.details?.category || 'Record',
-        verificationMethod: 'otp', // Mock
+        verificationMethod: 'otp' as const,
         timestamp: log.created_at
     }));
 
@@ -279,15 +265,16 @@ export async function getPatientPHR(memberId: string) {
 
     const records = docs.map((d: any) => ({
         id: d.id,
+        memberId: memberId,
         fileName: d.name,
-        fileType: d.file_type || 'pdf',
-        fileSize: d.file_size || '1.2 MB', // Mock size if not stored
+        fileType: (d.file_type || 'pdf') as 'pdf' | 'jpg' | 'png' | 'dicom',
+        fileSize: d.file_size || '1.2 MB',
         uploadedAt: d.created_at,
         category: d.category,
-        addedBy: d.doctor_name === 'Self' ? 'self' : d.doctor_name ? 'vendor' : 'admin', // Infer based on logic
+        addedBy: (d.doctor_name === 'Self' ? 'self' : d.doctor_name ? 'vendor' : 'admin') as 'self' | 'vendor' | 'admin',
         vendorName: d.doctor_name,
         tags: d.tags || [],
-        fileUrl: d.file_url
+        url: d.file_url || '#',
     }));
 
     return { success: true, data: { patient, records } };

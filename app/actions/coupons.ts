@@ -51,25 +51,31 @@ export async function getCouponLogs(_couponCode: string) {
 export async function upsertCoupon(coupon: Partial<Coupon>) {
     const supabase = await createAdminClient();
 
+    if (!coupon.code?.trim()) {
+        return { success: false, error: 'Coupon code is required' };
+    }
+
     // Ensure discount_type is always either 'percentage' or 'fixed'
     let discountType = coupon.type === 'percentage' ? 'percentage' : 'fixed';
-    
+
     const dbPayload: any = {
-        code: coupon.code?.toUpperCase() || 'EMPTY',
+        code: coupon.code.trim().toUpperCase(),
         discount_value: coupon.value || 0,
         discount_type: discountType,
         is_active: true,
-        used_count: 0
     };
 
+    let error;
     if (coupon.id) {
-        dbPayload.id = coupon.id;
+        // Update: do not reset used_count
+        ({ error } = await supabase.from('coupons').update(dbPayload).eq('id', coupon.id));
+    } else {
+        // Insert: initialise used_count to 0
+        ({ error } = await supabase.from('coupons').insert({ ...dbPayload, used_count: 0 }));
     }
 
-    const { error } = await supabase.from('coupons').upsert(dbPayload);
-
     if (error) {
-        console.error('Coupon upsert error:', error);
+        console.error('Coupon save error:', error);
         return { success: false, error: error.message };
     }
     return { success: true, message: 'Coupon saved successfully' };

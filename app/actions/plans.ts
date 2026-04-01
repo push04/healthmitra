@@ -42,7 +42,7 @@ export async function getPlans(filters?: {
         status: p.status,
         planImage: p.image_url,
         validityType: 'year', // Default for now
-        validityValue: p.duration_months / 12,
+        validityValue: p.duration_days ? Math.round(p.duration_days / 365) : 1,
         memberCountMin: 1,
         memberCountMax: 4,
         categoryIds: [],
@@ -74,7 +74,7 @@ export async function getPlan(id: string) {
         status: data.status,
         planImage: data.image_url,
         validityType: 'year',
-        validityValue: data.duration_months ? data.duration_months / 12 : 1,
+        validityValue: data.duration_days ? Math.round(data.duration_days / 365) : 1,
         memberCountMin: 1,
         memberCountMax: 4,
         categoryIds: [],
@@ -96,7 +96,7 @@ export async function createPlan(data: Partial<Plan>) {
         price: data.basePrice,
         description: data.description,
         features: data.services?.map(s => s.name),
-        duration_months: (data.validityValue || 1) * 12, // simple assertion
+        duration_days: (data.validityValue || 1) * 365,
         type: data.type,
         status: data.status || 'draft',
         is_featured: data.isFeatured,
