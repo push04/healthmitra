@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { signup } from '@/app/actions/auth';
 import { Loader2, ArrowRight, Mail, Lock, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function SignupForm() {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
 
     async function handleSubmit(formData: FormData) {
@@ -29,11 +31,10 @@ export default function SignupForm() {
             const result = await signup(formData);
             if (result?.error) {
                 toast.error("Signup Failed", { description: result.error });
+            } else if (result?.redirect) {
+                router.push(result.redirect);
             }
         } catch (err: any) {
-            if (err?.digest?.includes('NEXT_REDIRECT') || err?.message?.includes('NEXT_REDIRECT')) {
-                return;
-            }
             toast.error("Signup Failed", { description: "Please try again." });
         } finally {
             setLoading(false);
