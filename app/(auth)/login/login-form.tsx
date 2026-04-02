@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { login } from '@/app/actions/auth';
 import { Loader2, ArrowRight, Mail, Lock } from 'lucide-react';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 function LoginFormContent() {
     const [loading, setLoading] = useState(false);
     const searchParams = useSearchParams();
+    const router = useRouter();
     const message = searchParams.get('message');
 
     async function handleSubmit(formData: FormData) {
@@ -21,11 +22,10 @@ function LoginFormContent() {
             const result = await login(formData);
             if (result?.error) {
                 toast.error("Login Failed", { description: result.error });
+            } else if (result?.redirect) {
+                router.push(result.redirect);
             }
         } catch (err: any) {
-            if (err?.digest?.includes('NEXT_REDIRECT') || err?.message?.includes('NEXT_REDIRECT')) {
-                return;
-            }
             toast.error("Login Failed", { description: "Please check your credentials and try again." });
         } finally {
             setLoading(false);
