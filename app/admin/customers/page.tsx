@@ -19,7 +19,8 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { assignPlanToCustomer, resetCustomerPassword, generatePassword } from '@/app/actions/customers';
+import { assignPlanToCustomer, resetCustomerPassword } from '@/app/actions/customers';
+import { generatePassword } from '@/lib/utils/password';
 
 export default function CustomerManagementPage() {
     const [customers, setCustomers] = useState<any[]>([]);

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createCustomer, generatePassword, FamilyMemberInput } from '@/app/actions/customers';
+import { createCustomer, FamilyMemberInput } from '@/app/actions/customers';
+import { generatePassword } from '@/lib/utils/password';
 import { getPlans } from '@/app/actions/plans';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
