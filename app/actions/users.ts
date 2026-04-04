@@ -15,7 +15,7 @@ interface GetUsersFilters {
 }
 
 export async function getUsers(filters: GetUsersFilters) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     let query = supabase
         .from('profiles')
@@ -79,7 +79,7 @@ export async function getUsers(filters: GetUsersFilters) {
 }
 
 export async function getUser(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: p, error } = await supabase.from('profiles').select('*').eq('id', id).single();
 
     if (error) return { success: false, error: error.message };
@@ -137,7 +137,7 @@ export async function createUser(data: Partial<User>) {
     }
 
     // Create profile with the auth user's id
-    const { error: profileError } = await adminSupabase.from('profiles').insert({
+    const { error: profileError } = await adminSupabase.from('profiles').upsert({
         id: authData.user.id,
         email: data.email,
         full_name: data.name,
@@ -156,7 +156,7 @@ export async function createUser(data: Partial<User>) {
 }
 
 export async function updateUser(id: string, data: Partial<User>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const updates: any = {};
     if (data.name) updates.full_name = data.name;
@@ -172,14 +172,14 @@ export async function updateUser(id: string, data: Partial<User>) {
 }
 
 export async function toggleUserStatus(id: string, status: 'active' | 'inactive') {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('profiles').update({ status }).eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true, message: `User ${status === 'active' ? 'activated' : 'deactivated'} successfully` };
 }
 
 export async function updateBankDetails(id: string, bankDetails: any) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('profiles').update({
         bank_holder_name: bankDetails.holderName,
         bank_account_number: bankDetails.accountNumber,
@@ -194,7 +194,7 @@ export async function updateBankDetails(id: string, bankDetails: any) {
 }
 
 export async function updateDocuments(id: string, documents: any) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const updates: any = {};
     if (documents.aadhaar) updates.aadhaar_number = documents.aadhaar;
     if (documents.pan) updates.pan_number = documents.pan;
@@ -206,7 +206,7 @@ export async function updateDocuments(id: string, documents: any) {
 }
 
 export async function changePlan(id: string, planId: string, planName: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('ecard_members').update({ plan_id: planId }).eq('user_id', id);
     if (error) return { success: false, error: error.message };
     return { success: true, message: `Plan changed to ${planName}` };
@@ -215,7 +215,7 @@ export async function changePlan(id: string, planId: string, planName: string) {
 export async function resendCredentials(id: string, method: 'whatsapp' | 'email') {
     // This would integrate with a messaging API (Twilio/SendGrid)
     // For now, log the action
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     await supabase.from('audit_logs').insert({
         user_id: id,
         action: `resend_credentials_${method}`,
@@ -226,7 +226,7 @@ export async function resendCredentials(id: string, method: 'whatsapp' | 'email'
 }
 
 export async function activateNewPlan(id: string, planId: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('ecard_members').insert({
         user_id: id,
         plan_id: planId,
@@ -240,7 +240,7 @@ export async function activateNewPlan(id: string, planId: string) {
 // --- DEPARTMENT ACTIONS ---
 
 export async function getDepartments() {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data, error } = await supabase.from('departments').select('*').order('name');
     if (data && data.length > 0) return { success: true, data };
 
@@ -252,7 +252,7 @@ export async function getDepartments() {
 }
 
 export async function createDepartment(dept: Partial<any>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('departments').insert({
         name: dept.name,
         head_name: dept.head,
@@ -264,7 +264,7 @@ export async function createDepartment(dept: Partial<any>) {
 }
 
 export async function deleteDepartment(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('departments').delete().eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true, message: 'Department deleted' };

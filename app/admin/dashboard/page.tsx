@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { createUser } from '@/app/actions/users';
 import Link from 'next/link';
 
 interface DashboardData {
@@ -154,26 +155,26 @@ export default function AdminDashboard() {
         }
         
         setCreatingUser(true);
-        const supabase = createClient();
         
-        const { error } = await supabase.auth.signUp({
+        // Map roles correctly for UserType
+        let userType = 'Customer';
+        if (newUser.role === 'admin') userType = 'Admin';
+        if (newUser.role === 'employee') userType = 'Employee';
+        
+        const res = await createUser({
+            name: newUser.full_name,
             email: newUser.email,
-            password: newUser.password,
-            options: {
-                data: {
-                    full_name: newUser.full_name,
-                    phone: newUser.phone,
-                    role: newUser.role
-                }
-            }
+            phone: newUser.phone,
+            type: userType as any,
         });
 
-        if (error) {
-            toast.error(error.message);
+        if (!res.success) {
+            toast.error(res.error || 'Failed to create user');
         } else {
             toast.success('User created successfully!');
             setIsUserModalOpen(false);
             setNewUser({ full_name: '', email: '', phone: '', role: 'user', password: '' });
+            loadDashboardData(); // Refresh the list
         }
         setCreatingUser(false);
     };
