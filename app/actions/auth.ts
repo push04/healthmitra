@@ -10,7 +10,7 @@ export async function login(formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
     })
@@ -19,11 +19,17 @@ export async function login(formData: FormData) {
         return { error: error.message }
     }
 
-    const { data: userData } = await supabase.auth.getUser()
-    if (userData?.user) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userData.user.id).single()
+    if (authData?.user) {
+        const adminClient = await createAdminClient();
+        const { data: profile, error: profileError } = await adminClient.from('profiles').select('role').eq('id', authData.user.id).single()
+        
+        if (profileError) {
+            console.error("Error fetching admin profile:", profileError);
+        }
+        
         if (profile?.role === 'admin') {
-            redirect('/admin/dashboard')
+            revalidatePath('/', 'layout')
+            return { success: true, redirect: '/admin/dashboard' }
         }
     }
 
@@ -99,17 +105,23 @@ export async function signup(formData: FormData) {
     }
 
     // Check user role for redirect
+    revalidatePath('/', 'layout')
+    
+    // For admin creation flow, the role is typically set outside standard signup
+    // but just checking the db directly is safest
+    let redirectPath = '/dashboard';
+    
     const supabaseClient = await createClient()
-    const { data: userData } = await supabaseClient.auth.getUser()
-    if (userData?.user) {
-        const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', userData.user.id).single()
+    const { data: authData } = await supabaseClient.auth.getUser()
+    if (authData?.user) {
+        const adminClient = await createAdminClient();
+        const { data: profile } = await adminClient.from('profiles').select('role').eq('id', authData.user.id).single()
         if (profile?.role === 'admin') {
-            redirect('/admin/dashboard')
+            redirectPath = '/admin/dashboard';
         }
     }
 
-    revalidatePath('/', 'layout')
-    return { success: true, redirect: '/dashboard' }
+    return { success: true, redirect: redirectPath }
 }
 
 export async function signout() {

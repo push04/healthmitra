@@ -1,0 +1,50 @@
+{
+  "tables": [
+    {
+      "table": "request_messages",
+      "ok": true,
+      "http": 200,
+      "rows": "0"
+    },
+    {
+      "table": "withdrawal_requests",
+      "ok": true,
+      "http": 200,
+      "rows": "1"
+    },
+    {
+      "table": "invoices",
+      "ok": true,
+      "http": 200,
+      "rows": "0"
+    },
+    {
+      "table": "wallets",
+      "ok": true,
+      "http": 206,
+      "rows": "32"
+    },
+    {
+      "table": "payments",
+      "ok": true,
+      "http": 206,
+      "rows": "2"
+    },
+    {
+      "table": "coupons",
+      "ok": true,
+      "http": 206,
+      "rows": "5"
+    },
+    {
+      "table": "system_settings",
+      "ok": true,
+      "http": 206,
+      "rows": "57"
+    }
+  ],
+  "razorpay_default": {
+    "key": "razorpay_enabled",
+    "value": "false"
+  }
+}

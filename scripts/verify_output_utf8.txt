@@ -1,0 +1,25 @@
+﻿
+=== HEALTHMITRA PRODUCTION MIGRATION VERIFICATION ===
+
+ΓöüΓöüΓöü Table Existence & Row Counts ΓöüΓöüΓöü
+Γ£à  request_messages          rows: 0  (HTTP 200)
+Γ£à  withdrawal_requests       rows: 1  (HTTP 200)
+Γ£à  invoices                  rows: 0  (HTTP 200)
+Γ£à  wallets                   rows: 32  (HTTP 206)
+Γ£à  payments                  rows: 2  (HTTP 206)
+Γ£à  coupons                   rows: 5  (HTTP 206)
+Γ£à  system_settings           rows: 57  (HTTP 206)
+
+ΓöüΓöüΓöü Column Additions (key columns per table) ΓöüΓöüΓöü
+Γä╣∩╕Å  plans ΓÇö schema check skipped (HTTP 404)
+Γä╣∩╕Å  notifications ΓÇö schema check skipped (HTTP 404)
+Γä╣∩╕Å  service_requests ΓÇö schema check skipped (HTTP 404)
+Γä╣∩╕Å  reimbursement_claims ΓÇö schema check skipped (HTTP 404)
+Γä╣∩╕Å  phr_documents ΓÇö schema check skipped (HTTP 404)
+Γä╣∩╕Å  audit_logs ΓÇö schema check skipped (HTTP 404)
+
+ΓöüΓöüΓöü Default Data ΓöüΓöüΓöü
+Γ£à  system_settings razorpay_enabled = "false"
+
+=== VERIFICATION COMPLETE ===
+

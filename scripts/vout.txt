@@ -1,0 +1,24 @@
+﻿
+=== HEALTHMITRA MIGRATION VERIFICATION ===
+
+-- Table Existence & Row Counts --
+[OK]  request_messages          rows=0  (HTTP 200)
+[OK]  withdrawal_requests       rows=1  (HTTP 200)
+[OK]  invoices                  rows=0  (HTTP 200)
+[OK]  wallets                   rows=32  (HTTP 206)
+[OK]  payments                  rows=2  (HTTP 206)
+[OK]  coupons                   rows=5  (HTTP 206)
+[OK]  system_settings           rows=57  (HTTP 206)
+
+-- Key Column Additions --
+[SKIP] plans -- information_schema not accessible via REST (HTTP 404)
+[SKIP] notifications -- information_schema not accessible via REST (HTTP 404)
+[SKIP] service_requests -- information_schema not accessible via REST (HTTP 404)
+[SKIP] reimbursement_claims -- information_schema not accessible via REST (HTTP 404)
+[SKIP] phr_documents -- information_schema not accessible via REST (HTTP 404)
+[SKIP] audit_logs -- information_schema not accessible via REST (HTTP 404)
+
+-- Default Data --
+[OK]  system_settings.razorpay_enabled = "false"
+
+=== DONE ===
