@@ -1,6 +1,6 @@
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -13,7 +13,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
     // Verify admin role
     // Select * to avoid TS errors about missing fields
-    const { data: profile, error } = await supabase
+    const adminClient = await createAdminClient();
+    const { data: profile, error } = await adminClient
         .from('profiles')
         .select('*')
         .eq('id', user.id)
