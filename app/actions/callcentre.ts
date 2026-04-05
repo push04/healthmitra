@@ -226,13 +226,28 @@ export async function getAgents() {
 export async function getCallCentreReports() {
     const supabase = await createClient();
 
-    // Simple aggregation
-    const { count: total } = await supabase.from('service_requests').select('*', { count: 'exact', head: true });
+    const { data: requests } = await supabase
+        .from('service_requests')
+        .select('type, status, assigned_to');
 
-    // We can do more sophisticated grouping with RPC if needed. 
-    // For now, let's return placeholders or empty arrays to avoid errors.
+    const total = requests?.length || 0;
 
-    return { success: true, data: { byType: [], byStatus: [], byAgent: [], total: total || 0 } };
+    // Aggregate by type
+    const typeMap: Record<string, number> = {};
+    const statusMap: Record<string, number> = {};
+    const agentMap: Record<string, number> = {};
+
+    requests?.forEach((r: any) => {
+        if (r.type) typeMap[r.type] = (typeMap[r.type] || 0) + 1;
+        if (r.status) statusMap[r.status] = (statusMap[r.status] || 0) + 1;
+        if (r.assigned_to) agentMap[r.assigned_to] = (agentMap[r.assigned_to] || 0) + 1;
+    });
+
+    const byType = Object.entries(typeMap).map(([name, value]) => ({ name, value }));
+    const byStatus = Object.entries(statusMap).map(([name, value]) => ({ name, value }));
+    const byAgent = Object.entries(agentMap).map(([agentId, value]) => ({ agentId, value }));
+
+    return { success: true, data: { byType, byStatus, byAgent, total } };
 }
 
 // --- ASSIGN REQUEST ---

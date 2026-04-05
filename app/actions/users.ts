@@ -117,7 +117,7 @@ export async function createUser(data: Partial<User>) {
     }
 
     // Create auth user with admin API
-    const tempPassword = Math.random().toString(36).slice(-8) + 'A1!';
+    const tempPassword = crypto.randomUUID().replace(/-/g, '').slice(0, 12) + 'A1!';
     const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
         email: data.email,
         password: tempPassword,

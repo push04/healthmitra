@@ -125,8 +125,8 @@ async function exportPurchases(supabase: any, filters: any) {
 }
 
 async function exportReimbursements(supabase: any, filters: any) {
-    let query = supabase.from('reimbursements').select('*');
-    
+    let query = supabase.from('reimbursement_claims').select('*');
+
     if (filters?.status) {
         query = query.eq('status', filters.status);
     }
@@ -136,9 +136,9 @@ async function exportReimbursements(supabase: any, filters: any) {
 
     const { data: claims } = await query;
 
-    let csv = 'ID,Patient Name,Type,Amount,Approved Amount,Status,Submitted Date\n';
+    let csv = 'ID,Title,Type,Amount,Approved Amount,Provider,Status,Submitted Date\n';
     claims?.forEach((c: any) => {
-        csv += `${c.id},${c.patient_name || ''},${c.claim_type || ''},${c.amount || 0},${c.approved_amount || 0},${c.status || ''},${c.created_at || ''}\n`;
+        csv += `${c.id},${(c.title || '').replace(/,/g, ';')},${c.claim_type || ''},${c.amount || 0},${c.amount_approved || 0},${(c.provider_name || '').replace(/,/g, ';')},${c.status || ''},${c.created_at || ''}\n`;
     });
 
     return csv;

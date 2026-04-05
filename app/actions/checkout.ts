@@ -122,7 +122,7 @@ export async function purchasePlan(data: PlanPurchaseData) {
             valid_from: startDate.toISOString(),
             valid_till: expiryDate.toISOString(),
             coverage_amount: plan.coverage_amount || plan.price * 100,
-            card_unique_id: `HM${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+            card_unique_id: `HM${Date.now()}${crypto.randomUUID().replace(/-/g,'').slice(0,9).toUpperCase()}`,
         })
         .select()
         .single();

@@ -444,7 +444,7 @@ async function generateReimbursementReceipt(supabase: any, userId: string, data:
     const { claimId } = data;
 
     const { data: claim } = await supabase
-        .from('reimbursements')
+        .from('reimbursement_claims')
         .select('*')
         .eq('id', claimId)
         .single();
@@ -462,14 +462,14 @@ Receipt Date: ${new Date().toLocaleDateString('en-IN')}
 Receipt No: RCP-${claim.id.slice(0, 8).toUpperCase()}
 
 ------------------------------------------
-Patient: ${claim.patient_name || 'N/A'}
+Patient: ${claim.title || 'N/A'}
 Claim ID: ${claim.id}
 
 ------------------------------------------
 Claim Details:
 Type: ${claim.claim_type || 'Medical'}
 Amount Claimed: ₹${claim.amount || 0}
-Amount Approved: ₹${claim.approved_amount || 0}
+Amount Approved: ₹${claim.amount_approved || 0}
 
 Status: ${claim.status?.toUpperCase() || 'PENDING'}
 
@@ -548,7 +548,7 @@ async function generateReport(supabase: any, userId: string, data: any) {
         });
     } else if (reportType === 'claims') {
         const { data: claims } = await supabase
-            .from('reimbursements')
+            .from('reimbursement_claims')
             .select('*')
             .eq('user_id', userId);
 

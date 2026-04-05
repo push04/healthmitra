@@ -75,7 +75,7 @@ export async function POST(request: Request) {
                 valid_from: startDate.toISOString().split('T')[0],
                 valid_till: expiryDate.toISOString().split('T')[0],
                 coverage_amount: plan.coverage_amount || plan.price * 100,
-                card_unique_id: `HM${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+                card_unique_id: `HM${Date.now()}${crypto.randomUUID().replace(/-/g,'').slice(0,9).toUpperCase()}`,
             })
             .select()
             .single();
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         const { error: invoiceError } = await supabase.from('invoices').insert({
             user_id: user.id,
             plan_id: planId,
-            invoice_number: `INV-${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+            invoice_number: `INV-${Date.now()}${crypto.randomUUID().replace(/-/g,'').slice(0,6).toUpperCase()}`,
             plan_name: plan.name,
             amount: plan.price,
             gst: gstAmount,

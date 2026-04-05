@@ -42,7 +42,7 @@ export async function getCities(filters?: GetCitiesFilters) {
         name: c.name,
         state: c.state,
         region: c.region,
-        tier: 'Tier 2', // Mock or add to schema
+        tier: c.tier || 'Tier 2',
         pincodes: c.pincodes || [],
         isServiceable: c.is_serviceable,
         status: c.status,
