@@ -5,8 +5,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-const PAYPAL_CLIENT_ID = 'YOUR_PAYPAL_CLIENT_ID_HERE';
-const PAYPAL_CLIENT_SECRET = 'YOUR_PAYPAL_CLIENT_SECRET_HERE';
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
 
 async function pushPaypalSettings() {
     console.log('Pushing PayPal settings to Supabase...');
