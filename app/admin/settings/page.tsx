@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import RazorpaySettingsForm from '@/components/admin/settings/RazorpaySettingsForm';
+import PaypalSettingsForm from '@/components/admin/settings/PaypalSettingsForm';
 import { Loader2, Save, Settings, CreditCard, Mail, Phone, Globe, Shield, Users, Wallet, AlertCircle } from 'lucide-react';
 
 interface SystemSettings {
@@ -326,7 +327,10 @@ export default function SettingsPage() {
 
                 {/* PAYMENT SETTINGS */}
                 <TabsContent value="payment">
-                    <RazorpaySettingsForm />
+                    <div className="space-y-6">
+                        <RazorpaySettingsForm />
+                        <PaypalSettingsForm />
+                    </div>
                 </TabsContent>
 
                 {/* PLANS CONFIG */}

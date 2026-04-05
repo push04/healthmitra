@@ -258,3 +258,90 @@ export async function getAuditLogs() {
 
     return { success: true, data: logs };
 }
+
+// --- PAYPAL SETTINGS (Admin Only) ---
+
+export async function getPayPalSettings() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized' };
+
+    const { data, error } = await supabase.from('system_settings')
+        .select('key, value')
+        .in('key', ['paypal_enabled', 'paypal_client_id', 'paypal_client_secret', 'paypal_sandbox']);
+
+    if (error) return { success: false, error: error.message };
+
+    const settings: Record<string, string> = {};
+    data?.forEach((item: any) => { settings[item.key] = item.value; });
+
+    return { success: true, data: settings };
+}
+
+export async function updatePayPalSettings(keys: {
+    clientId: string;
+    clientSecret: string | null;
+    enabled: boolean;
+    sandbox: boolean;
+}) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized' };
+
+    const upserts = [
+        { key: 'paypal_enabled', value: keys.enabled ? 'true' : 'false', description: 'Enable PayPal payments', is_secure: false },
+        { key: 'paypal_sandbox', value: keys.sandbox ? 'true' : 'false', description: 'PayPal sandbox mode', is_secure: false },
+        { key: 'paypal_client_id', value: keys.clientId, description: 'PayPal Client ID', is_secure: false },
+    ];
+
+    if (keys.clientSecret) {
+        upserts.push({ key: 'paypal_client_secret', value: keys.clientSecret, description: 'PayPal Client Secret', is_secure: true });
+    }
+
+    const { error } = await supabase.from('system_settings').upsert(upserts);
+    if (error) return { success: false, error: error.message };
+
+    return { success: true };
+}
+
+export async function testPayPalConnection() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized' };
+
+    const { data: settings } = await supabase.from('system_settings')
+        .select('key, value')
+        .in('key', ['paypal_client_id', 'paypal_client_secret', 'paypal_sandbox']);
+
+    const clientId = settings?.find(s => s.key === 'paypal_client_id')?.value;
+    const clientSecret = settings?.find(s => s.key === 'paypal_client_secret')?.value;
+    const sandbox = settings?.find(s => s.key === 'paypal_sandbox')?.value !== 'false';
+
+    if (!clientId || !clientSecret) return { success: false, error: 'Credentials not configured' };
+
+    try {
+        const base = sandbox ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
+        const res = await fetch(`${base}/v1/oauth2/token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+            },
+            body: 'grant_type=client_credentials',
+        });
+        const data = await res.json();
+        if (!res.ok) return { success: false, error: data.error_description || 'Auth failed' };
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
