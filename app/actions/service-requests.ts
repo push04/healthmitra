@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 // --- CLIENT ACTIONS ---
 
@@ -58,7 +58,7 @@ export async function createServiceRequest(data: { type: string; memberId?: stri
 // --- ADMIN ACTIONS ---
 
 export async function getAdminServiceRequests(filters?: { query?: string, status?: string, type?: string, agentId?: string }) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Fetch requests with user profile and assigned agent profile
     const { data: allData, error } = await supabase.from('service_requests')
@@ -126,7 +126,7 @@ export async function getAdminServiceRequests(filters?: { query?: string, status
 }
 
 export async function getAdminServiceRequest(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: r, error } = await supabase.from('service_requests')
         .select(`
@@ -165,8 +165,7 @@ export async function getAdminServiceRequest(id: string) {
 }
 
 export async function getAgents() {
-    const supabase = await createClient();
-    // Return all profiles for now, or filter by role if/when roles are strictly enforced
+    const supabase = await createAdminClient();
     const { data, error } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
 
     if (error) return { success: false, error: error.message };
@@ -184,7 +183,7 @@ export async function getAgents() {
 }
 
 export async function assignServiceRequest(requestId: string, agentId: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { error } = await supabase.from('service_requests')
         .update({ assigned_to: agentId, status: 'in_progress' })
@@ -195,7 +194,7 @@ export async function assignServiceRequest(requestId: string, agentId: string) {
 }
 
 export async function updateServiceRequestStatus(requestId: string, status: string, notes?: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const updateData: any = { status };
     if (notes) updateData.admin_notes = notes;

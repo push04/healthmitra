@@ -156,9 +156,12 @@ export async function createClaim(data: any) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: 'Not authenticated' };
 
+    // Extract and filter allowed fields, ensure user_id is always set
+    const { user_id, ...restData } = data;
+    
     const { data: claim, error } = await supabase.from('reimbursement_claims').insert({
-        ...data,
-        user_id: user.id,
+        ...restData,
+        user_id: user.id, // Always use the authenticated user's ID
         status: 'pending'
     }).select().single();
 

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient();
+        const adminClient = await createAdminClient();
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
@@ -37,7 +38,8 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(csvContent, 'utf-8');
         const filename = `${type}-${new Date().toISOString().split('T')[0]}.csv`;
 
-        const { error: uploadError } = await supabase.storage
+        // Use admin client for storage upload to bypass RLS
+        const { error: uploadError } = await adminClient.storage
             .from('documents')
             .upload(`exports/${user.id}/${filename}`, buffer, {
                 cacheControl: '3600',

@@ -1,17 +1,17 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { FAQ, Testimonial, FooterSection, Page, Hotspot, HomepageSection } from '@/types/cms';
 
 // Generic helper to get/set JSON content
 async function getCMSContent(key: string, defaultValue: any) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data } = await supabase.from('cms_content').select('value').eq('key', key).single();
     return data?.value || defaultValue;
 }
 
 async function setCMSContent(key: string, value: any) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('cms_content').upsert({ key, value, updated_at: new Date().toISOString() });
     return error ? { success: false, error: error.message } : { success: true };
 }

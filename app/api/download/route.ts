@@ -427,6 +427,15 @@ async function generateInvoice(supabase: any, userId: string, data: any) {
         purchase = purchaseData;
     }
 
+    // Ensure we have a fallback purchase object
+    if (!purchase) {
+        purchase = {
+            full_name: 'Customer',
+            coverage_amount: 0,
+            card_unique_id: 'N/A'
+        };
+    }
+
     const htmlContent = generateHTMLInvoice(invoice, purchase);
     const filename = `${invoice.invoice_number || 'Invoice'}.html`;
 

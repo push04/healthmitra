@@ -1,10 +1,10 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { WithdrawalRequest, WithdrawalStatus } from '@/types/wallet';
 
 export async function getWithdrawals(): Promise<{ success: boolean; data?: WithdrawalRequest[]; error?: string }> {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     
     const { data, error } = await supabase
         .from('withdrawal_requests')
@@ -38,7 +38,24 @@ export async function processWithdrawal(
     action: 'approve' | 'reject' | 'complete',
     notes?: string
 ): Promise<{ success: boolean; error?: string }> {
-    const supabase = await createClient();
+    // Check authorization - only admins can process withdrawals
+    const regularClient = await createClient();
+    const adminClient = await createAdminClient();
+    const { data: { user } } = await regularClient.auth.getUser();
+    
+    if (!user) {
+        return { success: false, error: 'Unauthorized' };
+    }
+    
+    const { data: profile } = await adminClient
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+    
+    if (profile?.role !== 'admin') {
+        return { success: false, error: 'Only admins can process withdrawals' };
+    }
     
     let newStatus: WithdrawalStatus;
     switch (action) {
@@ -61,7 +78,7 @@ export async function processWithdrawal(
         processed_at: new Date().toISOString()
     };
 
-    const { error } = await supabase
+    const { error } = await adminClient
         .from('withdrawal_requests')
         .update(updates)
         .eq('id', id);

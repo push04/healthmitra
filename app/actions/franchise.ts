@@ -94,7 +94,7 @@ export async function getFranchises(query?: string) {
 }
 
 export async function getFranchise(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: franchiseData, error } = await supabase
         .from('franchises')
@@ -156,12 +156,7 @@ export async function getFranchise(id: string) {
 }
 
 export async function createFranchise(data: Partial<Franchise>) {
-    const supabase = await createClient();
-    console.log('Creating franchise:', data);
-
-    // Check if owner exists? Or allow creating without owner linked yet?
-    // DB requires owner_user_id? it is nullable in schema but logic might want it.
-    // For now insert basic info.
+    const supabase = await createAdminClient();
 
     const { error } = await supabase.from('franchises').insert({
         franchise_name: data.name,
@@ -182,7 +177,7 @@ export async function createFranchise(data: Partial<Franchise>) {
 }
 
 export async function updateFranchise(id: string, data: Partial<Franchise>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const updates: any = {};
     if (data.name) updates.franchise_name = data.name;
@@ -198,7 +193,7 @@ export async function updateFranchise(id: string, data: Partial<Franchise>) {
 }
 
 export async function deleteFranchise(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('franchises').delete().eq('id', id);
 
     if (error) return { success: false, error: error.message };
@@ -207,15 +202,14 @@ export async function deleteFranchise(id: string) {
 }
 
 export async function assignModules(franchiseId: string, modules: FranchiseModule[]) {
-    const supabase = await createClient();
-    // Store modules as JSONB on the franchise record
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('franchises').update({ modules: modules }).eq('id', franchiseId);
     if (error) return { success: false, error: error.message };
     return { success: true, message: 'Modules updated successfully' };
 }
 
 export async function getFranchiseActivity(franchiseId: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data } = await supabase.from('audit_logs').select('*')
         .eq('entity_type', 'franchise').eq('entity_id', franchiseId)
         .order('created_at', { ascending: false }).limit(20);
@@ -223,10 +217,8 @@ export async function getFranchiseActivity(franchiseId: string) {
 }
 
 export async function franchiseLogin(email: string, password: string) {
-    // This should probably go through auth.users too, or specific table
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
-    // Check franchises table?
     const { data, error } = await supabase
         .from('franchises')
         .select('*')
