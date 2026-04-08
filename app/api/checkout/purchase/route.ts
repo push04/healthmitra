@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
     try {
         const supabase = await createClient();
+        const adminClient = await createAdminClient();
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
 
         const { planId, paymentMethod, razorpayOrderId, razorpayPaymentId } = await request.json();
 
-        // Get plan details
+        // Get plan details (RLS should be permissive for plans)
         const { data: plan, error: planError } = await supabase
             .from('plans')
             .select('*')
@@ -50,21 +51,23 @@ export async function POST(request: Request) {
         const planDurationDays = plan.duration_days || 365;
         expiryDate.setDate(expiryDate.getDate() + planDurationDays);
 
-        // Ensure profile exists — use upsert to avoid race conditions
+        // Ensure profile exists — use admin client to bypass RLS
         try {
-            await supabase.from('profiles').upsert({
+            await adminClient.from('profiles').upsert({
                 id: user.id,
                 full_name: user.email?.split('@')[0] || 'User',
                 email: user.email,
                 role: 'customer',
                 status: 'active',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
             }, { onConflict: 'id', ignoreDuplicates: true });
         } catch (err) {
             console.error('Profile upsert error:', err);
         }
 
-        // Create membership record
-        const { data: member, error: memberError } = await supabase
+        // Create membership record — use admin client to bypass RLS
+        const { data: member, error: memberError } = await adminClient
             .from('ecard_members')
             .insert({
                 user_id: user.id,
@@ -85,8 +88,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Failed to create membership: ' + memberError.message }, { status: 500 });
         }
 
-        // Create payment record
-        await supabase.from('payments').insert({
+        // Create payment record — use admin client
+        await adminClient.from('payments').insert({
             user_id: user.id,
             plan_id: planId,
             amount: plan.price,
@@ -97,11 +100,11 @@ export async function POST(request: Request) {
             payment_method: paymentMethod || 'test',
         });
 
-        // Create invoice record for automatic invoicing
+        // Create invoice record — use admin client
         const gstAmount = Math.round(plan.price * 0.18);
         const totalAmount = plan.price + gstAmount;
         
-        const { error: invoiceError } = await supabase.from('invoices').insert({
+        const { error: invoiceError } = await adminClient.from('invoices').insert({
             user_id: user.id,
             plan_id: planId,
             invoice_number: `INV-${Date.now()}${crypto.randomUUID().replace(/-/g,'').slice(0,6).toUpperCase()}`,

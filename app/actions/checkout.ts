@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Razorpay from 'razorpay';
 
@@ -70,6 +70,7 @@ export async function createRazorpayOrderForPlan(planId: string, amount: number)
 
 export async function purchasePlan(data: PlanPurchaseData) {
     const supabase = await createClient();
+    const adminClient = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -110,8 +111,23 @@ export async function purchasePlan(data: PlanPurchaseData) {
     const expiryDate = new Date();
     expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
-    // Create purchase record in ecard_members
-    const { data: member, error: memberError } = await supabase
+    // Ensure profile exists — use admin client to bypass RLS
+    try {
+        await adminClient.from('profiles').upsert({
+            id: user.id,
+            full_name: user.email?.split('@')[0] || 'User',
+            email: user.email,
+            role: 'customer',
+            status: 'active',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        }, { onConflict: 'id', ignoreDuplicates: true });
+    } catch (err) {
+        console.error('Profile upsert error:', err);
+    }
+
+    // Create purchase record in ecard_members — use admin client
+    const { data: member, error: memberError } = await adminClient
         .from('ecard_members')
         .insert({
             user_id: user.id,
@@ -132,8 +148,8 @@ export async function purchasePlan(data: PlanPurchaseData) {
         return { success: false, error: 'Failed to create membership: ' + memberError.message };
     }
 
-    // Create payment record
-    await supabase.from('payments').insert({
+    // Create payment record — use admin client
+    await adminClient.from('payments').insert({
         user_id: user.id,
         plan_id: data.planId,
         amount: plan.price,

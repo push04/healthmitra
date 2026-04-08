@@ -151,7 +151,13 @@ export default function ProfileView({ profile }: ProfileViewProps) {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
-        const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+        let newValue: string | boolean = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+        
+        // Auto-uppercase PAN number
+        if (name === 'pan_number' && typeof newValue === 'string') {
+            newValue = newValue.toUpperCase();
+        }
+        
         setFormData({ ...formData, [name]: newValue });
         if (errors[name]) {
             setErrors({ ...errors, [name]: '' });
@@ -164,7 +170,8 @@ export default function ProfileView({ profile }: ProfileViewProps) {
         // Personal validation
         if (!formData.full_name.trim()) newErrors.full_name = 'Full name is required';
         if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
-        if (formData.phone && !/^[6-9]\d{9}$/.test(formData.phone)) newErrors.phone = 'Invalid phone number';
+        const cleanPhone = formData.phone.replace(/[\s\-\+\(\)]/g, '');
+        if (formData.phone && !/^[6-9]\d{9}$/.test(cleanPhone)) newErrors.phone = 'Invalid phone number (10 digits required)';
 
         // Address validation
         if (!formData.address_line1.trim()) newErrors.address_line1 = 'Address is required';
@@ -856,7 +863,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                                     ? 'border-teal-500 bg-teal-50 text-teal-700'
                                                     : 'border-slate-200 hover:border-slate-300'
                                                     }`}>
-                                                    <option.icon size={18} className="mx-auto mb-1" />
+                                                    {option.icon && <option.icon size={18} className="mx-auto mb-1" />}
                                                     <p className="text-xs font-medium">{option.label}</p>
                                                 </div>
                                             </label>
@@ -865,8 +872,12 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                 </div>
                             </div>
 
-                            <button className="px-6 py-3 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition-colors shadow-lg shadow-teal-200">
-                                Save Changes
+                            <button
+                                onClick={handleSave}
+                                disabled={loading}
+                                className="px-6 py-3 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition-colors shadow-lg shadow-teal-200 disabled:opacity-50"
+                            >
+                                {loading ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
                     )}

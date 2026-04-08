@@ -32,6 +32,7 @@ export async function updateUserProfile(formData: Record<string, any>) {
         email_renewal, email_promo, email_newsletter,
         sms_critical, sms_wallet, sms_appointments, sms_promo,
         language, theme,
+        email, // Don't update email from profile form
         ...profileFields
     } = formData;
 
@@ -42,6 +43,13 @@ export async function updateUserProfile(formData: Record<string, any>) {
             updates[key] = value;
         }
     }
+
+    // Don't update if no fields to update
+    if (Object.keys(updates).length === 0) {
+        return { success: true, message: 'No changes to save' };
+    }
+
+    updates.updated_at = new Date().toISOString();
 
     const { error } = await supabase.from('profiles')
         .update(updates)

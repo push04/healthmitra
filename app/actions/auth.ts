@@ -73,8 +73,23 @@ export async function signup(formData: FormData) {
         });
         error = result.error;
 
-        if (!error) {
-            // 2. Sign In immediatey if admin creation worked
+        if (!error && result.data?.user) {
+            // 2. Create profile record
+            const { error: profileError } = await supabase.from('profiles').insert({
+                id: result.data.user.id,
+                email: email,
+                full_name: fullName,
+                phone: phone,
+                role: 'customer',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            });
+            
+            if (profileError) {
+                console.error("Profile creation error:", profileError);
+            }
+
+            // 3. Sign In immediately if admin creation worked
             const supabaseClient = await createClient()
             const { error: signInError } = await supabaseClient.auth.signInWithPassword({
                 email,
@@ -97,6 +112,28 @@ export async function signup(formData: FormData) {
             },
         })
         error = result.error;
+        
+        // Create profile after successful signup using admin client
+        if (!error && result.data?.user) {
+            try {
+                const adminClient = await createAdminClient();
+                const { error: profileError } = await adminClient.from('profiles').insert({
+                    id: result.data.user.id,
+                    email: email,
+                    full_name: fullName,
+                    phone: phone,
+                    role: 'customer',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                });
+                
+                if (profileError) {
+                    console.error("Profile creation error:", profileError);
+                }
+            } catch (e) {
+                console.error("Admin client error for profile creation:", e);
+            }
+        }
     }
 
     if (error) {
