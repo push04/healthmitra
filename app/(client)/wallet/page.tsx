@@ -1,6 +1,7 @@
 import { WalletView } from "@/components/client/wallet/WalletView";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getWalletWithTransactions } from "@/app/actions/wallet";
 
 export default async function WalletPage() {
     const supabase = await createClient();
@@ -8,13 +9,8 @@ export default async function WalletPage() {
 
     if (!user) redirect("/login");
 
-    const { data: wallet } = await supabase.from('wallets').select('*').eq('user_id', user.id).single();
-
-    // Fetch transactions for stats
-    const { data: transactions } = await supabase.from('wallet_transactions')
-        .select('*')
-        .eq('wallet_id', wallet?.id)
-        .order('created_at', { ascending: false });
+    // Use server action to bypass RLS
+    const { wallet, transactions } = await getWalletWithTransactions(user.id);
 
     const txs: any[] = transactions || [];
     const now = new Date();

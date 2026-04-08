@@ -5,6 +5,7 @@ import { X, CreditCard, Wallet, Smartphone, Globe, Loader2, CheckCircle } from '
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { loadRazorpay } from '@/lib/razorpay';
+import { addMoneyToWallet } from '@/app/actions/wallet';
 
 interface AddMoneyModalProps {
     isOpen: boolean;
@@ -51,7 +52,6 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
         setIsProcessing(true);
         
         try {
-            // Get current user
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 toast.error('Please login to add money');
@@ -59,43 +59,13 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
                 return;
             }
 
-            // Check if wallet exists, if not create one
-            const { data: existingWallet } = await supabase
-                .from('wallets')
-                .select('*')
-                .eq('user_id', user.id)
-                .single();
+            // Use server action to bypass RLS
+            const result = await addMoneyToWallet(user.id, Number(amount));
 
-            if (!existingWallet) {
-                const { error: createWalletError } = await supabase
-                    .from('wallets')
-                    .insert({
-                        user_id: user.id,
-                        balance: Number(amount),
-                    });
-
-                if (createWalletError) {
-                    console.error('Wallet creation error:', createWalletError);
-                    toast.error('Failed to create wallet: ' + createWalletError.message);
-                    setIsProcessing(false);
-                    return;
-                }
-            } else {
-                // Update wallet balance
-                const newBalance = (existingWallet.balance || 0) + Number(amount);
-                const { error: updateError } = await supabase
-                    .from('wallets')
-                    .update({
-                        balance: newBalance,
-                    })
-                    .eq('user_id', user.id);
-
-                if (updateError) {
-                    console.error('Wallet update error:', updateError);
-                    toast.error('Failed to add money: ' + updateError.message);
-                    setIsProcessing(false);
-                    return;
-                }
+            if (!result.success) {
+                toast.error('Failed to add money: ' + result.error);
+                setIsProcessing(false);
+                return;
             }
 
             toast.success('Money added to wallet!', {
@@ -157,30 +127,20 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
                 description: 'Wallet Top-up',
                 order_id: result.data.orderId,
                 handler: async (response: any) => {
-                    // Payment successful - update wallet
-                    const { data: existingWallet } = await supabase
-                        .from('wallets')
-                        .select('balance')
-                        .eq('user_id', user.id)
-                        .single();
-                    
-                    const currentBal = existingWallet?.balance || 0;
-                    const newBalance = currentBal + Number(amount);
-                    
-                    await supabase
-                        .from('wallets')
-                        .update({
-                            balance: newBalance,
-                        })
-                        .eq('user_id', user.id);
+                    // Payment successful - use server action to bypass RLS
+                    const walletResult = await addMoneyToWallet(user.id, Number(amount));
 
-                    toast.success('Money added to wallet!', {
-                        description: `₹${Number(amount).toLocaleString('en-US')} credited successfully.`
-                    });
-                    
-                    if (onSuccess) onSuccess();
-                    onClose();
-                    setAmount('');
+                    if (walletResult.success) {
+                        toast.success('Money added to wallet!', {
+                            description: `₹${Number(amount).toLocaleString('en-US')} credited successfully.`
+                        });
+                        
+                        if (onSuccess) onSuccess();
+                        onClose();
+                        setAmount('');
+                    } else {
+                        toast.error('Payment received but failed to update wallet: ' + walletResult.error);
+                    }
                 },
                 prefill: {
                     name: user.email?.split('@')[0] || '',
