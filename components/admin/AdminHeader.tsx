@@ -31,6 +31,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAV_ITEMS } from "./AdminSidebar";
+import { signout } from "@/app/actions/auth";
+import { toast } from "sonner";
 
 interface AdminHeaderProps {
     user?: {
@@ -46,6 +48,14 @@ export function AdminHeader({ user }: AdminHeaderProps) {
     const userName = user?.name || "Administrator";
     const userEmail = user?.email || "admin@healthmitra.com";
     const userInitials = "AD";
+
+    const handleLogout = async () => {
+        try {
+            await signout();
+        } catch (error) {
+            toast.error("Logout failed. Please try again.");
+        }
+    };
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-lg md:px-6">
@@ -133,7 +143,10 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                             </DropdownMenuItem>
                         </Link>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="w-full text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer">
+                        <DropdownMenuItem 
+                            onClick={handleLogout}
+                            className="w-full text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer"
+                        >
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Log out</span>
                         </DropdownMenuItem>

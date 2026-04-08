@@ -78,18 +78,34 @@ interface ServiceRequestRow {
     } | null;
 }
 
-export async function agentLogin(email: string, _password: string) {
+export async function agentLogin(email: string, password: string) {
     const supabase = await createClient();
-    const { data: profile, error } = await supabase
+    
+    // First authenticate using Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+
+    if (authError || !authData.user) {
+        return { success: false, error: 'Invalid credentials.' };
+    }
+
+    // Then check if user has agent role
+    const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('email', email)
+        .eq('id', authData.user.id)
         .single();
 
-    if (error || !profile) return { success: false, error: 'Invalid credentials.' };
+    if (profileError || !profile) return { success: false, error: 'Profile not found.' };
 
     const profileData = profile as ProfileData;
-    if (profileData.role !== 'admin' && profileData.role !== 'agent' && profileData.role !== 'employee') return { success: false, error: 'Not authorized as agent.' };
+    if (profileData.role !== 'admin' && profileData.role !== 'agent' && profileData.role !== 'employee') {
+        // Sign out since they're not authorized
+        await supabase.auth.signOut();
+        return { success: false, error: 'Not authorized as agent.' };
+    }
 
     return {
         success: true,

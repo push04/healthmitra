@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     FileText,
@@ -25,6 +25,8 @@ import {
     UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signout } from "@/app/actions/auth";
+import { toast } from "sonner";
 
 export const ADMIN_NAV_ITEMS = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
@@ -50,6 +52,15 @@ export const ADMIN_NAV_ITEMS = [
 
 export function AdminSidebar() {
     const pathname = usePathname();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            await signout();
+        } catch (error) {
+            toast.error("Logout failed. Please try again.");
+        }
+    };
 
     return (
         <aside className="fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/50 hidden md:flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] transition-all duration-300">
@@ -93,7 +104,10 @@ export function AdminSidebar() {
             </div>
 
             <div className="border-t border-slate-100 p-4">
-                <button className="flex w-full items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:text-red-600 group">
+                <button 
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:text-red-600 group"
+                >
                     <LogOut className="size-5 group-hover:rotate-12 transition-transform duration-300" />
                     Logout
                 </button>

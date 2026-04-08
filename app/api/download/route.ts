@@ -382,61 +382,52 @@ function generateHTMLInvoice(invoice: any, purchase: any) {
 async function generateInvoice(supabase: any, userId: string, data: any) {
     const { purchaseId } = data;
 
-    // First try to get from invoices table
-    let invoice: any = null;
-    let purchase: any = null;
-
-    const { data: invoiceData } = await supabase
-        .from('invoices')
-        .select('*')
+    // IDOR Protection: Verify user owns this purchase
+    const { data: purchaseData, error: purchaseError } = await supabase
+        .from('ecard_members')
+        .select('*, plan:plan_id(*)')
         .eq('id', purchaseId)
+        .eq('user_id', userId)
         .single();
 
-    if (invoiceData) {
-        invoice = invoiceData;
-    } else {
-        // Fallback to ecard_members
-        const { data: purchaseData } = await supabase
-            .from('ecard_members')
-            .select('*, plan:plan_id(*)')
-            .eq('id', purchaseId)
-            .single();
-
-        if (!purchaseData) {
-            return NextResponse.json({ success: false, error: 'Purchase not found' }, { status: 404 });
-        }
-
-        purchase = purchaseData;
-        invoice = {
-            id: purchaseData.id,
-            invoice_number: `INV-${purchaseData.id.slice(0, 8).toUpperCase()}`,
-            plan_name: purchaseData.plan?.name || 'Health Plan',
-            amount: purchaseData.plan?.price || 0,
-            status: purchaseData.status === 'active' ? 'PAID' : 'PENDING',
-            transaction_id: purchaseData.card_unique_id,
-            created_at: purchaseData.created_at,
-        };
-    }
-
-    if (!purchase) {
-        const { data: purchaseData } = await supabase
-            .from('ecard_members')
+    if (purchaseError || !purchaseData) {
+        // Check invoices table
+        const { data: invoiceData } = await supabase
+            .from('invoices')
             .select('*')
             .eq('id', purchaseId)
+            .eq('user_id', userId)
             .single();
-        purchase = purchaseData;
+
+        if (!invoiceData) {
+            return NextResponse.json({ success: false, error: 'Purchase not found or access denied' }, { status: 404 });
+        }
+
+        // Build invoice from invoice table
+        const invoice = invoiceData;
+        const htmlContent = generateHTMLInvoice(invoice, { full_name: 'Customer', coverage_amount: 0, card_unique_id: 'N/A' });
+        return NextResponse.json({
+            success: true,
+            data: {
+                content: htmlContent,
+                filename: `${invoice.invoice_number || 'Invoice'}.html`,
+                type: 'html',
+            }
+        });
     }
 
-    // Ensure we have a fallback purchase object
-    if (!purchase) {
-        purchase = {
-            full_name: 'Customer',
-            coverage_amount: 0,
-            card_unique_id: 'N/A'
-        };
-    }
+    // Build invoice from purchase data
+    const invoice = {
+        id: purchaseData.id,
+        invoice_number: `INV-${purchaseData.id.slice(0, 8).toUpperCase()}`,
+        plan_name: purchaseData.plan?.name || 'Health Plan',
+        amount: purchaseData.plan?.price || 0,
+        status: purchaseData.status === 'active' ? 'PAID' : 'PENDING',
+        transaction_id: purchaseData.card_unique_id,
+        created_at: purchaseData.created_at,
+    };
 
-    const htmlContent = generateHTMLInvoice(invoice, purchase);
+    const htmlContent = generateHTMLInvoice(invoice, purchaseData);
     const filename = `${invoice.invoice_number || 'Invoice'}.html`;
 
     return NextResponse.json({
@@ -452,14 +443,16 @@ async function generateInvoice(supabase: any, userId: string, data: any) {
 async function generateReimbursementReceipt(supabase: any, userId: string, data: any) {
     const { claimId } = data;
 
-    const { data: claim } = await supabase
+    // IDOR Protection: Verify user owns this claim
+    const { data: claim, error: claimError } = await supabase
         .from('reimbursement_claims')
         .select('*')
         .eq('id', claimId)
+        .eq('user_id', userId)
         .single();
 
-    if (!claim) {
-        return NextResponse.json({ success: false, error: 'Claim not found' }, { status: 404 });
+    if (claimError || !claim) {
+        return NextResponse.json({ success: false, error: 'Claim not found or access denied' }, { status: 404 });
     }
 
     const receiptContent = `
@@ -500,14 +493,16 @@ Thank you for choosing HealthMitra!
 async function generateMembershipCard(supabase: any, userId: string, data: any) {
     const { memberId } = data;
 
-    const { data: member } = await supabase
+    // IDOR Protection: Verify user owns this member
+    const { data: member, error: memberError } = await supabase
         .from('ecard_members')
         .select('*, plan:plan_id(*)')
         .eq('id', memberId)
+        .eq('user_id', userId)
         .single();
 
-    if (!member) {
-        return NextResponse.json({ success: false, error: 'Member not found' }, { status: 404 });
+    if (memberError || !member) {
+        return NextResponse.json({ success: false, error: 'Member not found or access denied' }, { status: 404 });
     }
 
     const cardContent = `

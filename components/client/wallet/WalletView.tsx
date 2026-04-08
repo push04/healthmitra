@@ -20,11 +20,11 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
 
     const totalBalance = wallet?.balance || 0;
     const addedMoney = wallet?.addedMoney || 0;
-    const billRefundBalance = totalBalance - addedMoney;
+    const billRefundBalance = Math.max(0, totalBalance - addedMoney);
 
     const todayWithdrawals = wallet?.todayWithdrawals || 0;
     const MAX_DAILY_WITHDRAWALS = 5;
-    const remainingWithdrawals = MAX_DAILY_WITHDRAWALS - todayWithdrawals;
+    const remainingWithdrawals = Math.max(0, MAX_DAILY_WITHDRAWALS - todayWithdrawals);
 
     const handleWalletPayment = () => {
         toast.success('Wallet Payment', {

@@ -216,16 +216,37 @@ export async function getFranchiseActivity(franchiseId: string) {
     return { success: true, data: data || [] };
 }
 
+// DEPRECATED: Franchise login should be handled through Supabase Auth
+// This function is not secure and should not be used for authentication
 export async function franchiseLogin(email: string, password: string) {
-    const supabase = await createAdminClient();
+    const regularClient = await createClient();
+    const adminClient = await createAdminClient();
+    
+    // Verify the calling user is authenticated and is an admin
+    const { data: { user } } = await regularClient.auth.getUser();
+    
+    if (!user) {
+        return { success: false, error: 'Not authenticated' };
+    }
+    
+    const { data: profile } = await adminClient
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+    
+    if (profile?.role !== 'admin') {
+        return { success: false, error: 'Admin access required to manage franchises' };
+    }
 
-    const { data, error } = await supabase
+    // For franchise operations, we fetch the franchise by email for admin use
+    const { data, error } = await adminClient
         .from('franchises')
         .select('*')
         .eq('contact_email', email)
         .single();
 
-    if (error || !data) return { success: false, error: 'Invalid credentials' };
+    if (error || !data) return { success: false, error: 'Franchise not found' };
 
-    return { success: true, data: data, message: 'Login successful' };
+    return { success: true, data: data, message: 'Franchise retrieved' };
 }

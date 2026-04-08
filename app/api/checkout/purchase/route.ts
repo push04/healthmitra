@@ -13,7 +13,16 @@ export async function POST(request: Request) {
 
         const { planId, paymentMethod, razorpayOrderId, razorpayPaymentId } = await request.json();
 
-        // Get plan details (RLS should be permissive for plans)
+        // Validate required fields
+        if (!planId) {
+            return NextResponse.json({ success: false, error: 'Plan ID is required' }, { status: 400 });
+        }
+
+        if (!paymentMethod || !['razorpay', 'paypal', 'test'].includes(paymentMethod)) {
+            return NextResponse.json({ success: false, error: 'Invalid payment method' }, { status: 400 });
+        }
+
+        // Get plan details
         const { data: plan, error: planError } = await supabase
             .from('plans')
             .select('*')
@@ -34,13 +43,28 @@ export async function POST(request: Request) {
         // Determine transaction ID and status
         let transactionId: string;
         let status: string;
+        let isTestMode = false;
 
-        if (razorpayEnabled && paymentMethod === 'razorpay') {
-            // Real payment via Razorpay
-            transactionId = razorpayPaymentId || `RAZORPAY_${Date.now()}`;
+        if (paymentMethod === 'razorpay') {
+            if (!razorpayEnabled) {
+                return NextResponse.json({ success: false, error: 'Razorpay payment is not enabled' }, { status: 400 });
+            }
+            // Real payment via Razorpay - validate payment ID exists
+            if (!razorpayPaymentId) {
+                return NextResponse.json({ success: false, error: 'Razorpay payment ID is required' }, { status: 400 });
+            }
+            transactionId = razorpayPaymentId;
+            status = 'captured';
+        } else if (paymentMethod === 'paypal') {
+            // PayPal - validate order ID exists
+            if (!razorpayOrderId) {
+                return NextResponse.json({ success: false, error: 'PayPal order ID is required' }, { status: 400 });
+            }
+            transactionId = razorpayOrderId;
             status = 'captured';
         } else {
-            // Test payment (no real payment)
+            // Test payment - only allowed in test mode (should be disabled in production)
+            isTestMode = true;
             transactionId = `TEST_${Date.now()}`;
             status = 'captured';
         }
@@ -130,6 +154,7 @@ export async function POST(request: Request) {
                 startDate: startDate.toISOString(),
                 expiryDate: expiryDate.toISOString(),
                 transactionId,
+                isTestMode,
             }
         });
     } catch (error: any) {

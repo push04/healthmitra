@@ -75,7 +75,16 @@ export function DashboardView({ initialData }: DashboardViewProps) {
     // USE REAL DATA
     const data = initialData || DEFAULT_EMPTY_DATA;
     const loading = false;
-    const markNotificationAsRead = async (id: string) => { };
+    
+    const markNotificationAsRead = async (id: string) => {
+        try {
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+        } catch (error) {
+            console.error('Failed to mark notification as read:', error);
+        }
+    };
 
     const firstName = data.user.name?.split(' ')[0] || 'User';
     const hasActivePlan = data.activePlan?.id && data.activePlan?.id !== 'no-plan';
