@@ -56,7 +56,7 @@ export async function signup(formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const fullName = formData.get('fullName') as string
-    const phone = formData.get('phone') as string
+    const phone = (formData.get('phone') as string) || '';
 
     let error;
 

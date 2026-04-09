@@ -1,20 +1,28 @@
 import { DashboardView } from "@/components/client/DashboardView";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { fetchDashboardData } from "@/lib/api/client";
 
 export default async function DashboardPage() {
     const supabase = await createClient();
 
-    // If admin lands here, redirect to admin dashboard
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-        const adminClient = await createAdminClient();
-        const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
-        if (profile?.role === 'admin') {
-            redirect('/admin/dashboard');
-        }
+    
+    if (!user) {
+        redirect('/login');
     }
 
-    // Data is fetched client-side via useDashboard hook
-    return <DashboardView />;
+    // Check if admin and redirect
+    const adminClient = await createAdminClient();
+    const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
+    
+    if (profile?.role === 'admin') {
+        redirect('/admin/dashboard');
+    }
+
+    // Fetch dashboard data server-side for initial render
+    const dashboardResult = await fetchDashboardData();
+    const initialData = dashboardResult.success ? dashboardResult.data : undefined;
+
+    return <DashboardView initialData={initialData} />;
 }

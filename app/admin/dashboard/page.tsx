@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getDashboardStats } from '@/app/actions/analytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -14,8 +13,8 @@ import {
     Clock, CheckCircle, XCircle, AlertCircle, Shield, Building2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { createUser } from '@/app/actions/users';
+import { getAdminDashboardData } from '@/app/actions/admin-dashboard';
 import Link from 'next/link';
 
 interface DashboardData {
@@ -57,78 +56,16 @@ export default function AdminDashboard() {
     const loadDashboardData = async () => {
         setLoading(true);
         try {
-            const supabase = createClient();
-            
-            // Fetch all stats in parallel
-            const [
-                profilesRes, membersRes, plansRes, requestsRes, 
-                claimsRes, franchisesRes, activitiesRes
-            ] = await Promise.all([
-                supabase.from('profiles').select('id, role, created_at'),
-                supabase.from('ecard_members').select('id, status, plan_id'),
-                supabase.from('plans').select('id, name, is_active'),
-                supabase.from('service_requests').select('id, status'),
-                supabase.from('reimbursement_claims').select('id, status'),
-                supabase.from('franchises').select('id, status'),
-                supabase.from('audit_logs').select('*').limit(5).order('created_at', { ascending: false })
-            ]);
-
-            const profiles = profilesRes.data || [];
-            const members = membersRes.data || [];
-            const plans = plansRes.data || [];
-            const requests = requestsRes.data || [];
-            const claims = claimsRes.data || [];
-            const franchises = franchisesRes.data || [];
-            const activities = activitiesRes.data || [];
-
-            // Calculate metrics
-            const totalCustomers = profiles.filter(p => p.role === 'user').length;
-            const activeMembers = members.filter(m => m.status === 'active').length;
-            const pendingTasks = requests.filter(r => r.status === 'pending').length;
-            const pendingClaims = claims.filter(c => c.status === 'submitted' || c.status === 'under-review').length;
-            const activeFranchises = franchises.filter(f => f.status === 'active').length;
-
-            // Plan distribution
-            const planCounts: Record<string, number> = {};
-            members.forEach(m => {
-                if (m.plan_id) planCounts[m.plan_id] = (planCounts[m.plan_id] || 0) + 1;
-            });
-            const planSales = plans.map(p => ({
-                name: p.name,
-                value: planCounts[p.id] || 0
-            })).filter(p => p.value > 0);
-
-            // Revenue from payments table
-            const { data: payments } = await supabase
-                .from('payments')
-                .select('amount')
-                .eq('status', 'captured');
-            const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-            
-            setData({
-                metrics: {
-                    totalRevenue,
-                    activePlans: activeMembers,
-                    newCustomers: totalCustomers,
-                    pendingTasks,
-                    totalMembers: members.length,
-                    activeMembers,
-                    pendingClaims,
-                    activeFranchises,
-                    totalPlans: plans.filter((p: any) => p.is_active === true || p.is_active === 'active').length,
-                    pendingRequests: pendingTasks
-                },
-                activities: activities.map((a: any) => ({
-                    id: a.id,
-                    user: a.action || 'System',
-                    action: a.action || 'Activity',
-                    time: getRelativeTime(a.created_at),
-                    details: typeof a.details === 'object' ? JSON.stringify(a.details).substring(0, 50) : a.details || ''
-                })),
-                planSales,
-                revenueChart: [],
-                customerGrowth: []
-            });
+            const result = await getAdminDashboardData();
+            if (result.success && result.data) {
+                setData({
+                    ...result.data,
+                    activities: result.data.activities.map((a: any) => ({
+                        ...a,
+                        time: getRelativeTime(a.time)
+                    }))
+                } as DashboardData);
+            }
         } catch (error) {
             console.error('Error loading dashboard:', error);
         }

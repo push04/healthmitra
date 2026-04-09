@@ -1,6 +1,25 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+
+async function verifyAdminUser(): Promise<{ userId: string; isAdmin: boolean } | null> {
+    const supabase = await createClient();
+    const adminClient = await createAdminClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return null;
+    
+    const { data: profile } = await adminClient
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+    
+    return {
+        userId: user.id,
+        isAdmin: profile?.role === 'admin'
+    };
+}
 
 interface PlanData {
     id: string;
@@ -68,7 +87,11 @@ interface DashboardMetrics {
 }
 
 export async function getDashboardStats() {
-    const supabase = await createClient();
+    const auth = await verifyAdminUser();
+    if (!auth) return { success: false, error: 'Not authenticated' };
+    if (!auth.isAdmin) return { success: false, error: 'Admin access required' };
+
+    const supabase = await createAdminClient();
 
     // Fetch real plan data
     const { data: plans } = await supabase.from('plans').select('id, name');
@@ -182,7 +205,11 @@ function getRelativeTime(dateStr: string): string {
 }
 
 export async function getCustomerMetrics() {
-    const supabase = await createClient();
+    const auth = await verifyAdminUser();
+    if (!auth) return { success: false, error: 'Not authenticated' };
+    if (!auth.isAdmin) return { success: false, error: 'Admin access required' };
+
+    const supabase = await createAdminClient();
 
     const { count: totalCustomers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['user', 'customer']);
     const { count: activePlans } = await supabase.from('ecard_members').select('*', { count: 'exact', head: true }).eq('status', 'active');
@@ -232,11 +259,16 @@ export async function getCustomerMetrics() {
 }
 
 export async function generateReportAction(type: string, filters: ReportFilters) {
-    const supabase = await createClient();
+    const auth = await verifyAdminUser();
+    if (!auth) return { success: false, error: 'Not authenticated' };
+    if (!auth.isAdmin) return { success: false, error: 'Admin access required' };
+
+    const supabase = await createAdminClient();
     await supabase.from('audit_logs').insert({
         action: `generate_report_${type}`,
         entity_type: 'report',
+        admin_id: auth.userId,
         details: filters,
     });
-    return { success: true, message: 'Report generated successfully', downloadUrl: '#' };
+    return { success: true, message: 'Report generated successfully' };
 }

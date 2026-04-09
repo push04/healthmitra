@@ -3,7 +3,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function ensureWalletExists(userId: string): Promise<{ success: boolean; wallet?: any; error?: string }> {
-    const supabase = await createClient();
     const adminClient = await createAdminClient();
 
     // Check if wallet exists
@@ -23,8 +22,7 @@ export async function ensureWalletExists(userId: string): Promise<{ success: boo
         .insert({
             user_id: userId,
             balance: 0,
-            currency: 'INR',
-            status: 'active'
+            currency: 'INR'
         })
         .select()
         .single();
@@ -53,7 +51,10 @@ export async function addMoneyToWallet(
 
     const { error } = await adminClient
         .from('wallets')
-        .update({ balance: newBalance })
+        .update({ 
+            balance: newBalance,
+            updated_at: new Date().toISOString()
+        })
         .eq('user_id', userId);
 
     if (error) {
@@ -61,15 +62,19 @@ export async function addMoneyToWallet(
         return { success: false, error: error.message };
     }
 
-    // Record transaction
-    await adminClient.from('wallet_transactions').insert({
-        wallet_id: walletResult.wallet.id,
+    // Record transaction - use user_id as per schema (NOT wallet_id)
+    const { error: txnError } = await adminClient.from('wallet_transactions').insert({
         user_id: userId,
         type: 'credit',
         amount: Number(amount),
         description: 'Wallet top-up',
-        status: 'completed'
+        status: 'success',
+        transaction_date: new Date().toISOString()
     });
+
+    if (txnError) {
+        console.error('Transaction record error:', txnError);
+    }
 
     return { success: true };
 }
@@ -91,10 +96,11 @@ export async function getWalletWithTransactions(userId: string) {
         return { success: true, wallet: null, transactions: [] };
     }
 
+    // Use user_id instead of wallet_id for transactions
     const { data: transactions } = await adminClient
         .from('wallet_transactions')
         .select('*')
-        .eq('wallet_id', wallet.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
     return { success: true, wallet, transactions: transactions || [] };

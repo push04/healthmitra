@@ -1,25 +1,37 @@
 'use server';
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 export async function getUserProfile() {
     const supabase = await createClient();
+    const adminClient = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { data, error } = await supabase.from('profiles')
+    // Use admin client to bypass RLS for profile fetch
+    const { data, error } = await adminClient.from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+        // Fallback: try regular client
+        const { data: fallbackData, error: fallbackError } = await supabase.from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+        
+        if (fallbackError) return { success: false, error: fallbackError.message };
+        return { success: true, data: fallbackData };
+    }
 
     return { success: true, data };
 }
 
 export async function updateUserProfile(formData: Record<string, any>) {
     const supabase = await createClient();
+    const adminClient = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { success: false, error: 'Not authenticated' };
@@ -51,23 +63,32 @@ export async function updateUserProfile(formData: Record<string, any>) {
 
     updates.updated_at = new Date().toISOString();
 
-    const { error } = await supabase.from('profiles')
+    // Use admin client to bypass RLS
+    const { error } = await adminClient.from('profiles')
         .update(updates)
         .eq('id', user.id);
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+        // Fallback: try regular client
+        const { error: fallbackError } = await supabase.from('profiles')
+            .update(updates)
+            .eq('id', user.id);
+        
+        if (fallbackError) return { success: false, error: fallbackError.message };
+    }
 
     return { success: true, message: 'Profile updated successfully' };
 }
 
 export async function getUserInvoices() {
     const supabase = await createClient();
+    const adminClient = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { success: false, error: 'Not authenticated' };
 
     // First try to get from invoices table
-    const { data: invoices, error } = await supabase.from('invoices')
+    const { data: invoices, error } = await adminClient.from('invoices')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -78,7 +99,7 @@ export async function getUserInvoices() {
 
     // If no invoices, get from ecard_members as fallback
     if (!invoices || invoices.length === 0) {
-        const { data: purchases } = await supabase
+        const { data: purchases } = await adminClient
             .from('ecard_members')
             .select('*, plan:plan_id(*)')
             .eq('user_id', user.id)
@@ -89,7 +110,7 @@ export async function getUserInvoices() {
                 id: p.id,
                 user_id: p.user_id,
                 plan_id: p.plan_id,
-                invoice_number: `INV-${p.id.slice(0, 8).toUpperCase()}`,
+                invoice_number: `INV-${(p.id || '').slice(0, 8).toUpperCase()}`,
                 plan_name: p.plan?.name || 'Health Plan',
                 amount: p.plan?.price || 0,
                 gst: Math.round((p.plan?.price || 0) * 0.18),

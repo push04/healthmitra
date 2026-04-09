@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { RecentActivity } from "@/types/dashboard";
 import {
     Stethoscope,
@@ -40,6 +41,8 @@ const getStatusColor = (status: string) => {
 };
 
 export function ActivityFeed({ activities = [], loading }: ActivityFeedProps) {
+    const router = useRouter();
+
     if (loading) {
         return (
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm min-h-[400px]">
@@ -101,7 +104,6 @@ export function ActivityFeed({ activities = [], loading }: ActivityFeedProps) {
                                 key={activity.id}
                                 className="relative flex gap-4 pb-8 last:pb-0 group cursor-pointer"
                                 onClick={() => {
-                                    // Simple navigation logic based on type
                                     let path = '/dashboard';
                                     switch (activity.type) {
                                         case 'service_request': path = '/service-requests'; break;
@@ -110,9 +112,7 @@ export function ActivityFeed({ activities = [], loading }: ActivityFeedProps) {
                                         case 'wallet_transaction': path = '/wallet'; break;
                                         default: path = '/dashboard';
                                     }
-                                    // Use standard anchor navigation or Next.js router if available in parent
-                                    // For now, ensuring correct path
-                                    window.location.href = path;
+                                    router.push(path);
                                 }}
                             >
                                 {/* Timeline Line */}

@@ -53,7 +53,7 @@ export function QuickStats({
                             <ShieldCheck className="mb-3 h-10 w-10 text-white/90" />
                             <h3 className="text-lg font-semibold">{plan?.name || "No Active Plan"}</h3>
                         </div>
-                        {plan && (
+                        {plan?.validUntil && !isNaN(new Date(plan.validUntil).getTime()) ? (
                             <div className="space-y-1">
                                 <p className="text-xs text-cyan-100">Valid until</p>
                                 <p className="text-sm font-medium">
@@ -67,7 +67,7 @@ export function QuickStats({
                                     ({plan.daysRemaining} days left)
                                 </p>
                             </div>
-                        )}
+                        ) : null}
                         <div className="mt-2 text-xs font-medium text-white/80 underline-offset-4 group-hover:underline">
                             View Details →
                         </div>

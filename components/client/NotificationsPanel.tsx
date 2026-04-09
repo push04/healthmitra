@@ -17,6 +17,7 @@ interface NotificationsPanelProps {
     notifications?: Notification[];
     loading?: boolean;
     onMarkRead?: (id: string) => void;
+    onMarkAllRead?: () => void;
 }
 
 const getNotificationConfig = (type: string) => {
@@ -53,7 +54,7 @@ const getNotificationConfig = (type: string) => {
     }
 };
 
-export function NotificationsPanel({ notifications = [], loading, onMarkRead }: NotificationsPanelProps) {
+export function NotificationsPanel({ notifications = [], loading, onMarkRead, onMarkAllRead }: NotificationsPanelProps) {
     if (loading) {
         return (
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm min-h-[400px]">
@@ -74,7 +75,13 @@ export function NotificationsPanel({ notifications = [], loading, onMarkRead }: 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md h-full flex flex-col">
             <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-slate-800">Notifications</h2>
-                <Button variant="ghost" size="sm" className="text-xs text-slate-500 hover:text-teal-600 h-auto p-0 hover:bg-transparent">
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs text-slate-500 hover:text-teal-600 h-auto p-0 hover:bg-transparent"
+                    onClick={onMarkAllRead}
+                    disabled={!notifications?.some(n => !n.isRead)}
+                >
                     Mark all as read
                 </Button>
             </div>
@@ -109,8 +116,7 @@ export function NotificationsPanel({ notifications = [], loading, onMarkRead }: 
                                 onClick={() => {
                                     onMarkRead?.(notif.id);
                                     if (notif.relatedUrl) {
-                                        // Ensure no incorrect prefixes in the relatedUrl from backend or mock
-                                        const url = notif.relatedUrl.replace('/client/', '/');
+                                        const url = (notif.relatedUrl || '').replace('/client/', '/');
                                         window.location.href = url;
                                     }
                                 }}

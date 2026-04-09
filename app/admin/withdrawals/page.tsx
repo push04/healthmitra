@@ -145,7 +145,7 @@ export default function WithdrawalsPage() {
                                     <div className="flex gap-6 text-sm text-slate-500">
                                         <span>{withdrawal.customerEmail}</span>
                                         <span className="flex items-center gap-1"><Building className="h-3 w-3" /> {withdrawal.bankName}</span>
-                                        <span>****{withdrawal.bankAccount.slice(-4)}</span>
+                                        <span>****{(withdrawal.bankAccount || '').slice(-4)}</span>
                                         <span>{formatDate(withdrawal.createdAt)}</span>
                                     </div>
                                 </div>

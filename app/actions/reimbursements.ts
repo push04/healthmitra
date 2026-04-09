@@ -1,10 +1,10 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { ReimbursementClaim, ClaimStatus } from '@/types/reimbursements';
 
 export async function getClaims() {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Join with profiles if possible, or just fetch
     const { data, error } = await supabase.from('reimbursement_claims').select(`
@@ -16,18 +16,18 @@ export async function getClaims() {
 
     const claims: ReimbursementClaim[] = data.map((c: any) => ({
         id: c.id,
-        claimId: c.claim_id || `CLM-${c.id.substr(0, 8)}`,
+        claimId: c.claim_id_display || `CLM-${(c.id || '').substring(0, 8).toUpperCase()}`,
         status: (c.status as ClaimStatus) || 'pending',
         customerId: c.user_id,
         customerName: c.user?.full_name || 'Unknown User',
-        planName: c.plan_name || 'Standard Plan', // Or join with plans
+        planName: c.plan_name || 'Standard Plan',
         title: c.title || 'Reimbursement Claim',
-        amount: c.amount || 0,
+        amount: c.amount_requested || c.amount || 0,
         approvedAmount: c.amount_approved,
         billDate: c.bill_date,
         providerName: c.provider_name || 'Unknown Provider',
         submittedAt: c.created_at,
-        documents: c.documents || [], // JSONB
+        documents: c.documents || [],
         adminNotes: c.admin_notes,
         customerComments: c.customer_comments
     }));
@@ -36,7 +36,7 @@ export async function getClaims() {
 }
 
 export async function processClaim(id: string, status: ClaimStatus, data: { amount?: number; notes?: string }) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const updates: any = {
         status,
         updated_at: new Date().toISOString()
@@ -47,7 +47,6 @@ export async function processClaim(id: string, status: ClaimStatus, data: { amou
     }
 
     if (data.notes) {
-        // If rejected, maybe reason? Or just admin notes
         updates.admin_notes = data.notes;
         if (status === 'rejected') updates.rejection_reason = data.notes;
     }

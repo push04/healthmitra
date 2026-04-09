@@ -154,15 +154,13 @@ export default function ServiceRequestsPage() {
 
     // Get new updates for popup
     const newUpdates = requests.filter(req =>
-        // enhanced logic for "new" - for now just check status or timeframe
-        // assuming backend doesn't have "isNew" flag, we simulate or ignore
         req.status !== 'pending' &&
         !dismissedUpdates.includes(req.id)
     ).map(req => ({
         id: req.id,
-        title: req.service_type || 'Service Request', // Mapping data
+        title: req.type || 'Service Request',
         requestId: req.id,
-        previousStatus: '', // Not tracking history deeply yet
+        previousStatus: '',
         newStatus: req.status,
         updatedAt: req.updated_at || req.created_at,
         adminComment: req.admin_notes
@@ -186,13 +184,13 @@ export default function ServiceRequestsPage() {
             const searchLower = filters.search.toLowerCase();
             const matchSearch =
                 req.id.toLowerCase().includes(searchLower) ||
-                (req.service_type && req.service_type.toLowerCase().includes(searchLower)) ||
+                (req.type && req.type.toLowerCase().includes(searchLower)) ||
                 (req.description && req.description.toLowerCase().includes(searchLower));
             if (!matchSearch) return false;
         }
 
         // Type filter
-        if (filters.type !== 'all' && req.service_type !== filters.type) return false;
+        if (filters.type !== 'all' && req.type !== filters.type) return false;
 
         // Status filter
         if (filters.status !== 'all' && req.status !== filters.status) return false;
@@ -338,19 +336,29 @@ export default function ServiceRequestsPage() {
                                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                         <div className="flex-1">
                                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                <h3 className="font-bold text-slate-800">{req.service_type ? req.service_type.replace('_', ' ').toUpperCase() : 'REQUEST'}</h3>
+                                                <h3 className="font-bold text-slate-800">{req.type ? req.type.replace('_', ' ').toUpperCase() : 'REQUEST'}</h3>
                                                 <StatusBadge status={req.status} />
                                                 {/* <MemberBadge member={req.member} /> - Member field missing in schema currently */}
                                             </div>
                                             <p className="text-xs text-slate-500 mb-2">
-                                                ID: <span className="font-mono">{req.id.slice(0, 8)}</span>
+                                                ID: <span className="font-mono">{req.request_id_display || req.id.slice(0, 8)}</span>
                                             </p>
-                                            <p className="text-sm text-slate-600 mb-2">{req.description}</p>
+                                            <p className="text-sm text-slate-600 mb-2">{req.description || req.details?.description || req.details?.subject || 'No description'}</p>
 
                                             {/* Details based on jsonb 'details' if available */}
                                             {req.details?.doctor_name && (
                                                 <p className="text-xs text-slate-500">
                                                     Doctor: <span className="text-slate-700">{req.details.doctor_name}</span>
+                                                </p>
+                                            )}
+                                            {req.details?.symptoms && (
+                                                <p className="text-xs text-slate-500">
+                                                    Symptoms: <span className="text-slate-700">{req.details.symptoms}</span>
+                                                </p>
+                                            )}
+                                            {req.details?.preferredTime && (
+                                                <p className="text-xs text-slate-500">
+                                                    Preferred Time: <span className="text-slate-700">{req.details.preferredTime}</span>
                                                 </p>
                                             )}
 

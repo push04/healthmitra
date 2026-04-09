@@ -167,28 +167,32 @@ export default function ProfileView({ profile }: ProfileViewProps) {
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
 
-        // Personal validation
-        if (!formData.full_name.trim()) newErrors.full_name = 'Full name is required';
-        if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
-        const cleanPhone = formData.phone.replace(/[\s\-\+\(\)]/g, '');
-        if (formData.phone && !/^[6-9]\d{9}$/.test(cleanPhone)) newErrors.phone = 'Invalid phone number (10 digits required)';
+        // NO COMPULSORY FIELDS - Everything is optional for new users
+        // Only validate format if fields are filled (optional validation)
 
-        // Address validation
-        if (!formData.address_line1.trim()) newErrors.address_line1 = 'Address is required';
-        if (!formData.city.trim()) newErrors.city = 'City is required';
-        if (!formData.state.trim()) newErrors.state = 'State is required';
-        if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
-        if (formData.pincode && !/^\d{6}$/.test(formData.pincode)) newErrors.pincode = 'Pincode must be 6 digits';
+        // Phone validation (only if filled)
+        if (formData.phone.trim()) {
+            const cleanPhone = formData.phone.replace(/[\s\-\+\(\)]/g, '');
+            if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+                newErrors.phone = 'Invalid phone number (10 digits required)';
+            }
+        }
 
-        // Bank validation
-        if (formData.bank_account_number !== formData.bank_confirm_account) {
+        // Pincode validation (only if filled)
+        if (formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
+            newErrors.pincode = 'Pincode must be 6 digits';
+        }
+
+        // Bank validation (only if filled)
+        if (formData.bank_account_number && formData.bank_confirm_account && 
+            formData.bank_account_number !== formData.bank_confirm_account) {
             newErrors.bank_confirm_account = 'Account numbers do not match';
         }
         if (formData.bank_ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.bank_ifsc.toUpperCase())) {
             newErrors.bank_ifsc = 'Invalid IFSC code';
         }
 
-        // KYC validation
+        // KYC validation (only if filled)
         if (formData.aadhaar_number && !/^\d{12}$/.test(formData.aadhaar_number.replace(/\s/g, ''))) {
             newErrors.aadhaar_number = 'Aadhaar must be 12 digits';
         }
@@ -196,11 +200,11 @@ export default function ProfileView({ profile }: ProfileViewProps) {
             newErrors.pan_number = 'Invalid PAN format';
         }
 
-        // Password validation
+        // Password validation (only if changing password)
         if (formData.new_password && formData.new_password.length < 8) {
             newErrors.new_password = 'Password must be at least 8 characters';
         }
-        if (formData.new_password !== formData.confirm_password) {
+        if (formData.new_password && formData.new_password !== formData.confirm_password) {
             newErrors.confirm_password = 'Passwords do not match';
         }
 
@@ -285,7 +289,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
             <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-6">
                 <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-lg">
-                        {formData.full_name.charAt(0).toUpperCase() || 'U'}
+                        {(formData.full_name || 'U').charAt(0).toUpperCase()}
                     </div>
                     {isEditing && (
                         <button className="absolute bottom-0 right-0 p-2 bg-teal-600 text-white rounded-full hover:bg-teal-700 transition-colors shadow-sm">
@@ -305,7 +309,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                 Blood: {formData.blood_group}
                             </span>
                         )}
-                        {formData.height_cm && formData.weight_kg && (
+                        {formData.height_cm && formData.weight_kg && Number(formData.height_cm) > 0 && (
                             <span className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full border border-purple-100">
                                 BMI: {(Number(formData.weight_kg) / Math.pow(Number(formData.height_cm) / 100, 2)).toFixed(1)}
                             </span>
@@ -347,11 +351,11 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                     {activeTab === 'personal' && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Full Name" name="full_name" required placeholder="Enter your full name" icon={User} />
-                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Date of Birth" name="dob" type="date" required icon={Calendar} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Full Name" name="full_name" placeholder="Enter your full name" icon={User} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Date of Birth" name="dob" type="date" icon={Calendar} />
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">Gender <span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-medium text-slate-700">Gender</label>
                                     <select
                                         name="gender"
                                         value={formData.gender}
@@ -367,7 +371,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">Blood Group <span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-medium text-slate-700">Blood Group</label>
                                     <select
                                         name="blood_group"
                                         value={formData.blood_group}
@@ -384,7 +388,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                        <Phone size={14} className="text-slate-400" /> Mobile Number <span className="text-red-500">*</span>
+                                        <Phone size={14} className="text-slate-400" /> Mobile Number
                                     </label>
                                     <div className="relative">
                                         <input
@@ -397,15 +401,17 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                             maxLength={10}
                                             className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-70 disabled:cursor-not-allowed ${errors.phone ? 'border-red-300' : 'border-slate-200'}`}
                                         />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-medium flex items-center gap-1">
-                                            <CheckCircle size={12} /> Verified
-                                        </span>
+                                        {formData.phone && (
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-medium flex items-center gap-1">
+                                                <CheckCircle size={12} /> Verified
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                        <Mail size={14} className="text-slate-400" /> Email <span className="text-red-500">*</span>
+                                        <Mail size={14} className="text-slate-400" /> Email
                                     </label>
                                     <div className="relative">
                                         <input
@@ -415,9 +421,6 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                             disabled
                                             className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
                                         />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-medium flex items-center gap-1">
-                                            <CheckCircle size={12} /> Verified
-                                        </span>
                                     </div>
                                 </div>
 
@@ -425,7 +428,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                 <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Weight (kg)" name="weight_kg" type="number" placeholder="e.g., 72" icon={Scale} />
 
                                 <div className="md:col-span-2">
-                                    <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Emergency Contact" name="emergency_contact" type="tel" required placeholder="+91 9123456789" icon={Phone} maxLength={10} />
+                                    <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Emergency Contact" name="emergency_contact" type="tel" placeholder="+91 9123456789" icon={Phone} maxLength={10} />
                                 </div>
                             </div>
                         </div>
@@ -434,11 +437,11 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                     {/* TAB 2: Address Details */}
                     {activeTab === 'address' && (
                         <div className="space-y-6">
-                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                                <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={18} />
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                                <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={18} />
                                 <div>
-                                    <p className="text-sm font-semibold text-amber-800">Complete address with pincode is mandatory for services</p>
-                                    <p className="text-xs text-amber-700 mt-1">All fields marked with * are required</p>
+                                    <p className="text-sm font-semibold text-blue-800">Complete your address for better service</p>
+                                    <p className="text-xs text-blue-700 mt-1">All fields are optional but recommended</p>
                                 </div>
                             </div>
 
@@ -446,22 +449,20 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                 <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing}
                                     label="Address Line 1 (House/Flat No., Building)"
                                     name="address_line1"
-                                    required
                                     placeholder="A-101, Sunrise Apartments"
                                 />
                                 <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing}
                                     label="Address Line 2 (Street/Area)"
                                     name="address_line2"
-                                    required
                                     placeholder="SG Highway, Bodakdev"
                                 />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="City" name="city" required placeholder="Ahmedabad" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="City" name="city" placeholder="Ahmedabad" />
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">State <span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-medium text-slate-700">State</label>
                                     <select
                                         name="state"
                                         value={formData.state}
@@ -476,7 +477,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                     </select>
                                 </div>
 
-                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Pincode" name="pincode" required placeholder="380015" maxLength={6} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Pincode" name="pincode" placeholder="380015" maxLength={6} />
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Country</label>
@@ -500,14 +501,14 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                         <div className="space-y-6">
                             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
                                 <Building2 className="text-blue-600 flex-shrink-0 mt-0.5" size={18} />
-                                <p className="text-sm text-blue-800">Bank details are required for wallet withdrawals. All mandatory fields must be filled.</p>
+                                <p className="text-sm text-blue-800">Add your bank details for wallet withdrawals. All fields are optional.</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Account Holder Name" name="bank_holder_name" required placeholder="As per bank records" />
-                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Account Number" name="bank_account_number" required placeholder="Enter account number" />
-                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Confirm Account Number" name="bank_confirm_account" required placeholder="Re-enter account number" />
-                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="IFSC Code" name="bank_ifsc" required placeholder="e.g., HDFC0001234" maxLength={11} />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Account Holder Name" name="bank_holder_name" placeholder="As per bank records" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Account Number" name="bank_account_number" placeholder="Enter account number" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Confirm Account Number" name="bank_confirm_account" placeholder="Re-enter account number" />
+                                <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="IFSC Code" name="bank_ifsc" placeholder="e.g., HDFC0001234" maxLength={11} />
                                 <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Bank Name" name="bank_name" placeholder="Auto-filled from IFSC" />
                                 <InputField formData={formData} handleChange={handleChange} errors={errors} isEditing={isEditing} label="Branch Name" name="bank_branch" placeholder="Branch name" />
 
@@ -565,7 +566,6 @@ export default function ProfileView({ profile }: ProfileViewProps) {
                                 <div className="flex items-center justify-between mb-4">
                                     <h4 className="font-semibold text-slate-800 flex items-center gap-2">
                                         <CreditCard size={18} className="text-orange-500" /> Aadhaar Card
-                                        <span className="text-red-500 text-sm">*</span>
                                     </h4>
                                     {documents.aadhaar_front && documents.aadhaar_back && (
                                         <span className="text-emerald-500 text-xs font-medium flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-full">
@@ -576,7 +576,7 @@ export default function ProfileView({ profile }: ProfileViewProps) {
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Aadhaar Number <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-slate-700">Aadhaar Number</label>
                                         <input
                                             type="text"
                                             name="aadhaar_number"

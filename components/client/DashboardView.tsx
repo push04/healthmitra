@@ -86,6 +86,22 @@ export function DashboardView({ initialData }: DashboardViewProps) {
         }
     };
 
+    const markAllNotificationsAsRead = async () => {
+        try {
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase.from('notifications')
+                    .update({ is_read: true })
+                    .eq('recipient_id', user.id)
+                    .eq('is_read', false);
+            }
+        } catch (error) {
+            console.error('Failed to mark all notifications as read:', error);
+        }
+    };
+
     const firstName = data.user.name?.split(' ')[0] || 'User';
     const hasActivePlan = data.activePlan?.id && data.activePlan?.id !== 'no-plan';
 
@@ -154,6 +170,7 @@ export function DashboardView({ initialData }: DashboardViewProps) {
                     notifications={data.notifications}
                     loading={loading}
                     onMarkRead={markNotificationAsRead}
+                    onMarkAllRead={markAllNotificationsAsRead}
                 />
             </div>
         </div>

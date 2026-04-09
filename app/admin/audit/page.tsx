@@ -17,7 +17,7 @@ export default function AuditPage() {
         });
     }, []);
 
-    const filteredLogs = logs.filter(l => l.action.toLowerCase().includes(search.toLowerCase()) || l.user.toLowerCase().includes(search.toLowerCase()));
+    const filteredLogs = logs.filter(l => (l.action || '').toLowerCase().includes(search.toLowerCase()) || (l.user || '').toLowerCase().includes(search.toLowerCase()));
 
     return (
         <div className="space-y-6 animate-in fade-in max-w-[1200px] mx-auto p-6">

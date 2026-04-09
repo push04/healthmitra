@@ -105,7 +105,7 @@ export async function getAdminServiceRequests(filters?: { query?: string, status
     // Map to ServiceRequest type
     const mappedRequests = filteredData.map((r: any) => ({
         id: r.id,
-        requestId: r.request_id_display || r.id.substring(0, 8),
+        requestId: r.request_id_display || (r.id || '').substring(0, 8),
         userId: r.user_id,
         customerName: r.profiles?.full_name || 'Guest',
         customerEmail: r.profiles?.email || '',
@@ -114,7 +114,7 @@ export async function getAdminServiceRequests(filters?: { query?: string, status
         status: r.status,
         description: r.details?.description || r.details?.subject || '',
         priority: r.details?.priority || 'medium',
-        requestedAt: new Date(r.created_at).toLocaleDateString() + ' ' + new Date(r.created_at).toLocaleTimeString(),
+        requestedAt: r.created_at ? new Date(r.created_at).toLocaleDateString() + ' ' + new Date(r.created_at).toLocaleTimeString() : '',
         assignedAt: r.updated_at,
         assignedToId: r.assigned_to,
         assignedToName: r.agent?.full_name,
@@ -141,7 +141,7 @@ export async function getAdminServiceRequest(id: string) {
 
     const request = {
         id: r.id,
-        requestId: r.request_id_display || r.id.substring(0, 8),
+        requestId: r.request_id_display || (r.id || '').substring(0, 8),
         userId: r.user_id,
         customerName: r.profiles?.full_name || 'Guest',
         customerEmail: r.profiles?.email || '',
@@ -150,15 +150,15 @@ export async function getAdminServiceRequest(id: string) {
         status: r.status,
         description: r.details?.description || r.details?.subject || '',
         priority: r.details?.priority || 'medium',
-        requestedAt: new Date(r.created_at).toLocaleDateString() + ' ' + new Date(r.created_at).toLocaleTimeString(),
-        assignedAt: r.updated_at, // Approximate
+        requestedAt: r.created_at ? new Date(r.created_at).toLocaleDateString() + ' ' + new Date(r.created_at).toLocaleTimeString() : '',
+        assignedAt: r.updated_at,
         assignedToId: r.assigned_to,
         assignedToName: r.agent?.full_name,
-        assignedTo: r.agent ? { name: r.agent.full_name, email: r.agent.email } : undefined, // Object for detail page
+        assignedTo: r.agent ? { name: r.agent.full_name, email: r.agent.email } : undefined,
         notes: r.admin_notes || r.details?.admin_notes || '',
         details: r.details,
         completedAt: r.status === 'completed' ? r.updated_at : undefined,
-        franchiseName: r.details?.franchise_name // extended detail
+        franchiseName: r.details?.franchise_name
     };
 
     return { success: true, data: request };

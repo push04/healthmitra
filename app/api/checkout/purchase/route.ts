@@ -113,15 +113,18 @@ export async function POST(request: Request) {
         }
 
         // Create payment record — use admin client
+        // Generate unique order ID to avoid UNIQUE constraint violation
+        const orderId = razorpayOrderId || `manual_${Date.now()}_${user.id.slice(0, 8)}`;
         await adminClient.from('payments').insert({
             user_id: user.id,
             plan_id: planId,
             amount: plan.price,
             currency: 'INR',
             status,
-            razorpay_order_id: razorpayOrderId || null,
+            razorpay_order_id: orderId,
             razorpay_payment_id: transactionId,
             payment_method: paymentMethod || 'test',
+            purpose: 'plan_purchase',
         });
 
         // Create invoice record — use admin client
