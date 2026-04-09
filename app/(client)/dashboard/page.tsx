@@ -1,7 +1,7 @@
 import { DashboardView } from "@/components/client/DashboardView";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { fetchDashboardData } from "@/lib/api/client";
+import { fetchDashboardData } from "@/app/actions/fetch-dashboard";
 
 export default async function DashboardPage() {
     const supabase = await createClient();

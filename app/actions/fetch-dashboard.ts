@@ -1,18 +1,31 @@
-'use client';
+'use server';
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { DashboardData } from "@/types/dashboard";
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+import { ApiResponse, DashboardData } from "@/types/dashboard";
 
-async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: DashboardData; error?: string }> {
+export async function fetchDashboardData(): Promise<ApiResponse<DashboardData>> {
     try {
-        const supabase = createClient();
+        const cookieStore = await cookies();
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() {
+                        return cookieStore.getAll();
+                    },
+                },
+            }
+        );
+        
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
-            return { success: false, error: 'Not authenticated' };
+            return { success: false, error: 'Not authenticated', data: null as any };
         }
 
+        // Use Promise.allSettled to handle individual query failures gracefully
         const results = await Promise.allSettled([
             supabase.from('profiles').select('*').eq('id', user.id).single(),
             supabase.from('wallets').select('*').eq('user_id', user.id).single(),
@@ -22,6 +35,7 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
             supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(10),
         ]);
 
+        // Extract data from settled promises
         const profileRes = results[0].status === 'fulfilled' ? results[0].value : { data: null, error: results[0].reason };
         const walletRes = results[1].status === 'fulfilled' ? results[1].value : { data: null, error: results[1].reason };
         const membersRes = results[2].status === 'fulfilled' ? results[2].value : { data: null, error: results[2].reason };
@@ -29,14 +43,24 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
         const claimsRes = results[4].status === 'fulfilled' ? results[4].value : { data: null, error: results[4].reason };
         const notifsRes = results[5].status === 'fulfilled' ? results[5].value : { data: null, error: results[5].reason };
 
+        // Log any errors but continue with defaults
+        if (profileRes.error) console.error('Profile fetch error:', profileRes.error);
+        if (walletRes.error) console.error('Wallet fetch error:', walletRes.error);
+        if (membersRes.error) console.error('Members fetch error:', membersRes.error);
+        if (requestsRes.error) console.error('Requests fetch error:', requestsRes.error);
+        if (claimsRes.error) console.error('Claims fetch error:', claimsRes.error);
+        if (notifsRes.error) console.error('Notifications fetch error:', notifsRes.error);
+
         const profile = profileRes.data || { full_name: user.email?.split('@')[0], email: user.email, phone: '' };
         const wallet = walletRes.data || { balance: 0, currency: 'INR' };
         const members = membersRes.data || [];
         const activeMembers = members.filter((m: any) => m.status === 'active');
 
+        // Calculate Active Plan (Logic: Find first active member with a plan)
         const primaryMember = members.find((m: any) => m.relation === 'Self') || members[0];
         const activePlanData = primaryMember?.plans || null;
 
+        // Safely calculate days remaining
         let daysRemaining = 0;
         if (primaryMember?.valid_till) {
             const validTillDate = new Date(primaryMember.valid_till);
@@ -54,6 +78,7 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
             coverageAmount: primaryMember.coverage_amount || activePlanData.coverage_amount || 0
         } : null;
 
+        // Recent Activity Merger with safe timestamp handling
         const recentActivity = [
             ...(requestsRes.data || []).map((r: any) => ({
                 id: r.id,
@@ -80,6 +105,7 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
         })
         .slice(0, 5);
 
+        // Calculate reimbursement summary
         const allClaims = claimsRes.data || [];
         const reimbursementSummary = {
             totalClaimed: allClaims.reduce((sum: number, c: any) => sum + (c.amount || 0), 0),
@@ -88,6 +114,7 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
             rejected: allClaims.filter((c: any) => c.status === 'rejected').length
         };
 
+        // Count pending items
         const pendingRequests = (requestsRes.data || []).filter((r: any) => r.status === 'pending').length;
         const pendingClaims = allClaims.filter((c: any) => c.status === 'pending').length;
 
@@ -96,7 +123,7 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
             data: {
                 user: {
                     id: user.id,
-                    name: profile.full_name || user.email?.split('@')[0] || 'User',
+                    name: profile.full_name || 'User',
                     email: user.email ?? '',
                     phone: profile.phone || '',
                     avatar: profile.avatar_url || '',
@@ -119,8 +146,17 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
                     currency: wallet.currency || 'INR',
                     minimumBalance: 0,
                 },
-                vouchers: { available: 0, used: 0, expired: 0, totalValue: 0 },
-                services: { activeServices: 0, completedThisMonth: 0, pendingApproval: 0 },
+                vouchers: {
+                    available: 0,
+                    used: 0,
+                    expired: 0,
+                    totalValue: 0
+                },
+                services: {
+                    activeServices: 0,
+                    completedThisMonth: 0,
+                    pendingApproval: 0
+                },
                 members: {
                     totalMembers: members.length,
                     withActiveCards: activeMembers.length,
@@ -129,7 +165,10 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
                 reimbursementSummary,
                 pendingRequests: {
                     total: pendingRequests + pendingClaims,
-                    breakdown: { serviceRequests: pendingRequests, reimbursements: pendingClaims },
+                    breakdown: {
+                        serviceRequests: pendingRequests,
+                        reimbursements: pendingClaims,
+                    },
                 },
                 recentActivity,
                 notifications: (notifsRes.data || []).map((n: any) => ({
@@ -144,86 +183,6 @@ async function fetchDashboardDataClient(): Promise<{ success: boolean; data?: Da
         };
     } catch (error: any) {
         console.error('Dashboard data fetch error:', error);
-        return { success: false, error: error.message || 'Failed to fetch dashboard data' };
+        return { success: false, error: error.message || 'Failed to fetch dashboard data', data: null as any };
     }
-}
-
-interface UseDashboardReturn {
-    data: DashboardData | null;
-    loading: boolean;
-    error: string | null;
-    refresh: () => Promise<void>;
-    markNotificationAsRead: (id: string) => Promise<void>;
-}
-
-export function useDashboard(initialData?: DashboardData): UseDashboardReturn {
-    const [data, setData] = useState<DashboardData | null>(initialData || null);
-    const [loading, setLoading] = useState<boolean>(!initialData);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchData = async (isInitial: boolean) => {
-            if (isInitial && !initialData) setLoading(true);
-            try {
-                const response = await fetchDashboardDataClient();
-                if (isMounted && response.success) {
-                    setData(response.data || null);
-                    setError(null);
-                } else if (isMounted) {
-                    setError(response.error || "Failed to fetch data");
-                }
-            } catch (err) {
-                if (isMounted) setError("Network error");
-                console.error(err);
-            } finally {
-                if (isMounted && (isInitial && !initialData)) setLoading(false);
-            }
-        };
-
-        if (!initialData) {
-            fetchData(true);
-        }
-
-        const interval = setInterval(() => {
-            fetchData(false);
-        }, 30000);
-
-        return () => {
-            isMounted = false;
-            clearInterval(interval);
-        };
-    }, [initialData]);
-
-    const refresh = async () => {
-        setLoading(true);
-        const response = await fetchDashboardDataClient();
-        if (response.success) {
-            setData(response.data || null);
-            setError(null);
-        } else {
-            setError(response.error || "Failed to fetch data");
-        }
-        setLoading(false);
-    };
-
-    const markNotificationAsRead = async (id: string) => {
-        if (data) {
-            setData({
-                ...data,
-                notifications: data.notifications.map((n) =>
-                    n.id === id ? { ...n, isRead: true } : n
-                ),
-            });
-        }
-        try {
-            const supabase = createClient();
-            await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-        } catch (err) {
-            console.error('Failed to mark notification as read:', err);
-        }
-    };
-
-    return { data, loading, error, refresh, markNotificationAsRead };
 }
