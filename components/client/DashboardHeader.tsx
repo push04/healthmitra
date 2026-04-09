@@ -41,6 +41,7 @@ import { createClient } from "@/lib/supabase/client";
 
 interface DashboardHeaderProps {
     user?: {
+        id?: string;
         name: string;
         email: string;
         avatar?: string;
@@ -81,23 +82,28 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
     }, [user]);
 
     const loadNotifications = async () => {
-        if (!user?.email) return;
+        if (!user?.id && !user?.email) return;
         
         setLoadingNotifications(true);
         
-        // Get user ID from profiles
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', user.email)
-            .single();
+        // Get user ID - use user.id if available, otherwise query by email
+        let userId = user?.id;
+        
+        if (!userId && user?.email) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', user.email)
+                .single();
+            userId = profile?.id;
+        }
 
-        if (profile) {
-            // Fetch notifications
+        if (userId) {
+            // Fetch notifications using user ID
             const { data: notifs } = await supabase
                 .from('notifications')
                 .select('*')
-                .eq('recipient_id', profile.id)
+                .eq('recipient_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(10);
 
@@ -111,19 +117,24 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
     };
 
     const markAsRead = async (notificationId: string) => {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', user?.email || '')
-            .single();
+        let userId = user?.id;
+        
+        if (!userId && user?.email) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', user.email)
+                .single();
+            userId = profile?.id;
+        }
 
-        if (!profile) return;
+        if (!userId) return;
 
         await supabase
             .from('notifications')
-            .update({ is_read: true, read_at: new Date().toISOString() })
+            .update({ is_read: true })
             .eq('id', notificationId)
-            .eq('recipient_id', profile.id);
+            .eq('recipient_id', userId);
 
         setNotifications(prev => 
             prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
@@ -132,18 +143,23 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
     };
 
     const markAllAsRead = async () => {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', user?.email || '')
-            .single();
+        let userId = user?.id;
+        
+        if (!userId && user?.email) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', user.email)
+                .single();
+            userId = profile?.id;
+        }
 
-        if (!profile) return;
+        if (!userId) return;
 
         await supabase
             .from('notifications')
-            .update({ is_read: true, read_at: new Date().toISOString() })
-            .eq('recipient_id', profile.id)
+            .update({ is_read: true })
+            .eq('recipient_id', userId)
             .eq('is_read', false);
 
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));

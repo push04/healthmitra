@@ -246,7 +246,7 @@ export async function getAllNotificationsForAdmin(limit = 100): Promise<{ succes
 
         const { data, error } = await supabase
             .from('notifications')
-            .select('*, sender:profiles!sender_id(full_name, email)')
+            .select('*, sender:profiles(sender_id, full_name, email)')
             .order('created_at', { ascending: false })
             .limit(limit);
 
@@ -268,7 +268,7 @@ export async function getAllNotificationsAdmin(): Promise<{ success: boolean; al
 
         const { data, error } = await supabase
             .from('notifications')
-            .select('*, sender:profiles!sender_id(full_name, email)')
+            .select('*, sender:profiles(sender_id, full_name, email)')
             .order('created_at', { ascending: false })
             .limit(100);
 

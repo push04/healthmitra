@@ -75,7 +75,7 @@ export async function signup(formData: FormData) {
 
         if (!error && result.data?.user) {
             // 2. Create profile record
-            const { error: profileError } = await supabase.from('profiles').insert({
+            const { error: profileError } = await supabase.from('profiles').upsert({
                 id: result.data.user.id,
                 email: email,
                 full_name: fullName,
@@ -117,7 +117,7 @@ export async function signup(formData: FormData) {
         if (!error && result.data?.user) {
             try {
                 const adminClient = await createAdminClient();
-                const { error: profileError } = await adminClient.from('profiles').insert({
+                const { error: profileError } = await adminClient.from('profiles').upsert({
                     id: result.data.user.id,
                     email: email,
                     full_name: fullName,

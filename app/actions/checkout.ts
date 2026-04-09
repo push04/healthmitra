@@ -127,6 +127,7 @@ export async function purchasePlan(data: PlanPurchaseData) {
     }
 
     // Create purchase record in ecard_members — use admin client
+    // Use date-only format (YYYY-MM-DD) for valid_from and valid_till
     const { data: member, error: memberError } = await adminClient
         .from('ecard_members')
         .insert({
@@ -135,8 +136,8 @@ export async function purchasePlan(data: PlanPurchaseData) {
             full_name: user.email?.split('@')[0] || 'User',
             relation: 'Self',
             status: 'active',
-            valid_from: startDate.toISOString(),
-            valid_till: expiryDate.toISOString(),
+            valid_from: startDate.toISOString().split('T')[0],
+            valid_till: expiryDate.toISOString().split('T')[0],
             coverage_amount: plan.coverage_amount || plan.price * 100,
             card_unique_id: `HM${Date.now()}${crypto.randomUUID().replace(/-/g,'').slice(0,9).toUpperCase()}`,
         })

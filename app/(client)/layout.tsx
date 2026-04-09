@@ -24,6 +24,7 @@ export default async function ClientLayout({
 
     // User data for header
     const userData = {
+        id: user.id,
         name: profile?.full_name || user.email?.split('@')[0] || 'User',
         email: user.email || '',
         avatar: profile?.avatar_url
