@@ -3,17 +3,40 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { FAQ, Testimonial, FooterSection, Page, Hotspot, HomepageSection } from '@/types/cms';
 
-// Generic helper to get/set JSON content
 async function getCMSContent(key: string, defaultValue: any) {
     const supabase = await createAdminClient();
-    const { data } = await supabase.from('cms_content').select('value').eq('key', key).single();
+    const { data } = await supabase
+        .from('cms_content')
+        .select('value')
+        .eq('key', key)
+        .single();
     return data?.value || defaultValue;
 }
 
 async function setCMSContent(key: string, value: any) {
     const supabase = await createAdminClient();
-    const { error } = await supabase.from('cms_content').upsert({ key, value, updated_at: new Date().toISOString() });
-    return error ? { success: false, error: error.message } : { success: true };
+    
+    // Check if key exists first
+    const { data: existing } = await supabase
+        .from('cms_content')
+        .select('key')
+        .eq('key', key)
+        .single();
+    
+    if (existing) {
+        // Update existing
+        const { error } = await supabase
+            .from('cms_content')
+            .update({ value, updated_at: new Date().toISOString() })
+            .eq('key', key);
+        return error ? { success: false, error: error.message } : { success: true };
+    } else {
+        // Insert new
+        const { error } = await supabase
+            .from('cms_content')
+            .insert({ key, value, updated_at: new Date().toISOString() });
+        return error ? { success: false, error: error.message } : { success: true };
+    }
 }
 
 // --- EXISTING CMS ACTIONS ---
@@ -38,8 +61,20 @@ export async function deleteFAQ(id: string) {
     return { success: true, message: 'FAQ deleted' };
 }
 export async function reorderFAQs(orderedIds: string[]) {
-    // Logic to reorder
-    return { success: true, message: 'Order updated' };
+    const faqs: any[] = await getCMSContent('faqs', []);
+    const reordered = orderedIds.map((id, index) => {
+        const faq = faqs.find(f => f.id === id);
+        if (faq) {
+            return { ...faq, order: index };
+        }
+        return null;
+    }).filter(Boolean);
+    
+    const remaining = faqs.filter(f => !orderedIds.includes(f.id));
+    const allFaqs = [...reordered, ...remaining];
+    
+    await setCMSContent('faqs', allFaqs);
+    return { success: true, message: 'FAQ order updated' };
 }
 
 export async function getTestimonials() {
@@ -57,10 +92,20 @@ export async function upsertTestimonial(t: Partial<Testimonial>) {
     return { success: true, message: 'Testimonial saved' };
 }
 export async function deleteTestimonial(id: string) {
+    let list: any[] = await getCMSContent('testimonials', []);
+    list = list.filter(t => t.id !== id);
+    await setCMSContent('testimonials', list);
     return { success: true, message: 'Testimonial deleted' };
 }
 export async function toggleTestimonialFeatured(id: string) {
-    return { success: true, message: 'Status updated' };
+    const list: any[] = await getCMSContent('testimonials', []);
+    const index = list.findIndex(t => t.id === id);
+    if (index >= 0) {
+        list[index] = { ...list[index], isFeatured: !list[index].isFeatured };
+        await setCMSContent('testimonials', list);
+        return { success: true, message: 'Featured status updated' };
+    }
+    return { success: false, error: 'Testimonial not found' };
 }
 
 export async function getFooter() {
@@ -90,6 +135,9 @@ export async function upsertPage(page: Partial<Page>) {
 }
 
 export async function deletePage(id: string) {
+    let pages: any[] = await getCMSContent('pages', []);
+    pages = pages.filter(p => p.id !== id);
+    await setCMSContent('pages', pages);
     return { success: true, message: 'Page deleted' };
 }
 
@@ -112,6 +160,9 @@ export async function upsertHotspot(hotspot: Partial<Hotspot>) {
 }
 
 export async function deleteHotspot(id: string) {
+    let hotspots: any[] = await getCMSContent('hotspots', []);
+    hotspots = hotspots.filter(h => h.id !== id);
+    await setCMSContent('hotspots', hotspots);
     return { success: true, message: 'Hotspot deleted' };
 }
 
@@ -122,11 +173,31 @@ export async function getHomepageSections() {
 }
 
 export async function reorderHomepageSections(orderedIds: string[]) {
+    const sections: any[] = await getCMSContent('homepage_sections', []);
+    const reordered = orderedIds.map((id, index) => {
+        const section = sections.find(s => s.id === id);
+        if (section) {
+            return { ...section, order: index };
+        }
+        return null;
+    }).filter(Boolean);
+    
+    const remaining = sections.filter(s => !orderedIds.includes(s.id));
+    const allSections = [...reordered, ...remaining];
+    
+    await setCMSContent('homepage_sections', allSections);
     return { success: true, message: 'Homepage layout updated' };
 }
 
 export async function updateSectionConfig(id: string, config: any) {
-    return { success: true, message: 'Section settings saved' };
+    const sections: any[] = await getCMSContent('homepage_sections', []);
+    const index = sections.findIndex(s => s.id === id);
+    if (index >= 0) {
+        sections[index] = { ...sections[index], config: { ...sections[index].config, ...config } };
+        await setCMSContent('homepage_sections', sections);
+        return { success: true, message: 'Section settings saved' };
+    }
+    return { success: false, error: 'Section not found' };
 }
 
 // --- MEDIA ACTIONS ---

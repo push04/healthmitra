@@ -294,9 +294,9 @@ export async function createAgent(data: { name: string; email: string; phone: st
 
     if (existingProfile) {
         // Update existing profile to be an agent
-        const { error: updateError } = await supabase
+        const { error: updateError } = await adminSupabase
             .from('profiles')
-            .update({ role: 'agent' })
+            .update({ role: data.role || 'agent' })
             .eq('id', existingProfile.id);
 
         if (updateError) {
@@ -304,22 +304,22 @@ export async function createAgent(data: { name: string; email: string; phone: st
         }
 
         // Check if already in call_centre_agents
-        const { data: existingAgent } = await supabase
+        const { data: existingAgent } = await adminSupabase
             .from('call_centre_agents')
             .select('id')
             .eq('user_id', existingProfile.id)
             .single();
 
         if (!existingAgent) {
-            const { error: agentError } = await supabase.from('call_centre_agents').insert({
+            const { error: agentError } = await adminSupabase.from('call_centre_agents').upsert({
                 user_id: existingProfile.id,
                 agent_name: data.name,
                 agent_email: data.email,
                 agent_phone: data.phone,
-                role: data.role,
+                role: data.role || 'agent',
                 status: 'active',
                 is_available: true
-            });
+            }, { onConflict: 'user_id' });
 
             if (agentError) {
                 return { success: false, error: agentError.message };
@@ -329,9 +329,13 @@ export async function createAgent(data: { name: string; email: string; phone: st
         return { success: true, message: 'Agent added successfully (existing user)' };
     }
 
+    // Generate a temporary password for the agent
+    const tempPassword = generateTempPassword();
+
     // Create a new user with admin API using service role key
     const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
         email: data.email,
+        password: tempPassword,
         email_confirm: true,
         user_metadata: {
             full_name: data.name,
@@ -344,26 +348,51 @@ export async function createAgent(data: { name: string; email: string; phone: st
         console.log('Admin create failed:', authError.message);
         return { 
             success: false, 
-            error: 'Cannot create user. Please ensure SUPABASE_SERVICE_ROLE_KEY is configured. Error: ' + authError.message 
+            error: 'Cannot create user. Error: ' + authError.message 
         };
     }
 
-    // Then create agent profile
+    // Create agent profile in profiles table using UPSERT to handle trigger
     if (authData.user) {
-        const { error: profileError } = await supabase.from('call_centre_agents').insert({
+        const { error: profileError } = await adminSupabase.from('profiles').upsert({
+            id: authData.user.id,
+            email: data.email,
+            full_name: data.name,
+            phone: data.phone,
+            role: data.role || 'agent',
+            status: 'active'
+        }, { onConflict: 'id' });
+
+        if (profileError) {
+            console.log('Profile create error:', profileError.message);
+        }
+
+        // Create agent in call_centre_agents
+        const { error: agentError } = await adminSupabase.from('call_centre_agents').upsert({
             user_id: authData.user.id,
             agent_name: data.name,
             agent_email: data.email,
             agent_phone: data.phone,
-            role: data.role,
+            role: data.role || 'agent',
             status: 'active',
             is_available: true
-        });
+        }, { onConflict: 'user_id' });
 
-        if (profileError) {
-            return { success: false, error: profileError.message };
+        if (agentError) {
+            return { success: false, error: agentError.message };
         }
+
+        return { success: true, message: 'Agent created successfully', tempPassword };
     }
 
-    return { success: true, message: 'Agent created successfully' };
+    return { success: false, error: 'Failed to create agent' };
+}
+
+function generateTempPassword(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 10; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password + '@' + Math.floor(Math.random() * 9 + 1);
 }

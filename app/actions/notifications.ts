@@ -164,7 +164,7 @@ export async function createNotification(data: {
 
         const { error } = await supabase.from('notifications').insert({
             recipient_id: data.recipientId,
-            sender_id: data.senderId || auth.userId,
+            sender_id: null, // System/Admin notification
             title: data.title,
             message: data.message,
             type: data.type,
@@ -215,10 +215,10 @@ export async function sendBulkNotification(data: {
             return { success: true, count: 0 };
         }
 
-        // Insert notifications for all users
+        // Insert notifications for all users (sender_id set to null to avoid FK constraint issues)
         const notifications = users.map((user: { id: string }) => ({
             recipient_id: user.id,
-            sender_id: data.senderId,
+            sender_id: null, // Admin-sent, system notification
             title: data.title,
             message: data.message,
             type: data.type,
@@ -246,13 +246,34 @@ export async function getAllNotificationsForAdmin(limit = 100): Promise<{ succes
 
         const { data, error } = await supabase
             .from('notifications')
-            .select('*, sender:profiles(sender_id, full_name, email)')
+            .select('*')
             .order('created_at', { ascending: false })
             .limit(limit);
 
         if (error) return { success: false, error: error.message };
 
-        return { success: true, data: data as Notification[] };
+        // Fetch sender info manually since FK doesn't work for profiles join
+        const senderIds = [...new Set(data.map(n => n.sender_id).filter(Boolean))];
+        let senderMap: Record<string, { full_name: string; email: string }> = {};
+
+        if (senderIds.length > 0) {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, full_name, email')
+                .in('id', senderIds);
+            
+            profiles?.forEach(p => {
+                senderMap[p.id] = { full_name: p.full_name, email: p.email };
+            });
+        }
+
+        // Attach sender info to each notification
+        const notificationsWithSender = data.map(n => ({
+            ...n,
+            sender: n.sender_id ? senderMap[n.sender_id] || null : null
+        }));
+
+        return { success: true, data: notificationsWithSender as Notification[] };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
@@ -268,18 +289,38 @@ export async function getAllNotificationsAdmin(): Promise<{ success: boolean; al
 
         const { data, error } = await supabase
             .from('notifications')
-            .select('*, sender:profiles(sender_id, full_name, email)')
+            .select('*')
             .order('created_at', { ascending: false })
             .limit(100);
 
         if (error) return { success: false, error: error.message };
+
+        // Fetch sender info manually
+        const senderIds = [...new Set(data.map(n => n.sender_id).filter(Boolean))];
+        let senderMap: Record<string, { full_name: string; email: string }> = {};
+
+        if (senderIds.length > 0) {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, full_name, email')
+                .in('id', senderIds);
+            
+            profiles?.forEach(p => {
+                senderMap[p.id] = { full_name: p.full_name, email: p.email };
+            });
+        }
+
+        const notificationsWithSender = data.map(n => ({
+            ...n,
+            sender: n.sender_id ? senderMap[n.sender_id] || null : null
+        }));
 
         const { count: total } = await supabase.from('notifications').select('*', { count: 'exact', head: true });
         const { count: unread } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('is_read', false);
 
         return { 
             success: true, 
-            allNotifs: data as Notification[], 
+            allNotifs: notificationsWithSender as Notification[], 
             total: total || 0, 
             unread: unread || 0 
         };

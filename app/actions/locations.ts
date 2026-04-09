@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { City, Region } from '@/types/locations';
 
 // --- LOCATION ACTIONS ---
@@ -13,11 +13,11 @@ interface GetCitiesFilters {
 }
 
 export async function getCities(filters?: GetCitiesFilters) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     let query = supabase.from('cities').select('*');
 
     if (filters?.query) {
-        query = query.ilike('name', `%${filters.query}%`);
+        query = query.or(`name.ilike.%${filters.query}%,state.ilike.%${filters.query}%`);
     }
 
     if (filters?.state && filters.state !== 'all') {
@@ -36,54 +36,56 @@ export async function getCities(filters?: GetCitiesFilters) {
 
     if (error) return { success: false, error: error.message };
 
-    // Map to frontend expectation
-    const cities: City[] = data.map((c: any) => ({
+    const cities: City[] = (data || []).map((c: any) => ({
         id: c.id,
         name: c.name,
         state: c.state,
         region: c.region,
         tier: c.tier || 'Tier 2',
-        pincodes: c.pincodes || [],
-        isServiceable: c.is_serviceable,
+        pincodes: Array.isArray(c.pincodes) ? c.pincodes : (typeof c.pincodes === 'string' ? JSON.parse(c.pincodes) : []),
+        isServiceable: c.is_serviceable ?? true,
         status: c.status,
-        serviceCenters: c.service_centers || []
+        serviceCenters: Array.isArray(c.service_centers) ? c.service_centers : []
     }));
 
     return { success: true, data: cities };
 }
 
 export async function upsertCity(city: Partial<City>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('cities').upsert({
-        id: city.id,
+        id: city.id || undefined,
         name: city.name,
         state: city.state,
         region: city.region,
         pincodes: city.pincodes,
-        is_serviceable: city.isServiceable,
-        status: city.status,
-        service_centers: city.serviceCenters
-    });
+        tier: city.tier || 'Tier 2',
+        is_serviceable: city.isServiceable ?? true,
+        status: city.status || 'active',
+        service_centers: city.serviceCenters || []
+    }, { onConflict: 'id' });
 
     if (error) return { success: false, error: error.message };
     return { success: true, message: 'City saved successfully' };
 }
 
 export async function deleteCity(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('cities').delete().eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true, message: 'City deleted successfully' };
 }
 
 export async function searchPincode(pincode: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data, error } = await supabase
         .from('cities')
         .select('*')
         .contains('pincodes', [pincode])
-        .maybeSingle(); // Use maybeSingle to avoid error if not found
+        .maybeSingle();
+
+    if (error) return { success: false, error: error.message };
 
     if (data) {
         return {
@@ -103,15 +105,14 @@ export async function searchPincode(pincode: string) {
 }
 
 export async function bulkUploadCities(data: any[]) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
-    // Map data to schema columns
     const rows = data.map(d => ({
         name: d.name,
         state: d.state,
         region: d.region,
-        pincodes: d.pincodes,
-        is_serviceable: d.isServiceable,
+        pincodes: d.pincodes || [],
+        is_serviceable: d.isServiceable ?? true,
         status: 'active'
     }));
 

@@ -99,8 +99,8 @@ export async function createCustomer(data: CreateCustomerData) {
 
     const userId = authData.user.id;
 
-    // 3. Create profile
-    const { error: profileError } = await adminSupabase.from('profiles').insert({
+    // 3. Create profile (use upsert to handle trigger-created profile)
+    const { error: profileError } = await adminSupabase.from('profiles').upsert({
         id: userId,
         email: data.email,
         full_name: data.fullName,
@@ -114,7 +114,7 @@ export async function createCustomer(data: CreateCustomerData) {
         city: data.city || null,
         state: data.state || null,
         pincode: data.pincode || null,
-    });
+    }, { onConflict: 'id' });
 
     if (profileError) {
         await adminSupabase.auth.admin.deleteUser(userId);
