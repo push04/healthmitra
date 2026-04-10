@@ -303,7 +303,7 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                                                 Members: <strong>{purchase.members_count || 4}</strong>
                                             </span>
                                             <span className="flex items-center gap-1.5 text-teal-600 font-semibold">
-                                                Coverage: ₹{purchase.coverage_amount?.toLocaleString('en-IN')}
+                                                Coverage: ${purchase.coverage_amount?.toLocaleString('en-IN')}
                                             </span>
                                         </div>
                                     </div>
@@ -384,7 +384,7 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                                                 Members: {purchase.members_count || 4}
                                             </span>
                                             <span>
-                                                Coverage: ₹{purchase.coverage_amount?.toLocaleString('en-IN')}
+                                                Coverage: ${purchase.coverage_amount?.toLocaleString('en-IN')}
                                             </span>
                                         </div>
                                     </div>
@@ -449,7 +449,7 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                                     </Badge>
                                 </div>
                                 <p className="text-2xl font-bold mt-4">
-                                    ₹{selectedPurchase.coverage_amount?.toLocaleString('en-IN')}
+                                    ${selectedPurchase.coverage_amount?.toLocaleString('en-IN')}
                                     <span className="text-sm font-normal text-white/80 ml-2">Coverage</span>
                                 </p>
                             </div>
@@ -484,7 +484,7 @@ export function MyPurchasesView({ purchases }: MyPurchasesViewProps) {
                                 <ul className="space-y-2 text-sm text-slate-600">
                                     <li className="flex items-center gap-2"><CheckCircle size={14} className="text-emerald-500" /> Unlimited Doctor Consultations</li>
                                     <li className="flex items-center gap-2"><CheckCircle size={14} className="text-emerald-500" /> Medicine Discounts up to 25%</li>
-                                    <li className="flex items-center gap-2"><CheckCircle size={14} className="text-emerald-500" /> Free Diagnostic Tests (up to ₹5,000)</li>
+                                    <li className="flex items-center gap-2"><CheckCircle size={14} className="text-emerald-500" /> Free Diagnostic Tests (up to $5,000)</li>
                                     <li className="flex items-center gap-2"><CheckCircle size={14} className="text-emerald-500" /> Emergency Ambulance Services</li>
                                     <li className="flex items-center gap-2"><CheckCircle size={14} className="text-emerald-500" /> 24x7 Health Support</li>
                                 </ul>

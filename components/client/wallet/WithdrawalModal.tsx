@@ -78,7 +78,7 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance, userN
         }
 
         if (withdrawAmount > maxWithdrawal) {
-            toast.error('Insufficient Balance', { description: `You must maintain a minimum balance of ₹${minBalance}` });
+            toast.error('Insufficient Balance', { description: `You must maintain a minimum balance of $${minBalance}` });
             return;
         }
 
@@ -117,7 +117,7 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance, userN
 
         if (result.success) {
             toast.success('Withdrawal Request Submitted', {
-                description: `Amount ₹${withdrawAmount.toLocaleString('en-IN')} will be credited within 3-5 business days.`
+                description: `Amount $${withdrawAmount.toLocaleString('en-IN')} will be credited within 3-5 business days.`
             });
             onClose();
         } else {
@@ -155,11 +155,11 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance, userN
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm space-y-1">
                         <div className="flex justify-between">
                             <span className="text-slate-500">Available Balance:</span>
-                            <span className="font-bold text-slate-800">₹{currentBalance.toLocaleString('en-IN')}</span>
+                            <span className="font-bold text-slate-800">${currentBalance.toLocaleString('en-IN')}</span>
                         </div>
                         <div className="flex justify-between pt-2 border-t border-slate-200 mt-2">
                             <span className="text-slate-600 font-medium">Max Withdrawal:</span>
-                            <span className="font-bold text-teal-600">₹{maxWithdrawal.toLocaleString('en-IN')}</span>
+                            <span className="font-bold text-teal-600">${maxWithdrawal.toLocaleString('en-IN')}</span>
                         </div>
                     </div>
 
@@ -240,7 +240,7 @@ export default function WithdrawalModal({ isOpen, onClose, currentBalance, userN
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">Withdrawal Amount *</label>
                         <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">₹</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">$</span>
                             <input
                                 type="number"
                                 value={amount}

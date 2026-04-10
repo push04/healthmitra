@@ -105,7 +105,7 @@ export default function ClaimForm({ userProfile }: ClaimFormProps) {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Claim Amount (₹) *</label>
+                        <label className="text-sm font-medium text-slate-700">Claim Amount ($) *</label>
                         <input
                             type="number"
                             required

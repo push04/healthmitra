@@ -70,7 +70,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                             <h2 className="text-emerald-100 font-medium text-sm mb-2 flex items-center gap-2">
                                 <Wallet size={16} /> TOTAL WALLET BALANCE
                             </h2>
-                            <div className="text-4xl font-bold mb-4">₹{totalBalance.toLocaleString('en-IN')}</div>
+                            <div className="text-4xl font-bold mb-4">${totalBalance.toLocaleString('en-IN')}</div>
 
                             {/* Balance Breakdown */}
                             <div className="grid grid-cols-2 gap-3 mb-5">
@@ -78,7 +78,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                                     <div className="flex items-center gap-2 text-emerald-100 text-xs mb-1">
                                         <Upload size={12} /> Added Money
                                     </div>
-                                    <p className="text-xl font-bold">₹{addedMoney.toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold">${addedMoney.toLocaleString('en-IN')}</p>
                                     <p className="text-[10px] text-emerald-200 mt-1 flex items-center gap-1">
                                         <AlertCircle size={10} /> Not withdrawable
                                     </p>
@@ -87,7 +87,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                                     <div className="flex items-center gap-2 text-white text-xs mb-1">
                                         <Receipt size={12} /> Bill Refunds
                                     </div>
-                                    <p className="text-xl font-bold">₹{billRefundBalance.toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold">${billRefundBalance.toLocaleString('en-IN')}</p>
                                     <p className="text-[10px] text-emerald-100 mt-1 flex items-center gap-1">
                                         <CheckCircle size={10} /> Withdrawable
                                     </p>
@@ -140,7 +140,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                             <h3 className="font-bold text-slate-800 flex items-center gap-2">
                                 <Receipt size={18} className="text-teal-600" /> Withdrawable Bill Refunds
                             </h3>
-                            <span className="text-sm text-teal-600 font-semibold">₹{billRefundBalance.toLocaleString('en-IN')}</span>
+                            <span className="text-sm text-teal-600 font-semibold">${billRefundBalance.toLocaleString('en-IN')}</span>
                         </div>
                         <div className="divide-y divide-slate-100">
                             {billRefunds.length === 0 ? (
@@ -157,7 +157,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-emerald-600">₹{bill.amount.toLocaleString('en-IN')}</p>
+                                        <p className="font-bold text-emerald-600">${bill.amount.toLocaleString('en-IN')}</p>
                                         <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Withdrawable</span>
                                     </div>
                                 </div>
@@ -180,7 +180,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                                 <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><ArrowDownLeft size={12} /></span>
                                 CREDITED
                             </div>
-                            <p className="text-lg font-bold text-slate-800">₹{stats.totalCredited.toLocaleString('en-US')}</p>
+                            <p className="text-lg font-bold text-slate-800">${stats.totalCredited.toLocaleString('en-US')}</p>
                             <p className="text-xs text-slate-400 mt-1">{stats.creditedCount} txns</p>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -188,7 +188,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                                 <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"><ArrowUpRight size={12} /></span>
                                 DEBITED
                             </div>
-                            <p className="text-lg font-bold text-slate-800">₹{stats.totalDebited.toLocaleString('en-US')}</p>
+                            <p className="text-lg font-bold text-slate-800">${stats.totalDebited.toLocaleString('en-US')}</p>
                             <p className="text-xs text-slate-400 mt-1">{stats.debitedCount} txns</p>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -196,7 +196,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                                 <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><RefreshCw size={12} /></span>
                                 THIS MONTH
                             </div>
-                            <p className="text-lg font-bold text-slate-800">₹{stats.thisMonthSpend.toLocaleString('en-US')}</p>
+                            <p className="text-lg font-bold text-slate-800">${stats.thisMonthSpend.toLocaleString('en-US')}</p>
                             <p className="text-xs text-slate-400 mt-1">{stats.thisMonthCount} txns</p>
                         </div>
                     </div>
@@ -230,7 +230,7 @@ export function WalletView({ wallet, stats, billRefunds = [], userName = '' }: W
                     <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl p-6 text-white text-center">
                         <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">+</div>
                         <h3 className="font-bold mb-2">Refer & Earn</h3>
-                        <p className="text-sm text-slate-300 mb-4">Invite friends to Healthmitra and earn ₹500 for each successful referral.</p>
+                        <p className="text-sm text-slate-300 mb-4">Invite friends to Healthmitra and earn $500 for each successful referral.</p>
                         <button className="w-full py-2 bg-white text-slate-900 rounded-lg font-bold text-sm hover:bg-slate-100 transition-colors">
                             Invite Now
                         </button>

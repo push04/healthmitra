@@ -511,7 +511,7 @@ export function ServiceRequestForm({ initialType, userProfile, vouchers = [] }: 
                                                     <p className="font-bold text-purple-700">{v.code}</p>
                                                     <p className="text-sm text-slate-600">{v.description}</p>
                                                 </div>
-                                                <span className="text-lg font-bold text-purple-600">₹{v.value}</span>
+                                                <span className="text-lg font-bold text-purple-600">${v.value}</span>
                                             </div>
                                         </div>
                                     ))}

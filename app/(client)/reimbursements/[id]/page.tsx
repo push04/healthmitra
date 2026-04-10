@@ -91,7 +91,7 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
                                 </div>
                                 <div>
                                     <p className="text-slate-500 text-xs">Claimed Amount</p>
-                                    <p className="font-semibold text-slate-800">₹{claim.amount?.toLocaleString()}</p>
+                                    <p className="font-semibold text-slate-800">${claim.amount?.toLocaleString()}</p>
                                 </div>
                                 <div className="col-span-2">
                                     <p className="text-slate-500 text-xs">Diagnosis</p>

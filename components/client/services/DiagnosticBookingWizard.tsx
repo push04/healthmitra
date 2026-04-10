@@ -126,7 +126,7 @@ export function DiagnosticBookingWizard({ isOpen, onClose, testCatalog = [] }: D
                                             onClick={() => addTest(test)}
                                         >
                                             <span className="text-sm font-medium">{test.name}</span>
-                                            <span className="text-xs font-semibold text-teal-600">₹{test.price}</span>
+                                            <span className="text-xs font-semibold text-teal-600">${test.price}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -147,7 +147,7 @@ export function DiagnosticBookingWizard({ isOpen, onClose, testCatalog = [] }: D
                                                 <span className="text-sm font-medium text-slate-700">{test.name}</span>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <span className="text-sm font-bold text-slate-900">₹{test.price}</span>
+                                                <span className="text-sm font-bold text-slate-900">${test.price}</span>
                                                 <button onClick={() => removeTest(test.id)} className="text-slate-400 hover:text-red-500">
                                                     <X className="h-4 w-4" />
                                                 </button>
@@ -156,7 +156,7 @@ export function DiagnosticBookingWizard({ isOpen, onClose, testCatalog = [] }: D
                                     ))}
                                     <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
                                         <span className="font-semibold text-slate-900">Total Amount</span>
-                                        <span className="font-bold text-lg text-teal-700">₹{totalAmount}</span>
+                                        <span className="font-bold text-lg text-teal-700">${totalAmount}</span>
                                     </div>
                                 </div>
                             )}
@@ -252,7 +252,7 @@ export function DiagnosticBookingWizard({ isOpen, onClose, testCatalog = [] }: D
                             </div>
                             <div className="pt-2 flex justify-between items-center text-base font-semibold border-t border-slate-100">
                                 <span>Total Estimated Cost</span>
-                                <span>₹{totalAmount}</span>
+                                <span>${totalAmount}</span>
                             </div>
                         </div>
 

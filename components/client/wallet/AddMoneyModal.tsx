@@ -69,7 +69,7 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
             }
 
             toast.success('Money added to wallet!', {
-                description: `₹${Number(amount).toLocaleString('en-US')} credited successfully.`
+                description: `$${Number(amount).toLocaleString('en-US')} credited successfully.`
             });
             
             if (onSuccess) onSuccess();
@@ -132,7 +132,7 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
 
                     if (walletResult.success) {
                         toast.success('Money added to wallet!', {
-                            description: `₹${Number(amount).toLocaleString('en-US')} credited successfully.`
+                            description: `$${Number(amount).toLocaleString('en-US')} credited successfully.`
                         });
                         
                         if (onSuccess) onSuccess();
@@ -195,14 +195,14 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
 
                     <div className="text-center">
                         <p className="text-sm text-slate-500 mb-1">Current Balance</p>
-                        <p className="text-2xl font-bold text-slate-800">₹ {currentBalance.toLocaleString('en-US')}</p>
+                        <p className="text-2xl font-bold text-slate-800">$ {currentBalance.toLocaleString('en-US')}</p>
                     </div>
 
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-slate-700">Enter Amount *</label>
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">₹</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">$</span>
                                 <input
                                     type="number"
                                     value={amount}
@@ -224,7 +224,7 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
                                         : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'
                                         }`}
                                 >
-                                    ₹{amt.toLocaleString('en-US')}
+                                    ${amt.toLocaleString('en-US')}
                                 </button>
                             ))}
                         </div>
@@ -283,7 +283,7 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
                         {isProcessing ? (
                             <>Processing <Loader2 size={16} className="animate-spin" /></>
                         ) : razorpayEnabled ? (
-                            `Pay ₹${Number(amount || 0).toLocaleString('en-US')}`
+                            `Pay $${Number(amount || 0).toLocaleString('en-US')}`
                         ) : (
                             'Add Money (Test)'
                         )}

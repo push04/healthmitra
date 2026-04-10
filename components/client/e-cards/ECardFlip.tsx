@@ -45,7 +45,7 @@ export default function ECardFlip({ card }: ECardFlipProps) {
 
     // Calculate coverage display
     const coverageAmount = card.coverageAmount ?? 0;
-    const formattedCoverage = coverageAmount > 0 ? `₹${(coverageAmount / 100000).toFixed(0)},00,000` : '₹0';
+    const formattedCoverage = coverageAmount > 0 ? `$${(coverageAmount / 100000).toFixed(0)},00,000` : '$0';
 
     return (
         <div className="w-full perspective-1000 group">
@@ -207,7 +207,7 @@ export default function ECardFlip({ card }: ECardFlipProps) {
                         {/* Plan Name & Premium */}
                         <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-4 rounded-xl border border-teal-100 mb-4">
                             <p className="font-bold text-teal-800 text-lg">{card.planName}</p>
-                            <p className="text-sm text-teal-600 mt-1">Annual Premium: <span className="font-bold">₹{card.planPrice ? card.planPrice.toLocaleString('en-IN') : 'N/A'}</span></p>
+                            <p className="text-sm text-teal-600 mt-1">Annual Premium: <span className="font-bold">${card.planPrice ? card.planPrice.toLocaleString('en-IN') : 'N/A'}</span></p>
                         </div>
 
                         {/* Key Benefits */}
@@ -221,9 +221,9 @@ export default function ECardFlip({ card }: ECardFlipProps) {
                                     </li>
                                 )) : [
                                     'Cashless hospitalization at 1000+ hospitals',
-                                    'OPD coverage up to ₹25,000/year',
-                                    'Diagnostic tests up to ₹15,000/year',
-                                    'Medicine reimbursement up to ₹20,000/year',
+                                    'OPD coverage up to $25,000/year',
+                                    'Diagnostic tests up to $15,000/year',
+                                    'Medicine reimbursement up to $20,000/year',
                                     'Free annual health checkup (1 per member)',
                                     'Unlimited telemedicine consultations',
                                     'Emergency ambulance service',

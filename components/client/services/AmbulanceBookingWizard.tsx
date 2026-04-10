@@ -171,7 +171,7 @@ export function AmbulanceBookingWizard({ isOpen, onClose }: AmbulanceBookingWiza
                             </div>
                             <div className="pt-4 border-t border-slate-700 flex justify-between text-sm">
                                 <span>Distance: 12.5 km</span>
-                                <span className="font-bold text-emerald-400">₹ 1,200 - ₹ 1,500</span>
+                                <span className="font-bold text-emerald-400">$ 1,200 - $ 1,500</span>
                             </div>
                         </div>
 

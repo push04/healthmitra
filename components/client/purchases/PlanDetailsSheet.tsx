@@ -91,7 +91,7 @@ export function PlanDetailsSheet({ plan, isOpen, onClose, documents = [], claims
                                     <div className="space-y-3 md:border-l md:border-slate-200 md:pl-4">
                                         <div className="flex justify-between">
                                             <span className="text-sm text-slate-500">Amount Paid</span>
-                                            <span className="text-sm font-bold text-slate-900">₹ 12,500</span>
+                                            <span className="text-sm font-bold text-slate-900">$ 12,500</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-slate-500">Payment Mode</span>
@@ -146,22 +146,22 @@ export function PlanDetailsSheet({ plan, isOpen, onClose, documents = [], claims
                                         <tbody className="divide-y divide-slate-100">
                                             <tr>
                                                 <td className="px-4 py-3 text-slate-700">OPD Consultation</td>
-                                                <td className="px-4 py-3 text-slate-900 font-medium">₹ 25,000</td>
-                                                <td className="px-4 py-3 text-slate-500">₹ 4,200</td>
-                                                <td className="px-4 py-3 text-right text-emerald-600 font-medium">₹ 20,800</td>
+                                                <td className="px-4 py-3 text-slate-900 font-medium">$ 25,000</td>
+                                                <td className="px-4 py-3 text-slate-500">$ 4,200</td>
+                                                <td className="px-4 py-3 text-right text-emerald-600 font-medium">$ 20,800</td>
                                             </tr>
                                             <tr>
                                                 <td className="px-4 py-3 text-slate-700">Hospitalization</td>
-                                                <td className="px-4 py-3 text-slate-900 font-medium">₹ 5,00,000</td>
-                                                <td className="px-4 py-3 text-slate-500">₹ 0</td>
-                                                <td className="px-4 py-3 text-right text-emerald-600 font-medium">₹ 5,00,000</td>
+                                                <td className="px-4 py-3 text-slate-900 font-medium">$ 5,00,000</td>
+                                                <td className="px-4 py-3 text-slate-500">$ 0</td>
+                                                <td className="px-4 py-3 text-right text-emerald-600 font-medium">$ 5,00,000</td>
                                             </tr>
                                             {/* Mocking row for visual check */}
                                             <tr>
                                                 <td className="px-4 py-3 text-slate-700">Ambulance</td>
-                                                <td className="px-4 py-3 text-slate-900 font-medium">₹ 5,000</td>
-                                                <td className="px-4 py-3 text-slate-500">₹ 0</td>
-                                                <td className="px-4 py-3 text-right text-emerald-600 font-medium">₹ 5,000</td>
+                                                <td className="px-4 py-3 text-slate-900 font-medium">$ 5,000</td>
+                                                <td className="px-4 py-3 text-slate-500">$ 0</td>
+                                                <td className="px-4 py-3 text-right text-emerald-600 font-medium">$ 5,000</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -245,7 +245,7 @@ export function PlanDetailsSheet({ plan, isOpen, onClose, documents = [], claims
                                             }>{claim.status}</Badge>
                                         </div>
                                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
-                                            <span className="font-medium text-slate-900">₹ {claim.amount.toLocaleString('en-US')}</span>
+                                            <span className="font-medium text-slate-900">$ {claim.amount.toLocaleString('en-US')}</span>
                                             <Button variant="link" size="sm" className="h-auto p-0 text-teal-600">View Details →</Button>
                                         </div>
                                     </div>

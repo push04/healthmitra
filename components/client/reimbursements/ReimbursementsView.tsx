@@ -136,7 +136,7 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden">
                     <div className="relative z-10">
                         <p className="text-emerald-100 font-medium text-sm">Approved Amount</p>
-                        <h3 className="text-3xl font-bold mt-1">₹{approvedAmount.toLocaleString('en-IN')}</h3>
+                        <h3 className="text-3xl font-bold mt-1">${approvedAmount.toLocaleString('en-IN')}</h3>
                         <p className="text-xs text-emerald-200 mt-2 bg-white/10 inline-block px-2 py-1 rounded">{approvedCount} Claims approved</p>
                     </div>
                     <Activity className="absolute bottom-[-10px] right-[-10px] w-24 h-24 text-white opacity-10" />
@@ -145,7 +145,7 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                 <div className="bg-gradient-to-br from-red-500 to-red-600 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden">
                     <div className="relative z-10">
                         <p className="text-red-100 font-medium text-sm">Rejected Amount</p>
-                        <h3 className="text-3xl font-bold mt-1">₹{rejectedAmount.toLocaleString('en-IN')}</h3>
+                        <h3 className="text-3xl font-bold mt-1">${rejectedAmount.toLocaleString('en-IN')}</h3>
                         <p className="text-xs text-red-200 mt-2 bg-white/10 inline-block px-2 py-1 rounded">{rejectedCount} Claims rejected</p>
                     </div>
                 </div>
@@ -154,7 +154,7 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                     <div className="flex justify-between items-start">
                         <div>
                             <p className="text-slate-500 text-sm font-medium">Pending Processing</p>
-                            <h3 className="text-2xl font-bold text-slate-800 mt-1">₹{pendingAmount.toLocaleString('en-IN')}</h3>
+                            <h3 className="text-2xl font-bold text-slate-800 mt-1">${pendingAmount.toLocaleString('en-IN')}</h3>
                             <p className="text-xs text-amber-600 mt-1">{pendingCount} claims in review</p>
                         </div>
                         <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
@@ -298,7 +298,7 @@ export function ReimbursementsView({ initialClaims }: ReimbursementsViewProps) {
                                                 claim.status === 'rejected' ? 'text-red-600' :
                                                     'text-slate-800'
                                                 }`}>
-                                                ₹{claim.amount?.toLocaleString('en-IN')}
+                                                ${claim.amount?.toLocaleString('en-IN')}
                                             </p>
                                         </div>
 

@@ -107,7 +107,7 @@ export function QuickStats({
                         <h3 className="text-base font-medium text-slate-600">Wallet Balance</h3>
                         <div className="mt-1 flex items-baseline gap-1">
                             <span className="text-2xl font-bold text-emerald-600">
-                                ₹ {wallet?.balance ? wallet.balance.toLocaleString("en-IN") : '0'}
+                                $ {wallet?.balance ? wallet.balance.toLocaleString("en-IN") : '0'}
                             </span>
                         </div>
                         <p className="text-xs text-slate-500">Available Balance</p>
@@ -158,7 +158,7 @@ export function QuickStats({
                         <h3 className="font-semibold text-slate-700">Total Coverage</h3>
                         <div className="mt-2 flex items-baseline gap-1">
                             <span className="text-2xl font-bold text-rose-600">
-                                ₹{(plan?.coverageAmount || 0).toLocaleString("en-IN")}
+                                ${(plan?.coverageAmount || 0).toLocaleString("en-IN")}
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-1">Health protection</p>

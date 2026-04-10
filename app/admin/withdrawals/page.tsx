@@ -101,7 +101,7 @@ export default function WithdrawalsPage() {
                 <Card className="bg-white border-slate-200 shadow-sm">
                     <CardContent className="p-4 text-center">
                         <p className="text-slate-500 text-sm mb-1">Pending Amount</p>
-                        <h3 className="text-2xl font-bold text-amber-600">₹{stats.totalPending.toLocaleString()}</h3>
+                        <h3 className="text-2xl font-bold text-amber-600">${stats.totalPending.toLocaleString()}</h3>
                     </CardContent>
                 </Card>
                 <Card className="bg-white border-slate-200 shadow-sm">
@@ -140,7 +140,7 @@ export default function WithdrawalsPage() {
                                 <div className="flex-1">
                                     <div className="flex justify-between mb-1">
                                         <h3 className="font-bold text-slate-900 text-lg">{withdrawal.customerName}</h3>
-                                        <div className="font-mono text-amber-600 font-bold">₹{withdrawal.amount.toLocaleString()}</div>
+                                        <div className="font-mono text-amber-600 font-bold">${withdrawal.amount.toLocaleString()}</div>
                                     </div>
                                     <div className="flex gap-6 text-sm text-slate-500">
                                         <span>{withdrawal.customerEmail}</span>
@@ -189,7 +189,7 @@ export default function WithdrawalsPage() {
                                 <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                                     <div className="flex justify-between items-center">
                                         <span className="text-amber-800 font-medium">Withdrawal Amount</span>
-                                        <span className="text-2xl font-bold text-amber-600">₹{selectedWithdrawal.amount.toLocaleString()}</span>
+                                        <span className="text-2xl font-bold text-amber-600">${selectedWithdrawal.amount.toLocaleString()}</span>
                                     </div>
                                 </div>
 

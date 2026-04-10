@@ -53,7 +53,7 @@ export default function WithdrawalHistory({ withdrawals = [] }: WithdrawalHistor
                             <div className="flex items-start gap-4 pt-2">
                                 <div>
                                     <p className="text-xs text-slate-500 mb-0.5">Withdrawal Amount</p>
-                                    <p className="text-lg font-bold text-slate-800">₹{wd.amount.toLocaleString('en-US')}</p>
+                                    <p className="text-lg font-bold text-slate-800">${wd.amount.toLocaleString('en-US')}</p>
                                 </div>
                                 <div className="border-l border-slate-100 pl-4">
                                     <p className="text-xs text-slate-500 mb-0.5">Bank Details</p>
