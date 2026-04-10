@@ -284,139 +284,67 @@ export async function assignRequestToAgent(requestId: string, agentId: string) {
 export async function createAgent(data: { name: string; email: string; phone: string; role: string }) {
     const adminSupabase = await createAdminClient();
     
-    // First check if user exists with this email
+    // Check if user already exists
     const { data: existingProfile } = await adminSupabase
         .from('profiles')
-        .select('id, email')
+        .select('id, email, role')
         .eq('email', data.email)
         .single();
 
     if (existingProfile) {
-        // Update existing profile to be an agent
+        // Update role to agent
         const { error: updateError } = await adminSupabase
             .from('profiles')
-            .update({ role: data.role || 'agent' })
+            .update({ role: 'agent', full_name: data.name, phone: data.phone })
             .eq('id', existingProfile.id);
 
         if (updateError) {
             return { success: false, error: updateError.message };
         }
 
-        // Check if already in call_centre_agents
-        const { data: existingAgent } = await adminSupabase
-            .from('call_centre_agents')
-            .select('id')
-            .eq('user_id', existingProfile.id)
-            .single();
-
-        if (!existingAgent) {
-            // Insert new agent record
-            const { error: agentError } = await adminSupabase.from('call_centre_agents').insert({
-                user_id: existingProfile.id,
-                agent_name: data.name,
-                agent_email: data.email,
-                agent_phone: data.phone,
-                role: data.role || 'agent',
-                status: 'active',
-                is_available: true
-            });
-
-            if (agentError) {
-                return { success: false, error: agentError.message };
-            }
-        } else {
-            // Update existing agent
-            const { error: agentError } = await adminSupabase
-                .from('call_centre_agents')
-                .update({
-                    agent_name: data.name,
-                    agent_email: data.email,
-                    agent_phone: data.phone,
-                    role: data.role || 'agent',
-                    status: 'active'
-                })
-                .eq('user_id', existingProfile.id);
-
-            if (agentError) {
-                return { success: false, error: agentError.message };
-            }
-        }
-
-        return { success: true, message: 'Agent added successfully (existing user)' };
+        return { success: true, message: 'Agent updated successfully' };
     }
 
-    // Generate a temporary password for the agent
+    // Generate temp password
     const tempPassword = generateTempPassword();
 
-    // Create a new user with admin API using service role key
+    // Create auth user
     const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
         email: data.email,
         password: tempPassword,
         email_confirm: true,
-        user_metadata: {
-            full_name: data.name,
-            phone: data.phone,
-            role: 'agent'
-        }
+        user_metadata: { full_name: data.name, phone: data.phone }
     });
 
     if (authError) {
-        console.log('Admin create failed:', authError.message);
-        return { 
-            success: false, 
-            error: 'Cannot create user. Error: ' + authError.message 
-        };
+        return { success: false, error: 'Cannot create user: ' + authError.message };
     }
 
-    // Create agent profile in profiles table
-    if (authData.user) {
-        // Use 'call_center_agent' as the role (valid role per constraint)
-        const agentRole = 'call_center_agent';
-        
-        try {
-            const { error: profileError } = await adminSupabase.from('profiles').insert({
-                id: authData.user.id,
-                email: data.email,
-                full_name: data.name,
-                phone: data.phone,
-                role: agentRole,
-                status: 'active'
-            });
-
-            if (profileError && !profileError.message.includes('duplicate')) {
-                // If error is not duplicate key, try to update existing
-                await adminSupabase.from('profiles').update({
-                    email: data.email,
-                    full_name: data.name,
-                    phone: data.phone,
-                    role: agentRole,
-                    status: 'active'
-                }).eq('id', authData.user.id);
-            }
-        } catch (e) {
-            console.log('Profile operation warning:', e);
-        }
-
-        // Create agent in call_centre_agents
-        const { error: agentError } = await adminSupabase.from('call_centre_agents').insert({
-            user_id: authData.user.id,
-            agent_name: data.name,
-            agent_email: data.email,
-            agent_phone: data.phone,
-            role: data.role || 'call_center',
-            status: 'active',
-            is_available: true
-        });
-
-        if (agentError) {
-            console.log('Agent insert error:', agentError.message);
-            return { success: true, message: 'Agent created but entry in call_centre_agents failed. Use admin to manually add.', tempPassword };
-        }
-
-        return { success: true, message: 'Agent created successfully', tempPassword };
+    if (!authData.user) {
+        return { success: false, error: 'Failed to create auth user' };
     }
 
-    return { success: false, error: 'Failed to create agent' };
+    // Create profile
+    const { error: profileError } = await adminSupabase.from('profiles').insert({
+        id: authData.user.id,
+        email: data.email,
+        full_name: data.name,
+        phone: data.phone,
+        role: 'agent',
+        status: 'active'
+    });
+
+    if (profileError && !profileError.message.includes('duplicate')) {
+        // Try update if insert fails
+        await adminSupabase.from('profiles').update({
+            full_name: data.name,
+            phone: data.phone,
+            role: 'agent',
+            status: 'active'
+        }).eq('id', authData.user.id);
+    }
+
+    return { success: true, message: 'Agent created successfully', tempPassword };
 }
 
 function generateTempPassword(): string {
