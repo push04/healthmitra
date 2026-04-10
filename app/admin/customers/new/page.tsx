@@ -328,7 +328,7 @@ export default function NewCustomerPage() {
                                                     <div className="flex-1">
                                                         <div className="flex items-center justify-between">
                                                             <span className="font-medium text-slate-900">{plan.name}</span>
-                                                            <span className="text-teal-600 font-semibold">₹{plan.basePrice?.toLocaleString()}</span>
+                                                            <span className="text-teal-600 font-semibold">${plan.basePrice?.toLocaleString()}</span>
                                                         </div>
                                                         <p className="text-xs text-slate-500 mt-0.5">
                                                             {plan.validityValue || 1} year validity • {plan.services?.length || 0} services

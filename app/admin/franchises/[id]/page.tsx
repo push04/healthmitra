@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import {
     ArrowLeft, Building2, MapPin, Mail, Phone, Globe, Shield, Calendar,
-    Loader2, CheckCircle, Clock, Users, IndianRupee, Percent, Edit, Upload, Eye, FileText, CheckCircle2, XCircle
+    Loader2, CheckCircle, Clock, Users, DollarSign, Percent, Edit, Upload, Eye, FileText, CheckCircle2, XCircle
 } from 'lucide-react';
 import { Franchise, FranchiseModule, FranchiseActivity, FranchisePartner, FranchiseKYC, KYCHistoryEntry } from '@/types/franchise';
 import { getFranchise, assignModules, getFranchiseKYC, updateFranchiseKYC, verifyFranchiseKYC, uploadKYCDocument } from '@/app/actions/franchise';
@@ -200,8 +200,8 @@ export default function FranchiseDetailPage({ params }: { params: Promise<{ id: 
                     {/* Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <StatCard label="Total Partners" value={franchise.totalPartners} icon={Users} color="bg-blue-50 border-blue-200 text-blue-700" />
-                        <StatCard label="Total Revenue" value={`₹${(franchise.totalRevenue / 100000).toFixed(1)}L`} icon={IndianRupee} color="bg-emerald-50 border-emerald-200 text-emerald-700" />
-                        <StatCard label="Commission Earned" value={`₹${((franchise.totalRevenue * franchise.commissionPercent) / 100 / 1000).toFixed(0)}K`} icon={Percent} color="bg-teal-50 border-teal-200 text-teal-700" />
+                        <StatCard label="Total Revenue" value={`$${(franchise.totalRevenue / 100000).toFixed(1)}L`} icon={DollarSign} color="bg-emerald-50 border-emerald-200 text-emerald-700" />
+                        <StatCard label="Commission Earned" value={`$${((franchise.totalRevenue * franchise.commissionPercent) / 100 / 1000).toFixed(0)}K`} icon={Percent} color="bg-teal-50 border-teal-200 text-teal-700" />
                         <StatCard label="KYC Status" value={franchise.kycStatus} icon={Shield} color="bg-amber-50 border-amber-200 text-amber-700" />
                     </div>
                 </TabsContent>
@@ -421,7 +421,7 @@ export default function FranchiseDetailPage({ params }: { params: Promise<{ id: 
                                                 </TableCell>
                                                 <TableCell className="text-xs text-slate-500">{formatDate(p.joinedAt)}</TableCell>
                                                 <TableCell className="text-center text-sm font-medium text-slate-700">{p.plansCount}</TableCell>
-                                                <TableCell className="text-sm font-medium text-slate-700">₹{(p.revenue / 1000).toFixed(0)}K</TableCell>
+                                                <TableCell className="text-sm font-medium text-slate-700">${(p.revenue / 1000).toFixed(0)}K</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

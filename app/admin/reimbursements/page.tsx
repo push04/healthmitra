@@ -89,8 +89,8 @@ export default function ReimbursementsPage() {
 
             {/* STATS */}
             <div className="grid grid-cols-4 gap-4">
-                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Pending Claims</p><h3 className="text-2xl font-bold text-amber-600">{pendingCount}</h3><p className="text-xs text-slate-400">₹{pendingAmount.toLocaleString()}</p></CardContent></Card>
-                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Approved</p><h3 className="text-2xl font-bold text-emerald-600">{approvedCount}</h3><p className="text-xs text-slate-400">₹{approvedAmount.toLocaleString()}</p></CardContent></Card>
+                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Pending Claims</p><h3 className="text-2xl font-bold text-amber-600">{pendingCount}</h3><p className="text-xs text-slate-400">${pendingAmount.toLocaleString()}</p></CardContent></Card>
+                <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Approved</p><h3 className="text-2xl font-bold text-emerald-600">{approvedCount}</h3><p className="text-xs text-slate-400">${approvedAmount.toLocaleString()}</p></CardContent></Card>
                 <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Rejected</p><h3 className="text-2xl font-bold text-red-600">{rejectedCount}</h3></CardContent></Card>
                 <Card className="bg-white border-slate-200 shadow-sm"><CardContent className="p-4 text-center"><p className="text-slate-500 text-sm mb-1">Total Claims</p><h3 className="text-2xl font-bold text-slate-900">{allClaims.length}</h3></CardContent></Card>
             </div>
@@ -124,7 +124,7 @@ export default function ReimbursementsPage() {
                                                     <h3 className="font-bold text-slate-900 text-lg">{claim.title}</h3>
                                                     <Badge className={`text-xs border ${STATUS_STYLES[claim.status]}`}>{claim.status}</Badge>
                                                 </div>
-                                                <div className="font-mono text-emerald-600 font-bold">₹{claim.amount.toLocaleString()}</div>
+                                                <div className="font-mono text-emerald-600 font-bold">${claim.amount.toLocaleString()}</div>
                                             </div>
                                             <div className="flex gap-6 text-sm text-slate-500">
                                                 <span className="font-mono">{claim.claimId}</span>
@@ -160,7 +160,7 @@ export default function ReimbursementsPage() {
                                 <div className="bg-slate-50 p-4 rounded-lg space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-slate-500">Claimed Amount</span>
-                                        <span className="font-bold">₹{selectedClaim.amount.toLocaleString()}</span>
+                                        <span className="font-bold">${selectedClaim.amount.toLocaleString()}</span>
                                     </div>
                                 </div>
 
@@ -188,7 +188,7 @@ export default function ReimbursementsPage() {
                                     <div className="space-y-2">
                                         <Label>Approved Amount</Label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-2.5 text-slate-500">₹</span>
+                                            <span className="absolute left-3 top-2.5 text-slate-500">$</span>
                                             <Input type="number" value={audit.approvedAmount} onChange={e => setAudit({ ...audit, approvedAmount: parseFloat(e.target.value) || 0 })} className="pl-6" />
                                         </div>
                                     </div>

@@ -358,7 +358,7 @@ export default function CustomerManagementPage() {
                                 <SelectContent>
                                     {plans.map((p: any) => (
                                         <SelectItem key={p.id} value={p.id}>
-                                            {p.name} — ₹{p.basePrice?.toLocaleString()}
+                                            {p.name} — ${p.basePrice?.toLocaleString()}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

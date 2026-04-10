@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, IndianRupee, LogOut, Menu, X, Handshake } from 'lucide-react';
+import { LayoutDashboard, Users, DollarSign, LogOut, Menu, X, Handshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const NAV = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/partner/dashboard' },
     { icon: Users, label: 'Sub-Partners', href: '/partner/sub-partners' },
-    { icon: IndianRupee, label: 'Commissions', href: '/partner/commissions' },
+    { icon: DollarSign, label: 'Commissions', href: '/partner/commissions' },
 ];
 
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {

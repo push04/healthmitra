@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, IndianRupee, TrendingUp, ShoppingCart, Clock, Activity, Percent, Loader2 } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, ShoppingCart, Clock, Activity, Percent, Loader2 } from 'lucide-react';
 import { getCurrentPartner, getSubPartners, getPartnerCommissions } from '@/app/actions/partners';
 import { Partner, SubPartner, PartnerCommission } from '@/types/partners';
 import { toast } from 'sonner';
@@ -48,7 +48,7 @@ export default function PartnerDashboardPage() {
 
     const stats = [
         { label: 'Total Sales', value: partner.totalSales || 0, icon: ShoppingCart, color: 'bg-blue-50 border-blue-200 text-blue-700' },
-        { label: 'Commission Earned', value: `₹${((partner.totalCommission || 0) / 1000).toFixed(0)}K`, icon: IndianRupee, color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+        { label: 'Commission Earned', value: `$${((partner.totalCommission || 0) / 1000).toFixed(0)}K`, icon: DollarSign, color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
         { label: 'Sub-Partners', value: subPartners.length, icon: Users, color: 'bg-orange-50 border-orange-200 text-orange-700' },
         { label: 'Commission Rate', value: `${partner.commissionPercent || 0}%`, icon: Percent, color: 'bg-teal-50 border-teal-200 text-teal-700' },
     ];
@@ -84,7 +84,7 @@ export default function PartnerDashboardPage() {
                                     <p className="text-xs text-slate-400">{c.planName} — {new Date(c.saleDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-sm font-medium text-emerald-700">₹{c.commissionAmount.toLocaleString('en-IN')}</p>
+                                    <p className="text-sm font-medium text-emerald-700">${c.commissionAmount.toLocaleString('en-IN')}</p>
                                     <Badge className={`text-[10px] ${COM_STATUS[c.status] || 'bg-slate-100 text-slate-700'}`}>{c.status}</Badge>
                                 </div>
                             </div>
@@ -104,7 +104,7 @@ export default function PartnerDashboardPage() {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-medium text-slate-700">{sp.salesCount} sales</p>
-                                    <p className="text-xs text-slate-400">₹{(sp.totalRevenue / 1000).toFixed(0)}K</p>
+                                    <p className="text-xs text-slate-400">${(sp.totalRevenue / 1000).toFixed(0)}K</p>
                                 </div>
                             </div>
                         ))}

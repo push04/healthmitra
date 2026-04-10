@@ -28,7 +28,7 @@ export default async function WalletPage() {
     const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
 
     return <WalletView 
-        wallet={wallet || { id: '', balance: 0, currency: 'INR', status: 'inactive' }} 
+        wallet={wallet || { id: '', balance: 0, currency: 'USD', status: 'inactive' }} 
         stats={stats} 
         userName={profile?.full_name || ''}
     />;

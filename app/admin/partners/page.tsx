@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-    Search, Loader2, Handshake, Plus, Users, IndianRupee, Shield, TrendingUp, Eye, MapPin, Phone
+    Search, Loader2, Handshake, Plus, Users, DollarSign, Shield, TrendingUp, Eye, MapPin, Phone
 } from 'lucide-react';
 import { Partner } from '@/types/partners';
 import { getPartners, getPartnerStats } from '@/app/actions/partners';
@@ -111,7 +111,7 @@ export default function PartnersListingPage() {
                                 <h3 className="text-2xl font-bold text-amber-600">{stats.totalRevenue}</h3>
                             </div>
                             <div className="bg-amber-50 p-3 rounded-full">
-                                <IndianRupee className="h-6 w-6 text-amber-600" />
+                                <DollarSign className="h-6 w-6 text-amber-600" />
                             </div>
                         </div>
                     </CardContent>

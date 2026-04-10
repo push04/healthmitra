@@ -78,7 +78,7 @@ function CheckoutSuccessContent() {
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-slate-500">Amount Paid</span>
-                                        <span className="font-medium text-slate-900">₹{Number(purchaseData.amount || 0).toLocaleString()}</span>
+                                        <span className="font-medium text-slate-900">${Number(purchaseData.amount || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-slate-500">Transaction ID</span>

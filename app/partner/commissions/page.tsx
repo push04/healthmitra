@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { IndianRupee, TrendingUp, Clock, CheckCircle2, Banknote, Loader2 } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, CheckCircle2, Banknote, Loader2 } from 'lucide-react';
 import { getCurrentPartner, getPartnerCommissions } from '@/app/actions/partners';
 import { Partner, PartnerCommission } from '@/types/partners';
 import { toast } from 'sonner';
@@ -56,13 +56,13 @@ export default function CommissionsPage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4">
                 <div className="p-4 rounded-xl border bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm">
-                    <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">₹{(totalEarned / 1000).toFixed(1)}K</div><div className="text-xs uppercase tracking-wider opacity-70">Total Earned</div></div><TrendingUp className="h-5 w-5 opacity-40" /></div>
+                    <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">${(totalEarned / 1000).toFixed(1)}K</div><div className="text-xs uppercase tracking-wider opacity-70">Total Earned</div></div><TrendingUp className="h-5 w-5 opacity-40" /></div>
                 </div>
                 <div className="p-4 rounded-xl border bg-blue-50 border-blue-200 text-blue-700 shadow-sm">
-                    <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">₹{(paidOut / 1000).toFixed(1)}K</div><div className="text-xs uppercase tracking-wider opacity-70">Paid Out</div></div><CheckCircle2 className="h-5 w-5 opacity-40" /></div>
+                    <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">${(paidOut / 1000).toFixed(1)}K</div><div className="text-xs uppercase tracking-wider opacity-70">Paid Out</div></div><CheckCircle2 className="h-5 w-5 opacity-40" /></div>
                 </div>
                 <div className="p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-700 shadow-sm">
-                    <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">₹{(pending / 1000).toFixed(1)}K</div><div className="text-xs uppercase tracking-wider opacity-70">Pending</div></div><Clock className="h-5 w-5 opacity-40" /></div>
+                    <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">${(pending / 1000).toFixed(1)}K</div><div className="text-xs uppercase tracking-wider opacity-70">Pending</div></div><Clock className="h-5 w-5 opacity-40" /></div>
                 </div>
             </div>
 
@@ -103,9 +103,9 @@ export default function CommissionsPage() {
                                     <TableCell className="font-mono text-xs text-slate-500">{c.saleId}</TableCell>
                                     <TableCell className="text-sm text-slate-800">{c.customerName}</TableCell>
                                     <TableCell className="text-sm text-slate-600">{c.planName}</TableCell>
-                                    <TableCell className="text-sm text-slate-700">₹{c.saleAmount.toLocaleString('en-IN')}</TableCell>
+                                    <TableCell className="text-sm text-slate-700">${c.saleAmount.toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="text-center text-sm text-slate-600">{c.commissionPercent}%</TableCell>
-                                    <TableCell className="text-sm font-medium text-emerald-700">₹{c.commissionAmount.toLocaleString('en-IN')}</TableCell>
+                                    <TableCell className="text-sm font-medium text-emerald-700">${c.commissionAmount.toLocaleString('en-IN')}</TableCell>
                                     <TableCell><Badge className={`text-xs ${STATUS_COLORS[c.status]}`}>{c.status}</Badge></TableCell>
                                     <TableCell className="text-xs text-slate-500">{fmt(c.saleDate)}</TableCell>
                                     <TableCell className="text-xs text-slate-500">{c.payoutDate ? fmt(c.payoutDate) : '—'}</TableCell>

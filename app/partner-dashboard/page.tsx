@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-    Search, Loader2, Handshake, Plus, Users, IndianRupee, Shield, TrendingUp, Eye, MapPin, Phone
+    Search, Loader2, Handshake, Plus, Users, DollarSign, Shield, TrendingUp, Eye, MapPin, Phone
 } from 'lucide-react';
 import { Partner } from '@/types/partners';
 import { getPartners, getPartnerStats } from '@/app/actions/partners';
@@ -126,10 +126,10 @@ export default function PartnerDashboard() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-slate-500 text-sm">Total Revenue</p>
-                                    <h3 className="text-2xl font-bold text-amber-600">₹{(stats.totalRevenue / 100000).toFixed(1)}L</h3>
+                                    <h3 className="text-2xl font-bold text-amber-600">${(stats.totalRevenue / 100000).toFixed(1)}L</h3>
                                 </div>
                                 <div className="bg-amber-50 p-3 rounded-full">
-                                    <IndianRupee className="h-6 w-6 text-amber-600" />
+                                    <DollarSign className="h-6 w-6 text-amber-600" />
                                 </div>
                             </div>
                         </CardContent>
@@ -139,7 +139,7 @@ export default function PartnerDashboard() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-slate-500 text-sm">Total Commission</p>
-                                    <h3 className="text-2xl font-bold text-purple-600">₹{(stats.totalCommission / 100000).toFixed(1)}L</h3>
+                                    <h3 className="text-2xl font-bold text-purple-600">${(stats.totalCommission / 100000).toFixed(1)}L</h3>
                                 </div>
                                 <div className="bg-purple-50 p-3 rounded-full">
                                     <TrendingUp className="h-6 w-6 text-purple-600" />
@@ -239,10 +239,10 @@ export default function PartnerDashboard() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <span className="text-lg font-semibold text-slate-900">₹{(partner.totalSales / 1000).toFixed(0)}K</span>
+                                                <span className="text-lg font-semibold text-slate-900">${(partner.totalSales / 1000).toFixed(0)}K</span>
                                             </TableCell>
                                             <TableCell>
-                                                <span className="text-lg font-semibold text-purple-600">₹{(partner.totalCommission / 1000).toFixed(0)}K</span>
+                                                <span className="text-lg font-semibold text-purple-600">${(partner.totalCommission / 1000).toFixed(0)}K</span>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex gap-2">

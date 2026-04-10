@@ -116,7 +116,7 @@ export default function ShopPlansPage() {
                                         <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
                                         <p className="text-slate-500 text-sm">{plan.description}</p>
                                         <div className="mt-4">
-                                            <span className="text-4xl font-bold text-slate-900">₹{Number(plan.price || 0).toLocaleString()}</span>
+                                            <span className="text-4xl font-bold text-slate-900">${Number(plan.price || 0).toLocaleString()}</span>
                                             <span className="text-slate-500">/year</span>
                                         </div>
                                     </div>

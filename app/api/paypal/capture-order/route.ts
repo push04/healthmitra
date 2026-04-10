@@ -104,7 +104,7 @@ export async function POST(request: Request) {
             user_id: user.id,
             plan_id: planId,
             amount: plan.price,
-            currency: 'INR',
+            currency: 'USD',
             status: 'captured',
             razorpay_order_id: null,
             razorpay_payment_id: captureId || paypalOrderId,

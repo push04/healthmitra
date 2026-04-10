@@ -352,7 +352,7 @@ export default function SettingsPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Referral Bonus Amount (₹)</Label>
+                                    <Label>Referral Bonus Amount ($)</Label>
                                     <Input 
                                         type="number"
                                         value={settings.referral_bonus || '500'} 
@@ -492,7 +492,7 @@ export default function SettingsPage() {
                         <CardContent className="space-y-4">
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Minimum Withdrawal (₹)</Label>
+                                    <Label>Minimum Withdrawal ($)</Label>
                                     <Input 
                                         type="number"
                                         value={settings.min_withdrawal_amount || '500'} 
@@ -501,7 +501,7 @@ export default function SettingsPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Maximum Withdrawal (₹)</Label>
+                                    <Label>Maximum Withdrawal ($)</Label>
                                     <Input 
                                         type="number"
                                         value={settings.max_withdrawal_amount || '50000'} 

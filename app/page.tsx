@@ -299,7 +299,7 @@ export default async function Home() {
                     <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
                     <p className="text-slate-500 mb-6 text-sm">{plan.description || 'Comprehensive coverage for your family'}</p>
                     <div className="mb-6">
-                      <span className="text-4xl font-bold text-slate-900">₹{Number(plan.price || 0).toLocaleString()}</span>
+                      <span className="text-4xl font-bold text-slate-900">${Number(plan.price || 0).toLocaleString()}</span>
                       <span className="text-slate-500">/year</span>
                     </div>
                     <ul className="space-y-3 mb-8">

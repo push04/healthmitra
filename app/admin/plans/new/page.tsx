@@ -309,7 +309,7 @@ export default function CreatePlanWizard() {
 
                             <div className="grid grid-cols-3 gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
                                 <div className="space-y-2">
-                                    <Label>Base Price (₹) *</Label>
+                                    <Label>Base Price ($) *</Label>
                                     <Input type="number" value={plan.basePrice} onChange={e => updatePlan({ basePrice: parseFloat(e.target.value) })} className="bg-white border-slate-200 text-slate-900" />
                                 </div>
                                 <div className="space-y-2">
@@ -319,7 +319,7 @@ export default function CreatePlanWizard() {
                                 <div className="space-y-2">
                                     <Label className="text-teal-600">Total Price (Auto)</Label>
                                     <div className="h-10 px-3 py-2 bg-teal-50 border border-teal-200 rounded-md text-teal-600 font-bold">
-                                        ₹ {plan.totalPrice?.toFixed(2)}
+                                        $ {plan.totalPrice?.toFixed(2)}
                                     </div>
                                 </div>
                             </div>
@@ -595,7 +595,7 @@ export default function CreatePlanWizard() {
 
                                 <div className="flex justify-center gap-8 py-6 border-t border-b border-slate-200">
                                     <div className="text-center">
-                                        <div className="text-3xl font-bold text-teal-600">₹{plan.totalPrice?.toFixed(0)}</div>
+                                        <div className="text-3xl font-bold text-teal-600">${plan.totalPrice?.toFixed(0)}</div>
                                         <div className="text-xs text-slate-500 uppercase tracking-wider">Total Price</div>
                                     </div>
                                     <div className="w-px bg-slate-200 h-12"></div>

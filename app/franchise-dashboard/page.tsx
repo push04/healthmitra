@@ -111,7 +111,7 @@ export default function FranchiseDashboard() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-slate-500 text-sm">This Month Revenue</p>
-                                    <h3 className="text-2xl font-bold text-emerald-600">₹{(stats.totalSales * 0.1 / 100000).toFixed(1)}L</h3>
+                                    <h3 className="text-2xl font-bold text-emerald-600">${(stats.totalSales * 0.1 / 100000).toFixed(1)}L</h3>
                                 </div>
                                 <div className="bg-emerald-50 p-3 rounded-full">
                                     <TrendingUp className="h-6 w-6 text-emerald-600" />
@@ -124,7 +124,7 @@ export default function FranchiseDashboard() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-slate-500 text-sm">Commission Payout</p>
-                                    <h3 className="text-2xl font-bold text-purple-600">₹{(stats.totalSales * 0.15 / 100000).toFixed(1)}L</h3>
+                                    <h3 className="text-2xl font-bold text-purple-600">${(stats.totalSales * 0.15 / 100000).toFixed(1)}L</h3>
                                 </div>
                                 <div className="bg-purple-50 p-3 rounded-full">
                                     <DollarSign className="h-6 w-6 text-purple-600" />

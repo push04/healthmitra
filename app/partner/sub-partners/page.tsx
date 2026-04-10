@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Plus, Search, TrendingUp, IndianRupee, Loader2 } from 'lucide-react';
+import { Users, Plus, Search, TrendingUp, DollarSign, Loader2 } from 'lucide-react';
 import { getCurrentPartner, getSubPartners } from '@/app/actions/partners';
 import { Partner, SubPartner } from '@/types/partners';
 import { toast } from 'sonner';
@@ -55,7 +55,7 @@ export default function SubPartnersPage() {
                     <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">{totalSales}</div><div className="text-xs uppercase tracking-wider opacity-70">Combined Sales</div></div><TrendingUp className="h-5 w-5 opacity-40" /></div>
                 </div>
                 <div className="p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-700 shadow-sm">
-                    <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">₹{(totalRev / 1000).toFixed(0)}K</div><div className="text-xs uppercase tracking-wider opacity-70">Combined Revenue</div></div><IndianRupee className="h-5 w-5 opacity-40" /></div>
+                    <div className="flex items-center justify-between"><div><div className="text-2xl font-bold">${(totalRev / 1000).toFixed(0)}K</div><div className="text-xs uppercase tracking-wider opacity-70">Combined Revenue</div></div><DollarSign className="h-5 w-5 opacity-40" /></div>
                 </div>
             </div>
 
@@ -91,7 +91,7 @@ export default function SubPartnersPage() {
                                     <TableCell className="text-center text-sm font-medium text-slate-700">{sp.commissionPercent}%</TableCell>
                                     <TableCell><Badge className={`text-xs ${sp.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{sp.status}</Badge></TableCell>
                                     <TableCell className="text-center text-sm text-slate-700">{sp.salesCount}</TableCell>
-                                    <TableCell className="text-sm font-medium text-slate-700">₹{(sp.totalRevenue / 1000).toFixed(0)}K</TableCell>
+                                    <TableCell className="text-sm font-medium text-slate-700">${(sp.totalRevenue / 1000).toFixed(0)}K</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

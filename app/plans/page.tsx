@@ -79,7 +79,7 @@ export default async function PlansPage() {
                                 <div className="text-center mb-6">
                                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                                     <div className="flex items-baseline justify-center gap-1">
-                                        <span className="text-4xl font-bold text-primary">₹{Number(plan.price || 0).toLocaleString()}</span>
+                                        <span className="text-4xl font-bold text-primary">${Number(plan.price || 0).toLocaleString()}</span>
                                         <span className="text-muted-foreground">/year</span>
                                     </div>
                                     <p className="text-muted-foreground mt-2">{plan.description}</p>

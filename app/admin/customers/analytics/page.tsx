@@ -25,7 +25,7 @@ export default function CustomerAnalyticsPage() {
         { title: 'Total Customers', value: data.total, icon: Users, color: 'text-blue-600' },
         { title: 'Active', value: data.active, sub: `${Math.round((data.active / data.total) * 100)}%`, icon: UserPlus, color: 'text-green-600' },
         { title: 'Inactive', value: data.inactive, sub: `${Math.round((data.inactive / data.total) * 100)}%`, icon: UserMinus, color: 'text-red-500' },
-        { title: 'Avg CLV', value: `₹${data.clv.toLocaleString()}`, icon: Wallet, color: 'text-yellow-600' },
+        { title: 'Avg CLV', value: `$${data.clv.toLocaleString()}`, icon: Wallet, color: 'text-yellow-600' },
     ];
 
     return (

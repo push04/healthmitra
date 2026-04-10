@@ -273,13 +273,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ plan: strin
                                                 </Badge>
                                                 {plan.coverage_amount && (
                                                     <Badge variant="outline" className="text-xs border-emerald-300 text-emerald-700 bg-emerald-50">
-                                                        ₹{Number(plan.coverage_amount).toLocaleString()} cover
+                                                        ${Number(plan.coverage_amount).toLocaleString()} cover
                                                     </Badge>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <p className="text-2xl font-bold text-slate-900">₹{Number(plan.price || 0).toLocaleString()}</p>
+                                            <p className="text-2xl font-bold text-slate-900">${Number(plan.price || 0).toLocaleString()}</p>
                                             <p className="text-xs text-slate-400">base price</p>
                                         </div>
                                     </div>
@@ -315,16 +315,16 @@ export default function CheckoutPage({ params }: { params: Promise<{ plan: strin
                                 <CardContent className="pt-0 space-y-3">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-500">Base Price</span>
-                                        <span className="text-slate-800 font-medium">₹{Number(plan.price || 0).toLocaleString()}</span>
+                                        <span className="text-slate-800 font-medium">${Number(plan.price || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-500">GST (18%)</span>
-                                        <span className="text-slate-800 font-medium">₹{gst.toLocaleString()}</span>
+                                        <span className="text-slate-800 font-medium">${gst.toLocaleString()}</span>
                                     </div>
                                     <div className="h-px bg-slate-100" />
                                     <div className="flex justify-between text-base font-bold">
                                         <span className="text-slate-900">Total Payable</span>
-                                        <span className="text-primary text-lg">₹{total.toLocaleString()}</span>
+                                        <span className="text-primary text-lg">${total.toLocaleString()}</span>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -358,7 +358,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ plan: strin
 
                                         {/* Amount display */}
                                         <div className="text-center py-3 border border-slate-100 rounded-xl bg-slate-50">
-                                            <p className="text-3xl font-bold text-slate-900">₹{total.toLocaleString()}</p>
+                                            <p className="text-3xl font-bold text-slate-900">${total.toLocaleString()}</p>
                                             <p className="text-xs text-slate-400 mt-1">incl. GST</p>
                                         </div>
 

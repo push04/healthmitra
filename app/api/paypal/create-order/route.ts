@@ -39,9 +39,8 @@ export async function POST(request: Request) {
 
         const { accessToken, base } = await getPayPalAccessToken(clientId, clientSecret, sandbox);
 
-        // Convert INR to USD (approximate) — PayPal sandbox supports USD best
-        // Use USD for PayPal
-        const usdAmount = (amount / 84).toFixed(2); // approximate INR→USD
+        // Amount is already in USD (prices stored in USD)
+        const usdAmount = Number(amount).toFixed(2);
 
         const res = await fetch(`${base}/v2/checkout/orders`, {
             method: 'POST',

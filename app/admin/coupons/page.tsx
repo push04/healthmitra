@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit2, Trash2, Search, Copy, Check, Percent, IndianRupee, Calendar, Users, TrendingUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Copy, Check, Percent, DollarSign, Calendar, Users, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CouponFormData {
@@ -239,7 +239,7 @@ export default function CouponsPage() {
 
                                 <div className="mb-4">
                                     <h3 className="text-3xl font-bold text-slate-800">
-                                        {coupon.type === 'percentage' ? `${coupon.value}%` : `₹${coupon.value}`}
+                                        {coupon.type === 'percentage' ? `${coupon.value}%` : `$${coupon.value}`}
                                         <span className="text-sm font-normal text-slate-500 ml-1">OFF</span>
                                     </h3>
                                 </div>
@@ -300,7 +300,7 @@ export default function CouponsPage() {
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="percentage">Percentage (%)</SelectItem>
-                                        <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
+                                        <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import {
     ArrowLeft, Loader2, Building2, Mail, Phone, MapPin, Shield, Percent,
-    IndianRupee, Users, Calendar, Edit, Globe, CheckCircle, Clock, CreditCard, FileText, CheckCircle2, XCircle, Upload
+    DollarSign, Users, Calendar, Edit, Globe, CheckCircle, Clock, CreditCard, FileText, CheckCircle2, XCircle, Upload
 } from 'lucide-react';
 import { Partner, SubPartner, PartnerCommission, PartnerKYC } from '@/types/partners';
 import { getPartner, getPartnerKYC, updatePartnerKYC, verifyPartnerKYC, uploadPartnerKYCDocument } from '@/app/actions/partners';
@@ -172,7 +172,7 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
                             <CardHeader className="pb-3"><CardTitle className="text-base text-slate-700">Commission & Financial</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
                                 <Info icon={Percent} label="Commission Rate" value={`${partner.commissionPercent}%`} />
-                                <Info icon={IndianRupee} label="Total Commission" value={`₹${(partner.totalCommission / 1000).toFixed(0)}K`} />
+                                <Info icon={DollarSign} label="Total Commission" value={`$${(partner.totalCommission / 1000).toFixed(0)}K`} />
                                 <Info icon={Calendar} label="Joined" value={fmt(partner.joinedDate)} />
                                 <Info icon={Shield} label="MOU" value={partner.mouSigned ? `Signed (${fmt(partner.mouDate!)})` : 'Not signed'} />
                             </CardContent>
@@ -196,9 +196,9 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
 
                     {/* Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <Stat label="Total Sales" value={partner.totalSales} icon={IndianRupee} color="bg-emerald-50 border-emerald-200 text-emerald-700" />
+                        <Stat label="Total Sales" value={partner.totalSales} icon={DollarSign} color="bg-emerald-50 border-emerald-200 text-emerald-700" />
                         <Stat label="Sub-Partners" value={partner.totalSubPartners} icon={Users} color="bg-blue-50 border-blue-200 text-blue-700" />
-                        <Stat label="Commission Earned" value={`₹${(partner.totalCommission / 1000).toFixed(0)}K`} icon={Percent} color="bg-teal-50 border-teal-200 text-teal-700" />
+                        <Stat label="Commission Earned" value={`$${(partner.totalCommission / 1000).toFixed(0)}K`} icon={Percent} color="bg-teal-50 border-teal-200 text-teal-700" />
                         <Stat label="KYC" value={partner.kycStatus} icon={Shield} color="bg-amber-50 border-amber-200 text-amber-700" />
                     </div>
                 </TabsContent>
@@ -333,7 +333,7 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
                                                 <TableCell className="text-center text-sm font-medium text-slate-700">{sp.commissionPercent}%</TableCell>
                                                 <TableCell><Badge className={`text-xs ${sp.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{sp.status}</Badge></TableCell>
                                                 <TableCell className="text-center text-sm text-slate-700">{sp.salesCount}</TableCell>
-                                                <TableCell className="text-sm font-medium text-slate-700">₹{(sp.totalRevenue / 1000).toFixed(0)}K</TableCell>
+                                                <TableCell className="text-sm font-medium text-slate-700">${(sp.totalRevenue / 1000).toFixed(0)}K</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -368,9 +368,9 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
                                                 <TableCell className="font-mono text-xs text-slate-500">{c.saleId}</TableCell>
                                                 <TableCell className="text-sm text-slate-800">{c.customerName}</TableCell>
                                                 <TableCell className="text-sm text-slate-600">{c.planName}</TableCell>
-                                                <TableCell className="text-sm text-slate-700">₹{c.saleAmount.toLocaleString('en-IN')}</TableCell>
+                                                <TableCell className="text-sm text-slate-700">${c.saleAmount.toLocaleString('en-IN')}</TableCell>
                                                 <TableCell className="text-center text-sm text-slate-600">{c.commissionPercent}%</TableCell>
-                                                <TableCell className="text-sm font-medium text-emerald-700">₹{c.commissionAmount.toLocaleString('en-IN')}</TableCell>
+                                                <TableCell className="text-sm font-medium text-emerald-700">${c.commissionAmount.toLocaleString('en-IN')}</TableCell>
                                                 <TableCell><Badge className={`text-xs ${COM_STATUS[c.status]}`}>{c.status}</Badge></TableCell>
                                                 <TableCell className="text-xs text-slate-500">{fmt(c.saleDate)}</TableCell>
                                             </TableRow>
