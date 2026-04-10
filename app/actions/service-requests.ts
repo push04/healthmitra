@@ -166,17 +166,19 @@ export async function getAdminServiceRequest(id: string) {
 
 export async function getAgents() {
     const supabase = await createAdminClient();
-    const { data, error } = await supabase.from('profiles').select('id, full_name, email').order('full_name');
+    const { data, error } = await supabase.from('profiles')
+        .select('id, full_name, email, phone')
+        .in('role', ['admin', 'agent', 'employee', 'call_center_agent', 'call_centre_agent'])
+        .order('full_name');
 
     if (error) return { success: false, error: error.message };
 
-    // Map to Agent interface
     const agents = data.map((p: any) => ({
         id: p.id,
         name: p.full_name || p.email,
         email: p.email,
-        phone: p.phone || '', // Added phone field
-        status: 'available' as const // Placeholder with const assertion
+        phone: p.phone || '',
+        status: 'available' as const
     }));
 
     return { success: true, data: agents };

@@ -49,6 +49,7 @@ export default function AddPartnerPage() {
             } : undefined,
         });
         if (res.success) { toast.success(res.message); router.push('/admin/partners'); }
+        else { toast.error(res.error || 'Failed to create partner'); }
         setSaving(false);
     };
 
