@@ -1,12 +1,12 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import Razorpay from 'razorpay';
 
 // --- SYSTEM SETTINGS (Generic) ---
 
 export async function getSystemSettings() {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data, error } = await supabase.from('system_settings').select('*');
 
     if (error) {
@@ -20,28 +20,23 @@ export async function getSystemSettings() {
         if (!item.is_secure) settings[item.key] = item.value;
     });
 
-    // We also need to construct the nested object structure expected by the old frontend if we don't refactor it entirely yet.
-    // Ideally we refactor frontend, but for now let's return data.
-    // The frontend expects { general: { companyName... }, ... }
-    // Let's trying to support that or refactor frontend. Refactoring frontend is safer.
-
     return { success: true, data: settings };
 }
 
 export async function updateSystemSettings(settings: Record<string, string>) {
-    const supabase = await createClient();
-
-    // settings is expected to be a flat object { key: value }
-    // If frontend sends nested, we need to flatten or change frontend.
-    // Let's assume frontend will be updated to send flat keys.
+    const supabase = await createAdminClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
     const updates = Object.entries(settings).map(([key, value]) => ({
         key,
         value: String(value),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        updated_by: user?.id || 'system'
     }));
 
-    const { error } = await supabase.from('system_settings').upsert(updates);
+    const { error } = await supabase.from('system_settings').upsert(updates, {
+        onConflict: 'key'
+    });
 
     if (error) return { success: false, error: error.message };
     return { success: true, message: 'Settings updated successfully' };
@@ -50,18 +45,11 @@ export async function updateSystemSettings(settings: Record<string, string>) {
 // --- PAYMENT SETTINGS (Admin Only) ---
 
 export async function getPaymentSettings() {
-    const supabase = await createClient();
-
-    // Check Admin
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Unauthorized' };
-
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized: Admin access required' };
+    const supabase = await createAdminClient();
 
     const { data, error } = await supabase.from('system_settings')
         .select('*')
-        .in('key', ['razorpay_key_id', 'razorpay_key_secret']);
+        .in('key', ['razorpay_enabled', 'razorpay_key_id', 'razorpay_key_secret', 'razorpay_webhook_secret']);
 
     if (error) return { success: false, error: error.message };
 
@@ -74,71 +62,73 @@ export async function getPaymentSettings() {
 }
 
 export async function updatePaymentSettings(keys: { keyId: string; keySecret: string | null; webhookSecret?: string | null; enabled?: boolean }) {
-    const supabase = await createClient();
-
-    // Check Admin
+    const supabase = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Unauthorized' };
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized: Admin access required' };
+    const userId = user?.id || 'system';
 
-    let hasError = false;
-    let errorMsg = '';
+    // First try to update existing records
+    const updates: any[] = [];
 
     // Update enabled status
     if (keys.enabled !== undefined) {
-        const { error: err0 } = await supabase.from('system_settings').upsert({
+        updates.push({
             key: 'razorpay_enabled',
             value: keys.enabled ? 'true' : 'false',
             description: 'Enable or disable Razorpay payments',
             is_secure: false,
-            updated_by: user.id,
+            updated_by: userId,
             updated_at: new Date().toISOString()
         });
-        if (err0) { hasError = true; errorMsg = err0.message; }
     }
 
     // Update Key ID
     if (keys.keyId) {
-        const { error: err1 } = await supabase.from('system_settings').upsert({
+        updates.push({
             key: 'razorpay_key_id',
             value: keys.keyId,
             description: 'Razorpay Public Key ID',
             is_secure: false,
-            updated_by: user.id,
+            updated_by: userId,
             updated_at: new Date().toISOString()
         });
-        if (err1) { hasError = true; errorMsg = err1.message; }
     }
 
-    // Update Secret Key (only if provided)
-    if (keys.keySecret) {
-        const { error: err2 } = await supabase.from('system_settings').upsert({
+    // Update Secret Key (only if provided and not masked)
+    if (keys.keySecret && !keys.keySecret.includes('***')) {
+        updates.push({
             key: 'razorpay_key_secret',
             value: keys.keySecret,
             description: 'Razorpay Secret Key',
             is_secure: true,
-            updated_by: user.id,
+            updated_by: userId,
             updated_at: new Date().toISOString()
         });
-        if (err2) { hasError = true; errorMsg = err2.message; }
     }
 
     // Update Webhook Secret
-    if (keys.webhookSecret !== undefined) {
-        const { error: err3 } = await supabase.from('system_settings').upsert({
+    if (keys.webhookSecret !== null && keys.webhookSecret !== undefined && !keys.webhookSecret.includes('***')) {
+        updates.push({
             key: 'razorpay_webhook_secret',
-            value: keys.webhookSecret || '',
+            value: keys.webhookSecret,
             description: 'Razorpay Webhook Secret',
             is_secure: true,
-            updated_by: user.id,
+            updated_by: userId,
             updated_at: new Date().toISOString()
         });
-        if (err3) { hasError = true; errorMsg = err3.message; }
     }
 
-    if (hasError) return { success: false, error: errorMsg };
+    if (updates.length > 0) {
+        // Use upsert with onConflict
+        const { error } = await supabase.from('system_settings').upsert(updates, {
+            onConflict: 'key'
+        });
+
+        if (error) {
+            console.error('Error updating payment settings:', error);
+            return { success: false, error: error.message };
+        }
+    }
 
     return { success: true, message: 'Payment settings updated successfully' };
 }
@@ -180,7 +170,7 @@ export async function getRazorpayStatus() {
 // --- RAZORPAY ORDERS ---
 
 export async function createRazorpayOrder(amount: number, currency: string = 'INR', purpose: string, metadata: any = {}) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { success: false, error: 'User not authenticated' };
@@ -204,7 +194,7 @@ export async function createRazorpayOrder(amount: number, currency: string = 'IN
         });
 
         const options = {
-            amount: Math.round(amount * 100), // amount in lowest denomination
+            amount: Math.round(amount * 100),
             currency: currency,
             receipt: `rcpt_${Date.now()}`,
         };
@@ -224,7 +214,6 @@ export async function createRazorpayOrder(amount: number, currency: string = 'IN
 
         if (dbError) {
             console.error('DB Payment Log Error:', dbError);
-            // We still return order to not block user, but this is critical
         }
 
         return { success: true, orderId: order.id, keyId: keyId, amount: options.amount, currency: options.currency };
@@ -238,8 +227,7 @@ export async function createRazorpayOrder(amount: number, currency: string = 'IN
 // --- AUDIT LOGS ---
 
 export async function getAuditLogs() {
-    const supabase = await createClient();
-    // Assuming audit_logs table has admin_id linked to profiles
+    const supabase = await createAdminClient();
     const { data, error } = await supabase.from('audit_logs').select(`
         *,
         admin:admin_id(full_name, email)
@@ -262,13 +250,7 @@ export async function getAuditLogs() {
 // --- PAYPAL SETTINGS (Admin Only) ---
 
 export async function getPayPalSettings() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Unauthorized' };
-
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized' };
-
+    const supabase = await createAdminClient();
     const { data, error } = await supabase.from('system_settings')
         .select('key, value')
         .in('key', ['paypal_enabled', 'paypal_client_id', 'paypal_client_secret', 'paypal_sandbox']);
@@ -287,36 +269,27 @@ export async function updatePayPalSettings(keys: {
     enabled: boolean;
     sandbox: boolean;
 }) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Unauthorized' };
-
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized' };
 
     const upserts = [
-        { key: 'paypal_enabled', value: keys.enabled ? 'true' : 'false', description: 'Enable PayPal payments', is_secure: false },
-        { key: 'paypal_sandbox', value: keys.sandbox ? 'true' : 'false', description: 'PayPal sandbox mode', is_secure: false },
-        { key: 'paypal_client_id', value: keys.clientId, description: 'PayPal Client ID', is_secure: false },
+        { key: 'paypal_enabled', value: keys.enabled ? 'true' : 'false', description: 'Enable PayPal payments', is_secure: false, updated_by: user?.id || 'system' },
+        { key: 'paypal_sandbox', value: keys.sandbox ? 'true' : 'false', description: 'PayPal sandbox mode', is_secure: false, updated_by: user?.id || 'system' },
+        { key: 'paypal_client_id', value: keys.clientId, description: 'PayPal Client ID', is_secure: false, updated_by: user?.id || 'system' },
     ];
 
-    if (keys.clientSecret) {
-        upserts.push({ key: 'paypal_client_secret', value: keys.clientSecret, description: 'PayPal Client Secret', is_secure: true });
+    if (keys.clientSecret && !keys.clientSecret.includes('***')) {
+        upserts.push({ key: 'paypal_client_secret', value: keys.clientSecret, description: 'PayPal Client Secret', is_secure: true, updated_by: user?.id || 'system' });
     }
 
-    const { error } = await supabase.from('system_settings').upsert(upserts);
+    const { error } = await supabase.from('system_settings').upsert(upserts, { onConflict: 'key' });
     if (error) return { success: false, error: error.message };
 
     return { success: true };
 }
 
 export async function testPayPalConnection() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Unauthorized' };
-
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') return { success: false, error: 'Unauthorized' };
+    const supabase = await createAdminClient();
 
     const { data: settings } = await supabase.from('system_settings')
         .select('key, value')
