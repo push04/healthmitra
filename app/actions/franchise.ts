@@ -78,7 +78,7 @@ export async function getFranchises(query?: string) {
         website: f.website || '',
         gst: f.gst_number || '',
         commissionPercent: f.commission_percentage || 10,
-        kycStatus: (f.verification_status === 'verified' ? 'verified' : f.verification_status === 'submitted' ? 'submitted' : 'pending') as 'pending' | 'submitted' | 'verified' | 'rejected',
+        kycStatus: f.kyc_status || (f.verification_status === 'verified' ? 'verified' : f.verification_status === 'submitted' ? 'submitted' : 'pending') as 'pending' | 'submitted' | 'verified' | 'rejected',
         verificationStatus: f.verification_status || 'unverified',
         address: f.address || '',
         city: f.city || '',
@@ -87,7 +87,9 @@ export async function getFranchises(query?: string) {
         status: f.status || 'active',
         createdAt: f.created_at,
         totalPartners: partnerCounts[f.id] || 0,
-        totalRevenue: f.total_sales || 0
+        totalRevenue: f.total_sales || 0,
+        aadhaarNumber: f.aadhaar_number,
+        panNumber: f.pan_number
     }));
 
     return { success: true, data: franchises };
@@ -168,7 +170,9 @@ export async function createFranchise(data: Partial<Franchise>) {
         city: data.city,
         state: data.state,
         commission_percentage: data.commissionPercent,
-        status: 'active'
+        status: 'active',
+        aadhaar_number: data.aadhaarNumber,
+        pan_number: data.panNumber
     });
 
     if (error) return { success: false, error: error.message };

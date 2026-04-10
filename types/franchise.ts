@@ -47,6 +47,8 @@ export interface Franchise {
     createdAt: string;
     totalPartners: number;
     totalRevenue: number;
+    aadhaarNumber?: string;
+    panNumber?: string;
 }
 
 export interface FranchiseModule {

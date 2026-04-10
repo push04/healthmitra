@@ -23,6 +23,7 @@ export default function AddPartnerPage() {
         canAddSubPartners: false, designationAccess: false,
         bankName: '', branchName: '', accountHolder: '',
         accountNumber: '', ifscCode: '', accountType: 'Savings' as const,
+        aadhaarNumber: '', panNumber: '',
     });
 
     const update = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
@@ -40,6 +41,7 @@ export default function AddPartnerPage() {
             canAddSubPartners: form.canAddSubPartners, designationAccess: form.designationAccess,
             status: 'active', kycStatus: 'pending', mouSigned: false,
             totalSales: 0, totalCommission: 0, totalSubPartners: 0, joinedDate: new Date().toISOString().split('T')[0],
+            aadhaarNumber: form.aadhaarNumber, panNumber: form.panNumber,
             bankDetails: form.bankName ? {
                 bankName: form.bankName, branchName: form.branchName,
                 accountHolder: form.accountHolder, accountNumber: form.accountNumber,
@@ -115,6 +117,15 @@ export default function AddPartnerPage() {
                         <Checkbox checked={form.designationAccess} onCheckedChange={v => update('designationAccess', v)} />
                         <div><p className="text-sm font-medium text-slate-800">Designation Access</p><p className="text-xs text-slate-400">Partner can assign designations and manage access for sub-partners.</p></div>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* KYC Details */}
+            <Card className="bg-white border-slate-200 shadow-sm">
+                <CardHeader className="pb-3"><CardTitle className="text-base text-slate-700">KYC Details</CardTitle></CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><Label className="text-slate-600">Aadhaar Number</Label><Input value={form.aadhaarNumber} onChange={e => update('aadhaarNumber', e.target.value)} placeholder="XXXX XXXX XXXX" className="bg-white border-slate-200 text-slate-900 mt-1" /></div>
+                    <div><Label className="text-slate-600">PAN Number</Label><Input value={form.panNumber} onChange={e => update('panNumber', e.target.value)} placeholder="ABCDE1234F" className="bg-white border-slate-200 text-slate-900 mt-1" /></div>
                 </CardContent>
             </Card>
 

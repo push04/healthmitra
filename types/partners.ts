@@ -57,6 +57,10 @@ export interface Partner {
     mouSigned: boolean;
     mouDate?: string;
 
+    // KYC
+    aadhaarNumber?: string;
+    panNumber?: string;
+
     // Meta
     canAddSubPartners: boolean;
     designationAccess: boolean;

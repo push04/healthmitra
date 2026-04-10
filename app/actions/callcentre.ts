@@ -222,7 +222,7 @@ export async function getCallCentreRequests(filters: CCFilters = {}) {
 
 export async function getAgents() {
     const supabase = await createAdminClient();
-    const { data } = await supabase.from('profiles').select('*').in('role', ['admin', 'agent', 'employee']);
+    const { data } = await supabase.from('profiles').select('*').in('role', ['admin', 'agent', 'employee', 'call_center_agent', 'call_centre_agent']);
 
     const agentStatus: Agent['status'] = 'available';
 

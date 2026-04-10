@@ -24,6 +24,7 @@ export default function AddFranchisePage() {
         email: '', password: '', referralCode: '', website: '', gst: '',
         commissionPercent: 10, kycStatus: 'pending', verificationStatus: 'unverified',
         address: '', city: '', state: '', payoutDelay: 7, status: 'active',
+        aadhaarNumber: '', panNumber: '',
     });
 
     const [modules, setModules] = useState<FranchiseModule[]>(
@@ -130,6 +131,19 @@ export default function AddFranchisePage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* KYC Details */}
+            <Card className="bg-white border-slate-200 shadow-sm">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base text-slate-700">KYC Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Aadhaar Number" value={franchise.aadhaarNumber} onChange={v => update({ aadhaarNumber: v })} placeholder="XXXX XXXX XXXX" />
+                        <Field label="PAN Number" value={franchise.panNumber} onChange={v => update({ panNumber: v })} placeholder="ABCDE1234F" />
                     </div>
                 </CardContent>
             </Card>

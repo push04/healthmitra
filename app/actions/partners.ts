@@ -92,7 +92,7 @@ export async function getPartners(filters: { query?: string; status?: string } =
         referralCode: p.code,
         commissionPercent: p.commission_percent || 10,
         status: p.status || 'active',
-        kycStatus: p.verification_status || 'pending',
+        kycStatus: p.kyc_status || p.verification_status || 'pending',
         city: p.city || '',
         state: p.state || '',
         address: p.address,
@@ -100,13 +100,15 @@ export async function getPartners(filters: { query?: string; status?: string } =
         bankDetails: p.bank_details,
         totalSales: p.total_sales || 0,
         totalCommission: p.total_commission || 0,
-        totalSubPartners: 0, // Need count query if needed
+        totalSubPartners: 0,
         mouSigned: p.mou_signed || false,
         mouDate: p.mou_date,
         canAddSubPartners: p.can_add_sub_partners || false,
         designationAccess: p.designation_access || false,
         joinedDate: p.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-        lastActive: p.last_active
+        lastActive: p.last_active,
+        aadhaarNumber: p.aadhaar_number,
+        panNumber: p.pan_number
     }));
 
     // Calculate generic stats based on fetched data
@@ -200,7 +202,9 @@ export async function createPartner(data: Partial<Partner>) {
         can_add_sub_partners: data.canAddSubPartners,
         designation_access: data.designationAccess,
         status: 'active',
-        verification_status: 'pending'
+        verification_status: 'pending',
+        aadhaar_number: data.aadhaarNumber,
+        pan_number: data.panNumber
     });
 
     if (error) return { success: false, error: error.message };
