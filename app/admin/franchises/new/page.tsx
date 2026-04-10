@@ -40,10 +40,14 @@ export default function AddFranchisePage() {
     };
 
     const handleSave = async () => {
+        if (!franchise.name || !franchise.email || !franchise.referralCode || !franchise.contact) {
+            toast.error('Please fill in required fields'); return;
+        }
         const res = await createFranchise(franchise);
         if (res.success) {
-            await assignModules('new_franchise', modules);
             toast.success('Franchise created successfully');
+        } else {
+            toast.error(res.error || 'Failed to create franchise');
         }
     };
 

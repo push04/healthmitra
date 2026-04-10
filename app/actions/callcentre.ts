@@ -32,7 +32,7 @@ export async function getCallCentreStats() {
     const { data: agents } = await supabase
         .from('profiles')
         .select('*')
-        .in('role', ['admin', 'agent', 'employee']);
+        .in('role', ['admin', 'agent', 'employee', 'call_center_agent', 'call_centre_agent']);
 
     const activeAgents = agents?.filter((a: any) => a.role === 'agent').length || 0;
 
