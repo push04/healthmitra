@@ -298,10 +298,10 @@ export async function createAgent(data: { name: string; email: string; phone: st
             .single();
 
         if (existingProfile) {
-            // Update existing profile role to agent
+            // Update existing profile role to call_center_agent (allowed by DB constraint)
             const { error: updateError } = await adminSupabase
                 .from('profiles')
-                .update({ role: 'agent', full_name: data.name, phone: data.phone, status: 'active' })
+                .update({ role: 'call_center_agent', full_name: data.name, phone: data.phone, status: 'active' })
                 .eq('id', profileId);
 
             if (updateError) {
@@ -333,13 +333,13 @@ export async function createAgent(data: { name: string; email: string; phone: st
         return { success: false, error: 'Failed to get user ID' };
     }
 
-    // Create profile with agent role
+    // Create profile with call_center_agent role (allowed by DB constraint)
     const { error: profileError } = await adminSupabase.from('profiles').insert({
         id: profileId,
         email: data.email,
         full_name: data.name,
         phone: data.phone,
-        role: 'agent',
+        role: 'call_center_agent',
         status: 'active'
     });
 
@@ -348,7 +348,7 @@ export async function createAgent(data: { name: string; email: string; phone: st
         if (profileError.message.includes('duplicate') || profileError.code === '23505') {
             const { error: updateError } = await adminSupabase
                 .from('profiles')
-                .update({ role: 'agent', full_name: data.name, phone: data.phone, status: 'active' })
+                .update({ role: 'call_center_agent', full_name: data.name, phone: data.phone, status: 'active' })
                 .eq('id', profileId);
 
             if (updateError) {
@@ -356,6 +356,10 @@ export async function createAgent(data: { name: string; email: string; phone: st
                 return { success: false, error: updateError.message };
             }
             return { success: true, message: 'Agent updated successfully' };
+        }
+        // Check constraint error
+        if (profileError.code === '23514') {
+            return { success: false, error: 'Database role constraint error. Please use a valid role.' };
         }
         console.error('Profile insert error:', profileError.message);
         return { success: false, error: 'Failed to create profile: ' + profileError.message };
