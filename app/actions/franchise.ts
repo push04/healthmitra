@@ -216,6 +216,188 @@ export async function getFranchiseActivity(franchiseId: string) {
     return { success: true, data: data || [] };
 }
 
+// --- KYC MANAGEMENT ---
+export async function getFranchiseKYC(franchiseId: string) {
+    const supabase = await createAdminClient();
+    
+    // Get franchise KYC data
+    const { data: franchiseData, error } = await supabase
+        .from('franchises')
+        .select('aadhaar_number, aadhaar_front, aadhaar_back, pan_number, pan_card, photo, kyc_status, kyc_history, verification_status, verified_at, verified_by, rejection_reason')
+        .eq('id', franchiseId)
+        .single();
+
+    if (error) return { success: false, error: 'Franchise not found' };
+
+    return {
+        success: true,
+        data: {
+            aadhaarNumber: franchiseData.aadhaar_number || '',
+            aadhaarFront: franchiseData.aadhaar_front || '',
+            aadhaarBack: franchiseData.aadhaar_back || '',
+            panNumber: franchiseData.pan_number || '',
+            panCard: franchiseData.pan_card || '',
+            photo: franchiseData.photo || '',
+            kycStatus: franchiseData.kyc_status || 'pending',
+            history: (franchiseData.kyc_history || []).map((h: any, i: number) => ({
+                id: `history_${i}`,
+                status: h.status || 'submitted',
+                timestamp: h.timestamp || new Date().toISOString(),
+                performedBy: h.by || 'system',
+                notes: h.reason || ''
+            })),
+            verificationStatus: franchiseData.verification_status || 'unverified',
+            verifiedAt: franchiseData.verified_at || null,
+            verifiedBy: franchiseData.verified_by || null,
+            rejectionReason: franchiseData.rejection_reason || ''
+        }
+    };
+}
+
+export async function updateFranchiseKYC(
+    franchiseId: string,
+    data: {
+        aadhaarNumber?: string;
+        aadhaarFront?: string;
+        aadhaarBack?: string;
+        panNumber?: string;
+        panCard?: string;
+        photo?: string;
+    }
+) {
+    const supabase = await createAdminClient();
+
+    const updates: any = {};
+    if (data.aadhaarNumber) updates.aadhaar_number = data.aadhaarNumber;
+    if (data.aadhaarFront) updates.aadhaar_front = data.aadhaarFront;
+    if (data.aadhaarBack) updates.aadhaar_back = data.aadhaarBack;
+    if (data.panNumber) updates.pan_number = data.panNumber;
+    if (data.panCard) updates.pan_card = data.panCard;
+    if (data.photo) updates.photo = data.photo;
+    
+    // Update KYC status to submitted if documents are provided
+    if (data.aadhaarNumber || data.aadhaarFront || data.panNumber || data.panCard) {
+        updates.kyc_status = 'submitted';
+        updates.verification_status = 'in_review';
+    }
+
+    const { error } = await supabase
+        .from('franchises')
+        .update(updates)
+        .eq('id', franchiseId);
+
+    if (error) return { success: false, error: error.message };
+
+    // Log the KYC update
+    await supabase.from('audit_logs').insert({
+        entity_type: 'franchise',
+        entity_id: franchiseId,
+        action: 'kyc_document_updated',
+        description: 'KYC documents updated',
+    });
+
+    return { success: true, message: 'KYC documents updated successfully' };
+}
+
+export async function verifyFranchiseKYC(franchiseId: string, status: 'verified' | 'rejected', rejectionReason?: string) {
+    const supabase = await createAdminClient();
+
+    // Get current admin user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const updates: any = {
+        verification_status: status,
+        kyc_status: status === 'verified' ? 'verified' : 'rejected',
+        verified_at: new Date().toISOString(),
+        verified_by: user?.id || 'system'
+    };
+
+    if (status === 'rejected' && rejectionReason) {
+        updates.rejection_reason = rejectionReason;
+    }
+
+    const { error } = await supabase
+        .from('franchises')
+        .update(updates)
+        .eq('id', franchiseId);
+
+    if (error) return { success: false, error: error.message };
+
+    // Add to KYC history
+    const { data: franchiseData } = await supabase
+        .from('franchises')
+        .select('kyc_history')
+        .eq('id', franchiseId)
+        .single();
+
+    const history = franchiseData?.kyc_history || [];
+    history.push({
+        status,
+        timestamp: new Date().toISOString(),
+        by: user?.id || 'system',
+        reason: rejectionReason || ''
+    });
+
+    await supabase
+        .from('franchises')
+        .update({ kyc_history: history })
+        .eq('id', franchiseId);
+
+    // Log the verification
+    await supabase.from('audit_logs').insert({
+        entity_type: 'franchise',
+        entity_id: franchiseId,
+        action: `kyc_${status}`,
+        description: `KYC ${status}${rejectionReason ? `: ${rejectionReason}` : ''}`,
+    });
+
+    return { success: true, message: `KYC ${status} successfully` };
+}
+
+export async function uploadKYCDocument(
+    franchiseId: string,
+    docType: 'aadhaar_front' | 'aadhaar_back' | 'pan_card' | 'photo',
+    file: File
+): Promise<{ success: boolean; url?: string; error?: string }> {
+    const supabase = await createAdminClient();
+    
+    try {
+        const fileName = `kyc/${franchiseId}/${docType}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('documents')
+            .upload(fileName, file, { upsert: true });
+        
+        if (uploadError) {
+            return { success: false, error: uploadError.message };
+        }
+        
+        const { data: urlData } = supabase.storage
+            .from('documents')
+            .getPublicUrl(fileName);
+        
+        // Update the franchise record with the document URL
+        const updateField: Record<string, string> = {
+            aadhaar_front: 'aadhaar_front',
+            aadhaar_back: 'aadhaar_back',
+            pan_card: 'pan_card',
+            photo: 'photo'
+        };
+        
+        await supabase
+            .from('franchises')
+            .update({ 
+                [updateField[docType]]: urlData.publicUrl,
+                kyc_status: 'submitted',
+                verification_status: 'in_review'
+            })
+            .eq('id', franchiseId);
+        
+        return { success: true, url: urlData.publicUrl };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
 // DEPRECATED: Franchise login should be handled through Supabase Auth
 // This function is not secure and should not be used for authentication
 export async function franchiseLogin(email: string, password: string) {

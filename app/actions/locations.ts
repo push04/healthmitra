@@ -53,20 +53,29 @@ export async function getCities(filters?: GetCitiesFilters) {
 
 export async function upsertCity(city: Partial<City>) {
     const supabase = await createAdminClient();
-    const { error } = await supabase.from('cities').upsert({
-        id: city.id || undefined,
+    
+    const cityData = {
         name: city.name,
         state: city.state,
         region: city.region,
-        pincodes: city.pincodes,
+        pincodes: city.pincodes || [],
         tier: city.tier || 'Tier 2',
         is_serviceable: city.isServiceable ?? true,
         status: city.status || 'active',
         service_centers: city.serviceCenters || []
-    }, { onConflict: 'id' });
+    };
+
+    let error;
+    if (city.id) {
+        // Update existing
+        ({ error } = await supabase.from('cities').update(cityData).eq('id', city.id));
+    } else {
+        // Insert new
+        ({ error } = await supabase.from('cities').insert(cityData));
+    }
 
     if (error) return { success: false, error: error.message };
-    return { success: true, message: 'City saved successfully' };
+    return { success: true, message: city.id ? 'City updated successfully' : 'City added successfully' };
 }
 
 export async function deleteCity(id: string) {

@@ -383,11 +383,40 @@ export async function getCustomers(filters?: {
     });
 
     // Filter by planId if provided
-    const filtered = filters?.planId
-        ? customers.filter((c: any) => c.planId === filters.planId)
-        : customers;
+    let filtered = customers;
+    let finalCount = count || 0;
+    
+    if (filters?.planId) {
+        if (filters.planId === 'none') {
+            filtered = customers.filter((c: any) => !c.planId);
+        } else {
+            filtered = customers.filter((c: any) => c.planId === filters.planId);
+        }
+        // Get accurate count for filtered results
+        if (filters.planId === 'none') {
+            // Count customers without any plan
+            const { count: noPlanCount } = await adminSupabase
+                .from('ecard_members')
+                .select('user_id', { count: 'exact', head: true })
+                .eq('relation', 'Self')
+                .is('plan_id', null);
+            const { count: totalCustomers } = await adminSupabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('role', 'user');
+            finalCount = noPlanCount || 0;
+        } else {
+            // Count customers with this specific plan
+            const { count: planCount } = await adminSupabase
+                .from('ecard_members')
+                .select('user_id', { count: 'exact', head: true })
+                .eq('relation', 'Self')
+                .eq('plan_id', filters.planId);
+            finalCount = planCount || 0;
+        }
+    }
 
-    return { success: true, data: filtered, totalCount: count || 0 };
+    return { success: true, data: filtered, totalCount: finalCount };
 }
 
 // --- GET SINGLE CUSTOMER DETAIL ---

@@ -26,8 +26,10 @@ export default function ReimbursementsPage() {
         setLoading(true);
         const res = await getClaims();
         if (res.success && res.data) {
-            setClaims(res.data);
-            // Calculate stats from real data
+            // Filter to show only pending claims (remove approved/rejected from list)
+            const pendingClaims = res.data.filter((c: ReimbursementClaim) => c.status === 'pending');
+            setClaims(pendingClaims);
+            // Calculate stats from ALL data
             const pending = res.data.filter((c: ReimbursementClaim) => c.status === 'pending').reduce((sum: number, c: ReimbursementClaim) => sum + c.amount, 0);
             const approved = res.data.filter((c: ReimbursementClaim) => c.status === 'approved').reduce((sum: number, c: ReimbursementClaim) => sum + (c.approvedAmount || c.amount), 0);
             const rejected = res.data.filter((c: ReimbursementClaim) => c.status === 'rejected').reduce((sum: number, c: ReimbursementClaim) => sum + c.amount, 0);

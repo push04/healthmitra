@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { Plan, PlanCategory } from '@/types/plans';
 
 // --- PLANS ACTIONS ---
@@ -11,7 +11,7 @@ export async function getPlans(filters?: {
     type?: string;
     categoryId?: string;
 }) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     let query = supabase.from('plans').select('*');
 
     if (filters?.status && filters.status !== 'all') {
@@ -58,7 +58,7 @@ export async function getPlans(filters?: {
 }
 
 export async function getPlan(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data, error } = await supabase.from('plans').select('*').eq('id', id).single();
 
     if (error || !data) return { success: false, error: 'Plan not found' };
@@ -90,7 +90,7 @@ export async function getPlan(id: string) {
 }
 
 export async function createPlan(data: Partial<Plan>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('plans').insert({
         name: data.name,
         price: data.basePrice,
@@ -108,7 +108,7 @@ export async function createPlan(data: Partial<Plan>) {
 }
 
 export async function updatePlan(id: string, data: Partial<Plan>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('plans').update({
         name: data.name,
         price: data.basePrice,
@@ -124,21 +124,21 @@ export async function updatePlan(id: string, data: Partial<Plan>) {
 }
 
 export async function deletePlan(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('plans').delete().eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true, message: 'Plan deleted successfully' };
 }
 
 export async function togglePlanStatus(id: string, status: 'active' | 'inactive' | 'draft') {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('plans').update({ status }).eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true, message: `Plan status updated to ${status}` };
 }
 
 export async function copyPlan(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: original } = await supabase.from('plans').select('*').eq('id', id).single();
     if (!original) return { success: false, error: 'Plan not found' };
 
@@ -156,7 +156,7 @@ export async function copyPlan(id: string) {
 // --- CATEGORIES ACTIONS ---
 
 export async function getCategories() {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data, error } = await supabase.from('plan_categories').select('*').order('display_order', { ascending: true });
 
     // Fallback if table doesn't exist yet or is empty
@@ -175,7 +175,7 @@ export async function getCategories() {
 }
 
 export async function upsertCategory(data: Partial<PlanCategory>) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const payload = {
         name: data.name,
         description: data.description,
@@ -196,7 +196,7 @@ export async function upsertCategory(data: Partial<PlanCategory>) {
 }
 
 export async function deleteCategory(id: string) {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase.from('plan_categories').delete().eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true, message: 'Category deleted successfully' };

@@ -84,24 +84,7 @@ export default function FAQPage() {
         )
     }
 
-    // Default FAQs if none in DB
-    const defaultFaqs = faqCategories.length === 0 ? [
-        {
-            category: "General",
-            questions: [
-                { q: "What is HealthMitra?", a: "HealthMitra is a comprehensive healthcare platform that offers health plans, doctor consultations, medicine delivery, diagnostic tests, and emergency services all under one roof." },
-                { q: "How do I create an account?", a: "Click on 'Get Started' or 'Sign Up' button, fill in your details, verify your email/phone, and you're ready to explore our services." },
-                { q: "Is HealthMitra available in my city?", a: "We currently operate in major cities across India including Delhi, Mumbai, Bangalore, Chennai, Hyderabad, Kolkata, and are expanding rapidly." }
-            ]
-        },
-        {
-            category: "Health Plans",
-            questions: [
-                { q: "What health plans do you offer?", a: "We offer Basic, Family, and Premium plans. Each plan offers different coverage levels and benefits." },
-                { q: "Can I add family members to my plan?", a: "Yes! Our Family and Premium plans allow you to add family members." }
-            ]
-        }
-    ] : faqCategories
+    const displayFaqs = faqCategories.length > 0 ? faqCategories : [];
 
     let globalIndex = 0
 
@@ -118,7 +101,7 @@ export default function FAQPage() {
 
                 <section className="py-16 px-4">
                     <div className="max-w-4xl mx-auto">
-                                {defaultFaqs.map((category) => (
+                                {displayFaqs.map((category) => (
                             <div key={category.category} className="mb-12">
                                 <h2 className="text-2xl font-bold text-slate-900 mb-6">{category.category}</h2>
                                 <div className="space-y-3">

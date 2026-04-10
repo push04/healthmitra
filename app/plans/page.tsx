@@ -41,41 +41,6 @@ export default async function PlansPage() {
 
     const plans = await getPublicPlans()
 
-    const defaultPlans: Plan[] = plans.length > 0 ? plans : [
-        {
-            id: 'basic',
-            name: 'Basic',
-            description: 'Essential coverage for individuals',
-            price: 2999,
-            duration_days: 365,
-            features: ['Up to ₹2 Lakh Coverage', 'OPD Consultation (10 visits)', 'Basic Diagnostic Tests', 'Medicine Discounts (15%)', 'Teleconsultation Access'],
-            is_active: true,
-            is_featured: false
-        },
-        {
-            id: 'family',
-            name: 'Family',
-            description: 'Comprehensive coverage for families',
-            price: 7999,
-            duration_days: 365,
-            features: ['Up to ₹5 Lakh Coverage', 'Cover for 4 Family Members', 'Unlimited OPD Consultations', 'All Diagnostic Tests', 'Medicine Discounts (25%)', 'Free Ambulance', '24/7 Priority Support'],
-            is_active: true,
-            is_featured: true
-        },
-        {
-            id: 'premium',
-            name: 'Premium',
-            description: 'Maximum protection with exclusive benefits',
-            price: 14999,
-            duration_days: 365,
-            features: ['Up to ₹10 Lakh Coverage', 'Cover for 6 Family Members', 'Unlimited Everything', 'International Coverage', 'Personal Health Manager', 'Home Healthcare', 'VIP Hospital Treatment'],
-            is_active: true,
-            is_featured: false
-        }
-    ]
-
-    const displayPlans = plans.length > 0 ? plans : defaultPlans
-
     return (
         <>
             <Header />
@@ -95,7 +60,7 @@ export default async function PlansPage() {
                 {/* Plans Grid */}
                 <section className="py-16 px-4 md:px-6">
                     <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
-                        {displayPlans.map((plan) => (
+                        {plans.map((plan) => (
                             <div
                                 key={plan.id}
                                 className={`relative p-8 rounded-2xl border-2 transition-all duration-300 ${plan.is_featured

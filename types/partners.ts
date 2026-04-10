@@ -7,6 +7,29 @@ export interface BankDetails {
     accountType: 'Savings' | 'Current';
 }
 
+export interface KYCHistoryEntry {
+    id: string;
+    status: 'submitted' | 'verified' | 'rejected';
+    timestamp: string;
+    performedBy: string;
+    notes?: string;
+}
+
+export interface PartnerKYC {
+    aadhaarNumber: string;
+    aadhaarFront: string;
+    aadhaarBack: string;
+    panNumber: string;
+    panCard: string;
+    photo: string;
+    kycStatus: 'pending' | 'submitted' | 'verified' | 'rejected';
+    history: KYCHistoryEntry[];
+    verificationStatus: 'unverified' | 'in_review' | 'verified' | 'suspended';
+    verifiedAt: string | null;
+    verifiedBy: string | null;
+    rejectionReason: string;
+}
+
 export interface Partner {
     id: string;
     name: string;

@@ -91,13 +91,12 @@ export default function UsersListingPage() {
                 if (res.success && res.data) {
                     setUsers(res.data);
                     if (res.stats) {
-                        // Convert action stats to page stats
                         setStats({
                             total: res.stats.total || 0,
                             customers: res.stats.customers || 0,
-                            employees: 0, // Not tracked separately
+                            employees: res.stats.employees || 0,
                             admins: res.stats.admins || 0,
-                            partners: 0 // Not tracked separately
+                            partners: res.stats.partners || 0
                         });
                     }
                 }

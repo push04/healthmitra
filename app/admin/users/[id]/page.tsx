@@ -2,18 +2,20 @@
 
 import React, { useState, useEffect, use } from 'react';
 import { User } from '@/types/user';
-import { getUser, toggleUserStatus, changePlan, resendCredentials, activateNewPlan, getDepartments } from '@/app/actions/users';
+import { getUser, toggleUserStatus, changePlan, resendCredentials, activateNewPlan, getDepartments, updateUser } from '@/app/actions/users';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     ArrowLeft, Edit2, Mail, Phone, Clock, Shield, UserX, UserCheck,
     MapPin, Globe, CreditCard, FileText, Send, Loader2, RefreshCw,
-    Calendar, User as UserIcon, Landmark, Upload, Eye
+    Calendar, User as UserIcon, Landmark, Upload, Eye, Save, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -37,6 +39,25 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [departments, setDepartments] = useState<any[]>([]);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState<{
+        name: string;
+        email: string;
+        phone: string;
+        city: string;
+        state: string;
+        departmentId: string;
+        designation: string;
+    }>({
+        name: '',
+        email: '',
+        phone: '',
+        city: '',
+        state: '',
+        departmentId: '',
+        designation: '',
+    });
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         const load = async () => {
@@ -48,7 +69,17 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
                 const res = await getUser(id);
                 if (res.success && res.data) {
-                    setUser(res.data);
+                    const u = res.data;
+                    setUser(u);
+                    setEditForm({
+                        name: u.name || '',
+                        email: u.email || '',
+                        phone: u.phone || '',
+                        city: (u as any).city || '',
+                        state: (u as any).state || '',
+                        departmentId: (u as any).departmentId || '',
+                        designation: (u as any).designation || '',
+                    });
                 } else {
                     toast.error("User not found");
                 }
@@ -61,8 +92,51 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         load();
     }, [id]);
 
+    const handleEditToggle = () => {
+        if (isEditing && user) {
+            setEditForm({
+                name: user.name || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                city: (user as any).city || '',
+                state: (user as any).state || '',
+                departmentId: (user as any).departmentId || '',
+                designation: (user as any).designation || '',
+            });
+        }
+        setIsEditing(!isEditing);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!user) return;
+        setSaving(true);
+        try {
+            const res = await updateUser(user.id, {
+                name: editForm.name,
+                email: editForm.email,
+                phone: editForm.phone,
+                city: editForm.city,
+                state: editForm.state,
+                departmentId: editForm.departmentId || undefined,
+                designation: editForm.designation || undefined,
+            });
+            if (res.success) {
+                setUser({ ...user, name: editForm.name, email: editForm.email, phone: editForm.phone });
+                setIsEditing(false);
+                toast.success('User updated successfully');
+            } else {
+                toast.error(res.error || 'Failed to update user');
+            }
+        } catch (err) {
+            toast.error('Failed to update user');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const supabase = createClient();
     const [plans, setPlans] = useState<{id: string, name: string}[]>([]);
+    const [selectedPlanId, setSelectedPlanId] = useState<string>('');
 
     useEffect(() => {
         const loadPlans = async () => {
@@ -102,9 +176,16 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
     const handleActivatePlan = async () => {
         if (!user) return;
-        // @ts-ignore
-        const res = await activateNewPlan(user.id, user.planId || 'plan_gold');
-        if (res.success) toast.success(res.message);
+        if (!selectedPlanId) {
+            toast.error('Please select a plan first');
+            return;
+        }
+        const res = await activateNewPlan(user.id, selectedPlanId);
+        if (res.success) {
+            toast.success(res.message);
+        } else {
+            toast.error(res.error || 'Failed to activate plan');
+        }
     };
 
     const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -144,7 +225,16 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="sm" className="border-slate-200 text-slate-600" onClick={() => toast.info('Edit mode opening...', { description: 'User profile editing will be available shortly.' })}><Edit2 className="mr-1.5 h-3.5 w-3.5" /> Edit</Button>
+                                {isEditing ? (
+                                    <>
+                                        <Button variant="outline" size="sm" className="border-slate-200 text-slate-600" onClick={handleEditToggle}><X className="mr-1.5 h-3.5 w-3.5" /> Cancel</Button>
+                                        <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white" onClick={handleSaveEdit} disabled={saving}>
+                                            {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />} Save
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button variant="outline" size="sm" className="border-slate-200 text-slate-600" onClick={handleEditToggle}><Edit2 className="mr-1.5 h-3.5 w-3.5" /> Edit</Button>
+                                )}
                                 <Button variant="outline" size="sm" onClick={handleToggleStatus} className={user.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'}>
                                     {user.status === 'active' ? <><UserX className="mr-1.5 h-3.5 w-3.5" /> Disable</> : <><UserCheck className="mr-1.5 h-3.5 w-3.5" /> Enable</>}
                                 </Button>
@@ -177,22 +267,60 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                         <Card className="bg-white border-slate-200 shadow-sm">
                             <CardHeader className="pb-3"><CardTitle className="text-base text-slate-700">Personal Information</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
-                                <Row label="Full Name" value={user.name} />
-                                <Row label="Email" value={user.email} />
+                                {isEditing ? (
+                                    <>
+                                        <EditRow label="Full Name" value={editForm.name} onChange={v => setEditForm(f => ({ ...f, name: v }))} />
+                                        <EditRow label="Email" value={editForm.email} onChange={v => setEditForm(f => ({ ...f, email: v }))} />
+                                    </>
+                                ) : (
+                                    <>
+                                        <Row label="Full Name" value={user.name} />
+                                        <Row label="Email" value={user.email} />
+                                    </>
+                                )}
                                 <Row label="Date of Birth" value={fmt(user.dob)} />
                                 <Row label="Gender" value={user.gender || '—'} />
                                 <Row label="User Type" value={user.type} />
-                                {/* @ts-ignore */}
-                                <Row label="Designation" value={user.designation || '—'} />
-                                {/* @ts-ignore */}
-                                <Row label="Department" value={getDeptName(user.departmentId) || '—'} />
+                                {isEditing && user.type === 'Employee' ? (
+                                    <>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-slate-500">Department</Label>
+                                            <Select value={editForm.departmentId} onValueChange={v => setEditForm(f => ({ ...f, departmentId: v }))}>
+                                                <SelectTrigger className="bg-white border-slate-200"><SelectValue placeholder="Select Department" /></SelectTrigger>
+                                                <SelectContent>
+                                                    {departments.map((d: any) => (
+                                                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <EditRow label="Designation" value={editForm.designation} onChange={v => setEditForm(f => ({ ...f, designation: v }))} />
+                                    </>
+                                ) : (
+                                    <>
+                                        <Row label="Designation" value={(user as any).designation || '—'} />
+                                        <Row label="Department" value={getDeptName((user as any).departmentId) || '—'} />
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
 
                         <Card className="bg-white border-slate-200 shadow-sm">
                             <CardHeader className="pb-3"><CardTitle className="text-base text-slate-700">Contact & Location</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
-                                <Row label="Phone" value={user.phone} />
+                                {isEditing ? (
+                                    <>
+                                        <EditRow label="Phone" value={editForm.phone} onChange={v => setEditForm(f => ({ ...f, phone: v }))} />
+                                        <EditRow label="City" value={editForm.city} onChange={v => setEditForm(f => ({ ...f, city: v }))} />
+                                        <EditRow label="State" value={editForm.state} onChange={v => setEditForm(f => ({ ...f, state: v }))} />
+                                    </>
+                                ) : (
+                                    <>
+                                        <Row label="Phone" value={user.phone} />
+                                        <Row label="City" value={(user as any).city || '—'} />
+                                        <Row label="State" value={(user as any).state || '—'} />
+                                    </>
+                                )}
                                 {/* @ts-ignore */}
                                 <Row label="Alt Phone" value={user.altPhone || '—'} />
                                 {/* @ts-ignore */}
@@ -201,9 +329,9 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                                 <Row label="Landline" value={user.landline || '—'} />
                                 {/* @ts-ignore */}
                                 <Row label="Country" value={user.country || '—'} />
-                                <Row label="State" value={user.state || '—'} />
-                                <Row label="City" value={user.city || '—'} />
+                                {/* @ts-ignore */}
                                 <Row label="Address" value={user.address || '—'} />
+                                {/* @ts-ignore */}
                                 <Row label="Pincode" value={user.pincode || '—'} />
                             </CardContent>
                         </Card>
@@ -331,13 +459,35 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                             />
 
                             {/* Activate Plan */}
-                            <ActionCard
-                                title="Activate Plan from Backend"
-                                desc="Force-activate the user's plan without payment flow."
-                                icon={RefreshCw}
-                                color="text-indigo-600"
-                                onClick={handleActivatePlan}
-                            />
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="flex items-start gap-3">
+                                    <RefreshCw className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-slate-800">Activate Plan from Backend</p>
+                                        <p className="text-xs text-slate-400 mt-0.5">Force-activate the user's plan without payment flow.</p>
+                                        <div className="mt-3">
+                                            <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                                                <SelectTrigger className="bg-white border-slate-200 text-slate-700 h-8 text-sm">
+                                                    <SelectValue placeholder="Select a plan" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {plans.map(p => (
+                                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button 
+                                                size="sm" 
+                                                className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white w-full" 
+                                                onClick={handleActivatePlan}
+                                                disabled={!selectedPlanId}
+                                            >
+                                                Activate Plan
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Resend via WhatsApp */}
                             <ActionCard
@@ -392,6 +542,19 @@ function Row({ label, value }: { label: string; value: string }) {
         <div className="flex justify-between py-2 border-b border-slate-100 last:border-0">
             <span className="text-sm text-slate-500">{label}</span>
             <span className="text-sm font-medium text-slate-800">{value}</span>
+        </div>
+    );
+}
+
+function EditRow({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+    return (
+        <div className="flex justify-between py-2 border-b border-slate-100 last:border-0 items-center gap-2">
+            <span className="text-sm text-slate-500">{label}</span>
+            <Input 
+                value={value} 
+                onChange={e => onChange(e.target.value)} 
+                className="w-48 h-7 text-sm bg-white border-slate-200" 
+            />
         </div>
     );
 }

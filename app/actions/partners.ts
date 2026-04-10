@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { Partner, SubPartner, PartnerCommission } from '@/types/partners';
+import { Partner, SubPartner, PartnerCommission, PartnerKYC } from '@/types/partners';
 
 // --- PARTNER LISTING ---
 
@@ -312,4 +312,170 @@ export async function getPartnerCommissions(partnerId: string) {
     }));
 
     return { success: true, data: commissions };
+}
+
+// --- KYC MANAGEMENT ---
+export async function getPartnerKYC(partnerId: string): Promise<{ success: boolean; data?: PartnerKYC; error?: string }> {
+    const supabase = await createAdminClient();
+    
+    const { data: partnerData, error } = await supabase
+        .from('franchises')
+        .select('aadhaar_number, aadhaar_front, aadhaar_back, pan_number, pan_card, photo, kyc_status, kyc_history, verification_status, verified_at, verified_by, rejection_reason')
+        .eq('id', partnerId)
+        .single();
+
+    if (error) return { success: false, error: 'Partner not found' };
+
+    return {
+        success: true,
+        data: {
+            aadhaarNumber: partnerData.aadhaar_number || '',
+            aadhaarFront: partnerData.aadhaar_front || '',
+            aadhaarBack: partnerData.aadhaar_back || '',
+            panNumber: partnerData.pan_number || '',
+            panCard: partnerData.pan_card || '',
+            photo: partnerData.photo || '',
+            kycStatus: partnerData.kyc_status || 'pending',
+            history: (partnerData.kyc_history || []).map((h: any, i: number) => ({
+                id: `history_${i}`,
+                status: h.status || 'submitted',
+                timestamp: h.timestamp || new Date().toISOString(),
+                performedBy: h.by || 'system',
+                notes: h.reason || ''
+            })),
+            verificationStatus: partnerData.verification_status || 'unverified',
+            verifiedAt: partnerData.verified_at || null,
+            verifiedBy: partnerData.verified_by || null,
+            rejectionReason: partnerData.rejection_reason || ''
+        }
+    };
+}
+
+export async function updatePartnerKYC(
+    partnerId: string,
+    data: {
+        aadhaarNumber?: string;
+        aadhaarFront?: string;
+        aadhaarBack?: string;
+        panNumber?: string;
+        panCard?: string;
+        photo?: string;
+    }
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    const supabase = await createAdminClient();
+
+    const updates: any = {};
+    if (data.aadhaarNumber) updates.aadhaar_number = data.aadhaarNumber;
+    if (data.aadhaarFront) updates.aadhaar_front = data.aadhaarFront;
+    if (data.aadhaarBack) updates.aadhaar_back = data.aadhaarBack;
+    if (data.panNumber) updates.pan_number = data.panNumber;
+    if (data.panCard) updates.pan_card = data.panCard;
+    if (data.photo) updates.photo = data.photo;
+    
+    if (data.aadhaarNumber || data.aadhaarFront || data.panNumber || data.panCard) {
+        updates.kyc_status = 'submitted';
+        updates.verification_status = 'in_review';
+    }
+
+    const { error } = await supabase
+        .from('franchises')
+        .update(updates)
+        .eq('id', partnerId);
+
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, message: 'KYC documents updated successfully' };
+}
+
+export async function verifyPartnerKYC(
+    partnerId: string,
+    status: 'verified' | 'rejected',
+    rejectionReason?: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    const supabase = await createAdminClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const updates: any = {
+        verification_status: status,
+        kyc_status: status === 'verified' ? 'verified' : 'rejected',
+        verified_at: new Date().toISOString(),
+        verified_by: user?.id || 'system'
+    };
+
+    if (status === 'rejected' && rejectionReason) {
+        updates.rejection_reason = rejectionReason;
+    }
+
+    const { error } = await supabase
+        .from('franchises')
+        .update(updates)
+        .eq('id', partnerId);
+
+    if (error) return { success: false, error: error.message };
+
+    // Add to KYC history
+    const { data: partnerData } = await supabase
+        .from('franchises')
+        .select('kyc_history')
+        .eq('id', partnerId)
+        .single();
+
+    const history = partnerData?.kyc_history || [];
+    history.push({
+        status,
+        timestamp: new Date().toISOString(),
+        by: user?.id || 'system',
+        reason: rejectionReason || ''
+    });
+
+    await supabase
+        .from('franchises')
+        .update({ kyc_history: history })
+        .eq('id', partnerId);
+
+    return { success: true, message: `KYC ${status} successfully` };
+}
+
+export async function uploadPartnerKYCDocument(
+    partnerId: string,
+    docType: 'aadhaar_front' | 'aadhaar_back' | 'pan_card' | 'photo',
+    file: File
+): Promise<{ success: boolean; url?: string; error?: string }> {
+    const supabase = await createAdminClient();
+    
+    try {
+        const fileName = `kyc/${partnerId}/${docType}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('documents')
+            .upload(fileName, file, { upsert: true });
+        
+        if (uploadError) {
+            return { success: false, error: uploadError.message };
+        }
+        
+        const { data: urlData } = supabase.storage
+            .from('documents')
+            .getPublicUrl(fileName);
+        
+        const updateField: Record<string, string> = {
+            aadhaar_front: 'aadhaar_front',
+            aadhaar_back: 'aadhaar_back',
+            pan_card: 'pan_card',
+            photo: 'photo'
+        };
+        
+        await supabase
+            .from('franchises')
+            .update({ 
+                [updateField[docType]]: urlData.publicUrl,
+                kyc_status: 'submitted',
+                verification_status: 'in_review'
+            })
+            .eq('id', partnerId);
+        
+        return { success: true, url: urlData.publicUrl };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
 }

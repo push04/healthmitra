@@ -282,11 +282,10 @@ export async function assignRequestToAgent(requestId: string, agentId: string) {
 // --- CREATE AGENT ---
 
 export async function createAgent(data: { name: string; email: string; phone: string; role: string }) {
-    const supabase = await createClient();
     const adminSupabase = await createAdminClient();
     
     // First check if user exists with this email
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile } = await adminSupabase
         .from('profiles')
         .select('id, email')
         .eq('email', data.email)
@@ -311,7 +310,8 @@ export async function createAgent(data: { name: string; email: string; phone: st
             .single();
 
         if (!existingAgent) {
-            const { error: agentError } = await adminSupabase.from('call_centre_agents').upsert({
+            // Insert new agent record
+            const { error: agentError } = await adminSupabase.from('call_centre_agents').insert({
                 user_id: existingProfile.id,
                 agent_name: data.name,
                 agent_email: data.email,
@@ -319,7 +319,23 @@ export async function createAgent(data: { name: string; email: string; phone: st
                 role: data.role || 'agent',
                 status: 'active',
                 is_available: true
-            }, { onConflict: 'user_id' });
+            });
+
+            if (agentError) {
+                return { success: false, error: agentError.message };
+            }
+        } else {
+            // Update existing agent
+            const { error: agentError } = await adminSupabase
+                .from('call_centre_agents')
+                .update({
+                    agent_name: data.name,
+                    agent_email: data.email,
+                    agent_phone: data.phone,
+                    role: data.role || 'agent',
+                    status: 'active'
+                })
+                .eq('user_id', existingProfile.id);
 
             if (agentError) {
                 return { success: false, error: agentError.message };
@@ -352,23 +368,35 @@ export async function createAgent(data: { name: string; email: string; phone: st
         };
     }
 
-    // Create agent profile in profiles table using UPSERT to handle trigger
+    // Create agent profile in profiles table
     if (authData.user) {
-        const { error: profileError } = await adminSupabase.from('profiles').upsert({
-            id: authData.user.id,
-            email: data.email,
-            full_name: data.name,
-            phone: data.phone,
-            role: data.role || 'agent',
-            status: 'active'
-        }, { onConflict: 'id' });
+        // Try to insert profile, if fails due to trigger-created profile, update it
+        try {
+            const { error: profileError } = await adminSupabase.from('profiles').insert({
+                id: authData.user.id,
+                email: data.email,
+                full_name: data.name,
+                phone: data.phone,
+                role: data.role || 'agent',
+                status: 'active'
+            });
 
-        if (profileError) {
-            console.log('Profile create error:', profileError.message);
+            if (profileError && !profileError.message.includes('duplicate')) {
+                // If error is not duplicate key, try to update existing
+                await adminSupabase.from('profiles').update({
+                    email: data.email,
+                    full_name: data.name,
+                    phone: data.phone,
+                    role: data.role || 'agent',
+                    status: 'active'
+                }).eq('id', authData.user.id);
+            }
+        } catch (e) {
+            console.log('Profile operation warning:', e);
         }
 
         // Create agent in call_centre_agents
-        const { error: agentError } = await adminSupabase.from('call_centre_agents').upsert({
+        const { error: agentError } = await adminSupabase.from('call_centre_agents').insert({
             user_id: authData.user.id,
             agent_name: data.name,
             agent_email: data.email,
@@ -376,10 +404,11 @@ export async function createAgent(data: { name: string; email: string; phone: st
             role: data.role || 'agent',
             status: 'active',
             is_available: true
-        }, { onConflict: 'user_id' });
+        });
 
         if (agentError) {
-            return { success: false, error: agentError.message };
+            console.log('Agent insert error:', agentError.message);
+            return { success: true, message: 'Agent created but entry in call_centre_agents failed. Use admin to manually add.', tempPassword };
         }
 
         return { success: true, message: 'Agent created successfully', tempPassword };

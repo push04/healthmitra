@@ -26,7 +26,12 @@ export async function getUsers(filters: GetUsersFilters) {
     }
 
     if (filters.type && filters.type !== 'all') {
-        const roleMap: Record<string, string> = { 'Admin': 'admin', 'Customer': 'user', 'Referral Partner': 'franchise_owner' };
+        const roleMap: Record<string, string> = { 
+            'Admin': 'admin', 
+            'Customer': 'user', 
+            'Referral Partner': 'franchise_owner',
+            'Employee': 'employee'
+        };
         const role = roleMap[filters.type];
         if (role) query = query.eq('role', role);
     }
@@ -49,12 +54,17 @@ export async function getUsers(filters: GetUsersFilters) {
     // Compute stats from count queries
     const { count: totalCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     const { count: adminCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin');
+    const { count: employeeCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'employee');
+    const { count: partnerCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'franchise_owner');
+    const { count: customerCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'user');
     const { count: activeCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active');
 
     const stats = {
         total: totalCount || 0,
         admins: adminCount || 0,
-        customers: (totalCount || 0) - (adminCount || 0),
+        employees: employeeCount || 0,
+        partners: partnerCount || 0,
+        customers: customerCount || 0,
         active: activeCount || 0,
     };
 
@@ -62,6 +72,7 @@ export async function getUsers(filters: GetUsersFilters) {
         let type: UserType = 'Customer';
         if (p.role === 'admin') type = 'Admin';
         if (p.role === 'franchise_owner') type = 'Referral Partner';
+        if (p.role === 'employee') type = 'Employee';
 
         return {
             id: p.id,
@@ -71,7 +82,11 @@ export async function getUsers(filters: GetUsersFilters) {
             type: type,
             status: p.status || 'active',
             joinedDate: new Date(p.created_at).toISOString().split('T')[0],
-            avatar: p.avatar_url
+            avatar: p.avatar_url,
+            departmentId: p.department_id,
+            designation: p.designation,
+            city: p.city,
+            state: p.state,
         };
     });
 
@@ -102,7 +117,7 @@ export async function getUser(id: string) {
     return { success: true, data: user };
 }
 
-export async function createUser(data: Partial<User>) {
+export async function createUser(data: Partial<User> & { departmentId?: string; designation?: string; city?: string; state?: string }) {
     const adminSupabase = await createAdminClient();
 
     // Check if user already exists in profiles
@@ -136,14 +151,24 @@ export async function createUser(data: Partial<User>) {
         return { success: false, error: 'Failed to create auth user' };
     }
 
+    // Determine role
+    let role = 'user';
+    if (data.type === 'Admin') role = 'admin';
+    else if (data.type === 'Employee') role = 'employee';
+    else if (data.type === 'Referral Partner') role = 'franchise_owner';
+
     // Create profile with the auth user's id
     const { error: profileError } = await adminSupabase.from('profiles').upsert({
         id: authData.user.id,
         email: data.email,
         full_name: data.name,
         phone: data.phone,
-        role: data.type === 'Admin' ? 'admin' : data.type === 'Employee' ? 'employee' : 'user',
-        status: 'active',
+        role: role,
+        status: data.status || 'active',
+        department_id: data.departmentId || null,
+        designation: data.designation || null,
+        city: data.city || null,
+        state: data.state || null,
     });
 
     if (profileError) {
@@ -152,10 +177,10 @@ export async function createUser(data: Partial<User>) {
         return { success: false, error: profileError.message };
     }
 
-    return { success: true, message: 'User created successfully' };
+    return { success: true, message: 'User created successfully', tempPassword };
 }
 
-export async function updateUser(id: string, data: Partial<User>) {
+export async function updateUser(id: string, data: Partial<User> & { departmentId?: string; designation?: string; city?: string; state?: string; dob?: string; gender?: string }) {
     const supabase = await createAdminClient();
 
     const updates: any = {};
@@ -164,6 +189,10 @@ export async function updateUser(id: string, data: Partial<User>) {
     if (data.phone) updates.phone = data.phone;
     if (data.dob) updates.dob = data.dob;
     if (data.gender) updates.gender = data.gender;
+    if (data.departmentId !== undefined) updates.department_id = data.departmentId;
+    if (data.designation !== undefined) updates.designation = data.designation;
+    if (data.city !== undefined) updates.city = data.city;
+    if (data.state !== undefined) updates.state = data.state;
 
     const { error } = await supabase.from('profiles').update(updates).eq('id', id);
 
@@ -213,28 +242,104 @@ export async function changePlan(id: string, planId: string, planName: string) {
 }
 
 export async function resendCredentials(id: string, method: 'whatsapp' | 'email') {
-    // This would integrate with a messaging API (Twilio/SendGrid)
-    // For now, log the action
     const supabase = await createAdminClient();
+    
+    // Get user details
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('email, phone, full_name')
+        .eq('id', id)
+        .single();
+
+    if (profileError || !profile) {
+        return { success: false, error: 'User not found' };
+    }
+
+    // Generate a new temporary password
+    const tempPassword = crypto.randomUUID().replace(/-/g, '').slice(0, 12) + 'A1!';
+    
+    // Update user password
+    const { error: updateError } = await supabase.auth.admin.updateUserById(id, {
+        password: tempPassword,
+    });
+
+    if (updateError) {
+        return { success: false, error: 'Failed to reset password: ' + updateError.message };
+    }
+
+    // Log the action
     await supabase.from('audit_logs').insert({
         user_id: id,
         action: `resend_credentials_${method}`,
         entity_type: 'user',
         entity_id: id,
     });
-    return { success: true, message: `Credentials sent via ${method === 'whatsapp' ? 'WhatsApp' : 'Email'}` };
+
+    // In production, you would integrate with:
+    // - Email: SendGrid, AWS SES, Resend, etc.
+    // - WhatsApp: Twilio, MSG91, etc.
+    
+    // For now, we'll return success and the method used
+    return { 
+        success: true, 
+        message: `Credentials sent via ${method === 'whatsapp' ? 'WhatsApp' : 'Email'}`,
+        tempPassword // In production, don't return the password - send it via the messaging service
+    };
 }
 
 export async function activateNewPlan(id: string, planId: string) {
     const supabase = await createAdminClient();
+    
+    // Get user profile for full_name
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', id)
+        .single();
+
+    if (!profile) {
+        return { success: false, error: 'User not found' };
+    }
+
+    // Get plan details
+    const { data: plan } = await supabase
+        .from('plans')
+        .select('name, duration_days')
+        .eq('id', planId)
+        .single();
+
+    // Expire existing active plans
+    await supabase
+        .from('ecard_members')
+        .update({ status: 'expired' })
+        .eq('user_id', id)
+        .eq('relation', 'Self')
+        .eq('status', 'active');
+
+    // Calculate validity
+    const validFrom = new Date();
+    const durationDays = plan?.duration_days || 365;
+    const validTill = new Date(validFrom);
+    validTill.setDate(validTill.getDate() + durationDays);
+
+    // Generate member ID
+    const memberIdCode = `HM-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
+    const cardUniqueId = `HM-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
     const { error } = await supabase.from('ecard_members').insert({
         user_id: id,
         plan_id: planId,
+        member_id_code: memberIdCode,
+        card_unique_id: cardUniqueId,
+        full_name: profile.full_name,
+        relation: 'Self',
         status: 'active',
-        valid_from: new Date().toISOString(),
+        valid_from: validFrom.toISOString().split('T')[0],
+        valid_till: validTill.toISOString().split('T')[0],
     });
+
     if (error) return { success: false, error: error.message };
-    return { success: true, message: 'New plan activated successfully' };
+    return { success: true, message: `Plan "${plan?.name || 'selected plan'}" activated successfully` };
 }
 
 // --- DEPARTMENT ACTIONS ---

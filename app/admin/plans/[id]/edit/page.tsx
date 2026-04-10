@@ -19,6 +19,7 @@ import { Plan, PlanService, PlanDetail, PlanCategory } from '@/types/plans';
 import { getCategories, getPlan, updatePlan as savePlan } from '@/app/actions/plans';
 import Link from 'next/link';
 import { useDropzone } from 'react-dropzone';
+import { use } from 'react';
 
 const TOTAL_STEPS = 6;
 
@@ -108,7 +109,8 @@ function PdfDropzone({ value, onChange }: { value?: string; onChange: (v: string
     );
 }
 
-export default function EditPlanPage({ params }: { params: { id: string } }) {
+export default function EditPlanPage({ params }: { params: Promise<{ id: string }> }) {
+    const resolvedParams = use(params);
     const router = useRouter();
     const [currentStep, setCurrentStep] = useState(1);
     const [plan, setPlan] = useState<Partial<Plan>>({});
@@ -122,7 +124,7 @@ export default function EditPlanPage({ params }: { params: { id: string } }) {
             try {
                 const [catRes, planRes] = await Promise.all([
                     getCategories(),
-                    getPlan(params.id)
+                    getPlan(resolvedParams.id)
                 ]);
                 
                 if (catRes.success && catRes.data) {
@@ -143,7 +145,7 @@ export default function EditPlanPage({ params }: { params: { id: string } }) {
             }
         };
         load();
-    }, [params.id, router]);
+    }, [resolvedParams.id, router]);
 
     const updatePlanData = (updates: Partial<Plan>) => {
         setPlan(prev => {
@@ -209,7 +211,7 @@ export default function EditPlanPage({ params }: { params: { id: string } }) {
     const handleSave = async () => {
         setSaving(true);
         toast.loading("Saving plan...");
-        const res = await savePlan(params.id, plan);
+        const res = await savePlan(resolvedParams.id, plan);
         toast.dismiss();
 
         if (res && res.success) {

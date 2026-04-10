@@ -1,6 +1,29 @@
 export type KYCStatus = 'pending' | 'submitted' | 'verified' | 'rejected';
 export type VerificationStatus = 'unverified' | 'in_review' | 'verified' | 'suspended';
 
+export interface FranchiseKYC {
+    aadhaarNumber: string;
+    aadhaarFront: string;
+    aadhaarBack: string;
+    panNumber: string;
+    panCard: string;
+    photo: string;
+    kycStatus: KYCStatus;
+    history: KYCHistoryEntry[];
+    verificationStatus: VerificationStatus;
+    verifiedAt: string | null;
+    verifiedBy: string | null;
+    rejectionReason: string;
+}
+
+export interface KYCHistoryEntry {
+    id: string;
+    status: 'submitted' | 'verified' | 'rejected';
+    timestamp: string;
+    performedBy: string;
+    notes?: string;
+}
+
 export interface Franchise {
     id: string;
     name: string;

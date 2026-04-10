@@ -103,30 +103,26 @@ export default async function Home() {
   const plans = await getPlans()
 
   // Parse testimonials from CMS
-  const parsedTestimonials = homepageData.testimonials.map((t: any) => {
-    try {
-      return JSON.parse(t.value);
-    } catch {
-      return { name: 'Member', role: 'India', text: 'Great service!', rating: 5 };
-    }
-  }) || [
-    { name: "Rajesh Kumar", role: "Delhi", text: "HealthMitra has been a blessing for my family.", rating: 5 },
-    { name: "Priya Sharma", role: "Mumbai", text: "The doctor consultations are so convenient.", rating: 5 },
-    { name: "Anil Gupta", role: "Bangalore", text: "Best investment for our family's health.", rating: 5 },
-  ];
+  const parsedTestimonials = homepageData.testimonials
+    .map((t: any) => {
+      try {
+        return JSON.parse(t.value);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
 
   // Parse FAQs from CMS
-  const parsedFaqs = homepageData.faqs.map((f: any) => {
-    try {
-      return JSON.parse(f.value);
-    } catch {
-      return { q: 'Question', a: 'Answer' };
-    }
-  }) || [
-    { q: "What is HealthMitra?", a: "HealthMitra is a comprehensive healthcare platform." },
-    { q: "How do I enroll?", a: "Simply choose a plan and complete payment." },
-    { q: "Is there a waiting period?", a: "No waiting period for OPD services." },
-  ];
+  const parsedFaqs = homepageData.faqs
+    .map((f: any) => {
+      try {
+        return JSON.parse(f.value);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
 
   const stats = [
     { number: `${(homepageData.membersCount / 1000).toFixed(0)}K+`, label: "Happy Members", icon: Users },
@@ -323,42 +319,9 @@ export default async function Home() {
                   </CardContent>
                 </Card>
               )) : (
-                // Fallback plans if none in DB
-                [
-                  { name: "Basic", price: 2999, desc: "Essential coverage for individuals", features: ["Doctor Consultations", "Medicine Discounts", "Health Records"] },
-                  { name: "Family", price: 7999, desc: "Complete protection for family", features: ["Up to 4 Members", "All Basic Features", "Emergency Support"] },
-                  { name: "Premium", price: 14999, desc: "Ultimate healthcare solution", features: ["Up to 6 Members", "Priority Support", "All Features"] },
-                ].map((plan, idx) => (
-                  <Card key={idx} className={`relative overflow-hidden border-2 ${idx === 1 ? 'border-teal-500 shadow-xl shadow-teal-100' : 'border-slate-200'} hover:border-teal-300 transition-all`}>
-                    {idx === 1 && (
-                      <div className="absolute top-0 right-0 bg-teal-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-                        POPULAR
-                      </div>
-                    )}
-                    <CardContent className="p-8">
-                      <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
-                      <p className="text-slate-500 mb-6 text-sm">{plan.desc}</p>
-                      <div className="mb-6">
-                        <span className="text-4xl font-bold text-slate-900">₹{plan.price.toLocaleString()}</span>
-                        <span className="text-slate-500">/year</span>
-                      </div>
-                      <ul className="space-y-3 mb-8">
-                        {plan.features.map((feature, i) => (
-                          <li key={i} className="flex items-center gap-2 text-sm text-slate-600">
-                            <CheckCircle2 className="w-4 h-4 text-teal-500" />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                      <Link href="/plans" className="block">
-                        <Button className={`w-full ${idx === 1 ? 'bg-teal-600 hover:bg-teal-700' : 'bg-slate-900 hover:bg-slate-800'}`}>
-                          Get Started
-                          <ArrowUpRight className="ml-2 w-4 h-4" />
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                ))
+                <div className="col-span-3 text-center py-12 text-slate-500">
+                  No plans available at the moment.
+                </div>
               )}
             </div>
           </div>
@@ -373,25 +336,29 @@ export default async function Home() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
-              {parsedTestimonials.map((testimonial: any, idx: number) => (
+              {parsedTestimonials.length > 0 ? parsedTestimonials.map((testimonial: any, idx: number) => (
                 <div key={idx} className="bg-slate-50 rounded-2xl p-8">
                   <div className="flex gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
+                    {[...Array(testimonial.rating || 5)].map((_, i) => (
                       <Star key={i} size={18} className="fill-amber-400 text-amber-400" />
                     ))}
                   </div>
-                  <p className="text-slate-600 mb-6 leading-relaxed">"{testimonial.text}"</p>
+                  <p className="text-slate-600 mb-6 leading-relaxed">"{testimonial.text || testimonial.a}"</p>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
                       <Users size={20} className="text-teal-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-slate-900">{testimonial.name}</p>
-                      <p className="text-sm text-slate-500">{testimonial.role}</p>
+                      <p className="font-semibold text-slate-900">{testimonial.name || testimonial.author || 'Member'}</p>
+                      <p className="text-sm text-slate-500">{testimonial.role || testimonial.location || ''}</p>
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="col-span-3 text-center py-12 text-slate-500">
+                  No testimonials available at the moment.
+                </div>
+              )}
             </div>
           </div>
         </section>
