@@ -9,9 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Loader2, Save, User as UserIcon, Building2, MapPin, Shield, CheckCircle2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ArrowLeft, Loader2, Save, User as UserIcon, Building2, MapPin, Shield, CheckCircle2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { createUser, getDepartments } from '@/app/actions/users';
+import { createDepartment } from '@/app/actions/departments';
 import { UserType } from '@/types/user';
 
 const STEPS = [
@@ -26,6 +28,12 @@ export default function NewUserPage() {
     const [step, setStep] = useState(1);
     const [submitting, setSubmitting] = useState(false);
     const [departments, setDepartments] = useState<any[]>([]);
+    
+    // Create Department Dialog
+    const [createDeptOpen, setCreateDeptOpen] = useState(false);
+    const [newDeptName, setNewDeptName] = useState('');
+    const [newDeptDesc, setNewDeptDesc] = useState('');
+    const [creatingDept, setCreatingDept] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -56,6 +64,31 @@ export default function NewUserPage() {
 
     const handleChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleCreateDepartment = async () => {
+        if (!newDeptName.trim()) {
+            toast.error("Department name is required");
+            return;
+        }
+        setCreatingDept(true);
+        try {
+            const res = await createDepartment(newDeptName.trim(), newDeptDesc.trim());
+            if (res.success && res.data) {
+                toast.success("Department created successfully");
+                setDepartments(prev => [...prev, res.data]);
+                setFormData(prev => ({ ...prev, departmentId: res.data.id }));
+                setCreateDeptOpen(false);
+                setNewDeptName('');
+                setNewDeptDesc('');
+            } else {
+                toast.error(res.error || "Failed to create department");
+            }
+        } catch (e) {
+            toast.error("Failed to create department");
+        } finally {
+            setCreatingDept(false);
+        }
     };
 
     const handleNext = () => {
@@ -177,7 +210,12 @@ export default function NewUserPage() {
                                     {formData.type === 'Employee' && (
                                         <>
                                             <div className="grid gap-2">
-                                                <Label>Department</Label>
+                                                <div className="flex items-center justify-between">
+                                                    <Label>Department</Label>
+                                                    <Button variant="ghost" size="sm" className="text-teal-600 h-8" onClick={() => setCreateDeptOpen(true)}>
+                                                        <Plus className="h-4 w-4 mr-1" /> Create New
+                                                    </Button>
+                                                </div>
                                                 <Select value={formData.departmentId} onValueChange={(v) => handleChange('departmentId', v)}>
                                                     <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
                                                     <SelectContent>
@@ -274,6 +312,39 @@ export default function NewUserPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* Create Department Dialog */}
+            <Dialog open={createDeptOpen} onOpenChange={setCreateDeptOpen}>
+                <DialogContent className="bg-white border-slate-200 text-slate-900">
+                    <DialogHeader>
+                        <DialogTitle>Create New Department</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Department Name *</Label>
+                            <Input 
+                                placeholder="e.g. Human Resources" 
+                                value={newDeptName}
+                                onChange={e => setNewDeptName(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description (Optional)</Label>
+                            <Input 
+                                placeholder="Brief description of the department" 
+                                value={newDeptDesc}
+                                onChange={e => setNewDeptDesc(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setCreateDeptOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateDepartment} disabled={creatingDept} className="bg-teal-600 hover:bg-teal-700">
+                            {creatingDept ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Department'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
