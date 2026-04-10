@@ -325,6 +325,16 @@ export async function getCustomers(filters?: {
     const { data: profiles, error, count } = await query;
     if (error) return { success: false, error: error.message };
 
+    // Get total count (without pagination) for accurate total
+    let totalCount = count || 0;
+    if (!filters?.planId) {
+        const { count: fullCount } = await adminSupabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', 'user');
+        totalCount = fullCount || 0;
+    }
+
     // Get e-card members (self) for each profile to get plan info
     const userIds = profiles.map((p: any) => p.id);
 
@@ -384,7 +394,7 @@ export async function getCustomers(filters?: {
 
     // Filter by planId if provided
     let filtered = customers;
-    let finalCount = count || 0;
+    let finalCount = totalCount;
     
     if (filters?.planId) {
         if (filters.planId === 'none') {
@@ -400,10 +410,6 @@ export async function getCustomers(filters?: {
                 .select('user_id', { count: 'exact', head: true })
                 .eq('relation', 'Self')
                 .is('plan_id', null);
-            const { count: totalCustomers } = await adminSupabase
-                .from('profiles')
-                .select('*', { count: 'exact', head: true })
-                .eq('role', 'user');
             finalCount = noPlanCount || 0;
         } else {
             // Count customers with this specific plan

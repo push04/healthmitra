@@ -370,14 +370,16 @@ export async function createAgent(data: { name: string; email: string; phone: st
 
     // Create agent profile in profiles table
     if (authData.user) {
-        // Try to insert profile, if fails due to trigger-created profile, update it
+        // Use 'call_center_agent' as the role (valid role per constraint)
+        const agentRole = 'call_center_agent';
+        
         try {
             const { error: profileError } = await adminSupabase.from('profiles').insert({
                 id: authData.user.id,
                 email: data.email,
                 full_name: data.name,
                 phone: data.phone,
-                role: data.role || 'agent',
+                role: agentRole,
                 status: 'active'
             });
 
@@ -387,7 +389,7 @@ export async function createAgent(data: { name: string; email: string; phone: st
                     email: data.email,
                     full_name: data.name,
                     phone: data.phone,
-                    role: data.role || 'agent',
+                    role: agentRole,
                     status: 'active'
                 }).eq('id', authData.user.id);
             }
@@ -401,7 +403,7 @@ export async function createAgent(data: { name: string; email: string; phone: st
             agent_name: data.name,
             agent_email: data.email,
             agent_phone: data.phone,
-            role: data.role || 'agent',
+            role: data.role || 'call_center',
             status: 'active',
             is_available: true
         });
