@@ -92,7 +92,7 @@ export async function fetchDashboardData(): Promise<ApiResponse<DashboardData>> 
                 id: c.id,
                 type: 'reimbursement' as const,
                 title: c.title || 'Reimbursement',
-                description: `Amount: ₹${c.amount || 0}`,
+                description: `Amount: $${c.amount || 0}`,
                 status: (c.status || 'pending') as 'pending' | 'completed' | 'approved' | 'rejected',
                 timestamp: c.created_at || new Date().toISOString()
             }))

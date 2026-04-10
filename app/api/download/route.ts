@@ -323,11 +323,11 @@ function generateHTMLInvoice(invoice: any, purchase: any) {
                         </td>
                         <td>
                             <div style="font-size: 13px;">
-                                <div>Coverage: ₹${(purchase.coverage_amount || 0).toLocaleString('en-IN')}</div>
+                                <div>Coverage: $${(purchase.coverage_amount || 0).toLocaleString('en-IN')}</div>
                                 <div>Card ID: ${purchase.card_unique_id || 'N/A'}</div>
                             </div>
                         </td>
-                        <td class="text-right font-bold">₹${Number(invoice.amount || 0).toLocaleString('en-IN')}</td>
+                        <td class="text-right font-bold">$${Number(invoice.amount || 0).toLocaleString('en-IN')}</td>
                     </tr>
                 </tbody>
             </table>
@@ -336,15 +336,15 @@ function generateHTMLInvoice(invoice: any, purchase: any) {
                 <div class="totals-table">
                     <div class="totals-row">
                         <span>Subtotal</span>
-                        <span>₹${Number(invoice.amount || 0).toLocaleString('en-IN')}</span>
+                        <span>$${Number(invoice.amount || 0).toLocaleString('en-IN')}</span>
                     </div>
                     <div class="totals-row">
                         <span>GST (18%)</span>
-                        <span>₹${gstAmount.toLocaleString('en-IN')}</span>
+                        <span>$${gstAmount.toLocaleString('en-IN')}</span>
                     </div>
                     <div class="totals-row">
                         <span>Total</span>
-                        <span>₹${totalAmount.toLocaleString('en-IN')}</span>
+                        <span>$${totalAmount.toLocaleString('en-IN')}</span>
                     </div>
                 </div>
             </div>
@@ -470,8 +470,8 @@ Claim ID: ${claim.id}
 ------------------------------------------
 Claim Details:
 Type: ${claim.claim_type || 'Medical'}
-Amount Claimed: ₹${claim.amount || 0}
-Amount Approved: ₹${claim.amount_approved || 0}
+Amount Claimed: $${claim.amount || 0}
+Amount Approved: $${claim.amount_approved || 0}
 
 Status: ${claim.status?.toUpperCase() || 'PENDING'}
 
@@ -519,7 +519,7 @@ Valid Till: ${member.valid_till ? new Date(member.valid_till).toLocaleDateString
 
 ------------------------------------------
 Plan: ${member.plan?.name || 'N/A'}
-Coverage: ₹${member.coverage_amount || 0}
+Coverage: $${member.coverage_amount || 0}
 
 ==========================================
 HealthMitra - Your Health Partner
@@ -547,7 +547,7 @@ async function generateReport(supabase: any, userId: string, data: any) {
 
         reportContent += `Total Plans: ${purchases?.length || 0}\n\n`;
         purchases?.forEach((p: any, i: number) => {
-            reportContent += `${i + 1}. ${p.plan?.name || 'N/A'} - ₹${p.plan?.price || 0}\n`;
+            reportContent += `${i + 1}. ${p.plan?.name || 'N/A'} - $${p.plan?.price || 0}\n`;
             reportContent += `   Valid: ${p.valid_from ? new Date(p.valid_from).toLocaleDateString('en-IN') : 'N/A'} to ${p.valid_till ? new Date(p.valid_till).toLocaleDateString('en-IN') : 'N/A'}\n`;
         });
     } else if (reportType === 'claims') {
@@ -558,7 +558,7 @@ async function generateReport(supabase: any, userId: string, data: any) {
 
         reportContent += `Total Claims: ${claims?.length || 0}\n\n`;
         claims?.forEach((c: any, i: number) => {
-            reportContent += `${i + 1}. ${c.claim_type || 'Medical'} - ₹${c.amount || 0}\n`;
+            reportContent += `${i + 1}. ${c.claim_type || 'Medical'} - $${c.amount || 0}\n`;
             reportContent += `   Status: ${c.status}\n`;
         });
     }
