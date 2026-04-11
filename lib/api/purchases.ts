@@ -19,12 +19,26 @@ export async function fetchPurchases(params?: { status?: string; search?: string
     const planMap: Record<string, any> = {};
     memberData?.forEach((m: any) => {
         const planId = m.plan_id;
+        
+        // Transform benefits from string array to {id, text} objects
+        const transformBenefits = (benefits: any): {id: string; text: string}[] => {
+            if (!benefits) return [];
+            if (typeof benefits === 'string') return [{ id: '1', text: benefits }];
+            if (Array.isArray(benefits)) {
+                return benefits.map((b: any, idx: number) => {
+                    if (typeof b === 'string') return { id: String(idx + 1), text: b };
+                    return { id: b.id || String(idx + 1), text: b.text || String(b) };
+                });
+            }
+            return [];
+        };
+        
         if (!planMap[planId]) {
             planMap[planId] = {
                 id: planId,
                 name: m.plan?.name || 'Unknown Plan',
                 planId: m.plan?.id || planId,
-                policyNumber: m.policy_number || '',
+                policyNumber: m.member_id_code || m.policy_number || '',
                 status: m.status || 'active',
                 purchaseDate: m.created_at,
                 validFrom: m.valid_from,
@@ -36,7 +50,7 @@ export async function fetchPurchases(params?: { status?: string; search?: string
                 transactionId: '',
                 amountPaid: m.plan?.price || 0,
                 paymentMode: '',
-                benefits: m.plan?.benefits || [],
+                benefits: transformBenefits(m.plan?.features || m.plan?.benefits),
                 coverage: m.plan?.coverage || [],
                 members: [],
                 documents: [],

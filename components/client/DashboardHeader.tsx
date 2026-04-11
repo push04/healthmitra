@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
     Bell,
     Menu,
@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS } from "./Sidebar";
+import { NAV_ITEMS, NavItem } from "./Sidebar";
 import { createClient } from "@/lib/supabase/client";
 
 
@@ -75,13 +75,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         .toUpperCase()
         .slice(0, 2);
 
-    useEffect(() => {
-        if (user) {
-            loadNotifications();
-        }
-    }, [user]);
-
-    const loadNotifications = async () => {
+    const loadNotifications = useCallback(async () => {
         if (!user?.id && !user?.email) return;
         
         setLoadingNotifications(true);
@@ -114,7 +108,13 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         }
         
         setLoadingNotifications(false);
-    };
+    }, [user, supabase]);
+
+    useEffect(() => {
+        if (user) {
+            loadNotifications();
+        }
+    }, [user, loadNotifications]);
 
     const markAsRead = async (notificationId: string) => {
         let userId = user?.id;
@@ -204,7 +204,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                         </SheetHeader>
                         <div className="flex-1 overflow-y-auto py-4">
                             <nav className="space-y-1 px-2">
-                                {NAV_ITEMS.map((item) => {
+                                {NAV_ITEMS.map((item: NavItem) => {
                                     const isActive = pathname === item.href;
                                     const Icon = item.icon;
                                     return (
@@ -220,9 +220,9 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                                         >
                                             <Icon className={cn("size-5", isActive ? "text-teal-600" : "text-slate-500")} />
                                             {item.label}
-                                            {(item as any).badge && (
+                                            {'badge' in item && item.badge && (
                                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-red-500 px-2 py-0.5 text-xs font-medium text-white">
-                                                    {(item as any).badge}
+                                                    {item.badge}
                                                 </span>
                                             )}
                                         </Link>

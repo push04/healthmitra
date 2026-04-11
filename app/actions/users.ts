@@ -180,7 +180,7 @@ export async function createUser(data: Partial<User> & { departmentId?: string; 
     return { success: true, message: 'User created successfully', tempPassword };
 }
 
-export async function updateUser(id: string, data: Partial<User> & { departmentId?: string; designation?: string; city?: string; state?: string; dob?: string; gender?: string }) {
+export async function updateUser(id: string, data: Partial<User> & { departmentId?: string; designation?: string; city?: string; state?: string; dob?: string; gender?: string; role?: string }) {
     const supabase = await createAdminClient();
 
     const updates: any = {};
@@ -193,6 +193,24 @@ export async function updateUser(id: string, data: Partial<User> & { departmentI
     if (data.designation !== undefined) updates.designation = data.designation;
     if (data.city !== undefined) updates.city = data.city;
     if (data.state !== undefined) updates.state = data.state;
+    
+    // Handle role updates
+    if (data.role || data.type) {
+        let newRole = data.role;
+        if (!newRole && data.type) {
+            const roleMap: Record<string, string> = {
+                'Customer': 'user',
+                'Admin': 'admin',
+                'Referral Partner': 'franchise_owner',
+                'Employee': 'employee',
+                'Doctor': 'doctor',
+                'Diagnostic Center': 'diagnostic_center',
+                'Pharmacy': 'pharmacy'
+            };
+            newRole = roleMap[data.type] || 'user';
+        }
+        if (newRole) updates.role = newRole;
+    }
 
     const { error } = await supabase.from('profiles').update(updates).eq('id', id);
 

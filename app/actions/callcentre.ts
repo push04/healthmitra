@@ -369,10 +369,23 @@ export async function createAgent(data: { name: string; email: string; phone: st
 }
 
 function generateTempPassword(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowercase = 'abcdefghjkmnpqrstuvwxyz';
+    const numbers = '23456789';
+    const special = '!@#$%';
+    
+    const getRandom = (chars: string) => chars.charAt(Math.floor(Math.random() * chars.length));
+    
     let password = '';
-    for (let i = 0; i < 10; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    password += getRandom(uppercase); // at least 1 uppercase
+    password += getRandom(lowercase); // at least 1 lowercase
+    password += getRandom(numbers); // at least 1 number
+    password += getRandom(special); // at least 1 special
+    
+    const allChars = uppercase + lowercase + numbers + special;
+    for (let i = password.length; i < 12; i++) {
+        password += getRandom(allChars);
     }
-    return password + '@' + Math.floor(Math.random() * 9 + 1);
+    
+    return password;
 }

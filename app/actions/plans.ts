@@ -91,6 +91,7 @@ export async function getPlan(id: string) {
 
 export async function createPlan(data: Partial<Plan>) {
     const supabase = await createAdminClient();
+    const planStatus = data.status || 'draft';
     const { error } = await supabase.from('plans').insert({
         name: data.name,
         price: data.basePrice,
@@ -98,7 +99,8 @@ export async function createPlan(data: Partial<Plan>) {
         features: data.services?.map(s => s.name),
         duration_days: (data.validityValue || 1) * 365,
         type: data.type,
-        status: data.status || 'draft',
+        status: planStatus,
+        is_active: planStatus === 'active',
         is_featured: data.isFeatured,
         image_url: data.planImage
     });
@@ -109,14 +111,18 @@ export async function createPlan(data: Partial<Plan>) {
 
 export async function updatePlan(id: string, data: Partial<Plan>) {
     const supabase = await createAdminClient();
+    const planStatus = data.status || 'active';
     const { error } = await supabase.from('plans').update({
         name: data.name,
         price: data.basePrice,
         description: data.description,
         features: data.services?.map(s => s.name),
-        status: data.status,
+        duration_days: data.validityType === 'year' ? (data.validityValue || 1) * 365 : data.validityValue ? data.validityValue * 30 : 365,
+        status: planStatus,
+        is_active: planStatus === 'active',
         is_featured: data.isFeatured,
-        image_url: data.planImage
+        image_url: data.planImage,
+        type: data.type
     }).eq('id', id);
 
     if (error) return { success: false, error: error.message };
@@ -132,7 +138,10 @@ export async function deletePlan(id: string) {
 
 export async function togglePlanStatus(id: string, status: 'active' | 'inactive' | 'draft') {
     const supabase = await createAdminClient();
-    const { error } = await supabase.from('plans').update({ status }).eq('id', id);
+    const { error } = await supabase.from('plans').update({ 
+        status,
+        is_active: status === 'active'
+    }).eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true, message: `Plan status updated to ${status}` };
 }

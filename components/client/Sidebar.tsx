@@ -22,7 +22,14 @@ import { cn } from "@/lib/utils";
 import { signout } from "@/app/actions/auth";
 import { toast } from "sonner";
 
-export const NAV_ITEMS = [
+export interface NavItem {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    href: string;
+    badge?: number;
+}
+
+export const NAV_ITEMS: NavItem[] = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
     { icon: Bell, label: 'Notifications', href: '/notifications' },
     { icon: FileText, label: 'Service Requests', href: '/service-requests' },

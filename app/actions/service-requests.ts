@@ -43,11 +43,22 @@ export async function createServiceRequest(data: { type: string; memberId?: stri
 
     if (!user) return { success: false, error: 'Not authenticated' };
 
+    // Generate request_id_display (e.g., SR-2026-0001)
+    const year = new Date().getFullYear();
+    const { count } = await supabase
+        .from('service_requests')
+        .select('*', { count: 'exact', head: true })
+        .like('request_id_display', `SR-${year}-%`);
+    
+    const nextNum = (count || 0) + 1;
+    const requestIdDisplay = `SR-${year}-${String(nextNum).padStart(4, '0')}`;
+
     const { data: req, error } = await supabase.from('service_requests').insert({
         user_id: user.id,
         type: data.type,
         status: 'pending',
         details: data.details,
+        request_id_display: requestIdDisplay,
     }).select().single();
 
     if (error) return { success: false, error: error.message };
