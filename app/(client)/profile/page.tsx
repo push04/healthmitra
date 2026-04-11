@@ -1,6 +1,8 @@
 import { getUserProfile } from "@/app/actions/user";
 import ProfileView from "@/components/client/ProfileView";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProfilePage() {
     const { success, data } = await getUserProfile();
 
