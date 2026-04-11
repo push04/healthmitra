@@ -15,14 +15,14 @@ export async function fetchDashboardData(): Promise<ApiResponse<DashboardData>> 
         }
 
         // Use Promise.allSettled to handle individual query failures gracefully
-        // Use admin client for ecard_members to bypass RLS
+        // Use admin client for all queries to bypass RLS
         const results = await Promise.allSettled([
-            supabase.from('profiles').select('*').eq('id', user.id).single(),
-            supabase.from('wallets').select('*').eq('user_id', user.id).single(),
+            adminClient.from('profiles').select('*').eq('id', user.id).single(),
+            adminClient.from('wallets').select('*').eq('user_id', user.id).single(),
             adminClient.from('ecard_members').select('*, plans(*)').eq('user_id', user.id),
-            supabase.from('service_requests').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-            supabase.from('reimbursement_claims').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-            supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(10),
+            adminClient.from('service_requests').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+            adminClient.from('reimbursement_claims').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+            adminClient.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(10),
         ]);
 
         // Extract data from settled promises
