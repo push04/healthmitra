@@ -84,50 +84,74 @@ export async function getMyPurchases() {
     if (!user) return { success: false, error: 'Not authenticated' };
 
     // Fetch ALL member purchases for this user (including Self and family members)
-    // Group by plan_id to show unique plan purchases
     const { data, error } = await adminClient.from('ecard_members')
         .select('*, plans(*)')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
     if (error) return { success: false, error: error.message };
 
-    // Group by plan_id and take first 'Self' member for each plan
-    const planMap = new Map<string, any>();
-    
-    for (const m of data) {
-        // If we haven't seen this plan_id yet, add this member
-        if (!planMap.has(m.plan_id)) {
-            planMap.set(m.plan_id, m);
-        } else if (m.relation === 'Self') {
-            // If this is 'Self' relation, prioritize it
-            planMap.set(m.plan_id, m);
-        }
-    }
-
-    const purchases = Array.from(planMap.values()).map((m: any) => {
+    // Group purchases by a unique key (card_unique_id or plan_id + valid_from combination)
+    // Each ecard_member entry represents a family member on a plan
+    // Show each family member as a separate "purchase" entry
+    const purchases = (data || []).map((m: any) => {
         // Determine status based on valid_till
         const isExpired = m.valid_till && new Date(m.valid_till) < new Date();
         const status = isExpired ? 'expired' : (m.status === 'active' ? 'active' : m.status);
         
+        // Get plan name - prefer plans table, fallback to other fields
+        let planName = m.plans?.name;
+        if (!planName) {
+            // Try to get from related data or use default
+            planName = 'Health Plan';
+        }
+        
         return {
-            id: m.id,
-            plan_name: m.plans?.name || 'Health Plan',
+            id: m.id, // Use member ID as the purchase ID
+            plan_name: planName,
             status: status,
             coverage_amount: m.coverage_amount || m.plans?.coverage_amount || 0,
             start_date: m.valid_from,
             expiry_date: m.valid_till,
             created_at: m.created_at,
             price: m.plans?.price || 0,
-            type: 'Family',
-            members_count: data.filter((d: any) => d.plan_id === m.plan_id).length,
-            isFirstPurchase: m.relation === 'Self' && m.created_at === data.find((d: any) => d.plan_id === m.plan_id && d.relation === 'Self')?.created_at
+            type: m.relation === 'Self' ? 'Primary' : 'Family Member',
+            member_name: m.full_name,
+            relation: m.relation,
+            card_number: m.card_unique_id,
+            isFirstPurchase: m.relation === 'Self'
         };
     });
 
-    // Sort by creation date, newest first
-    purchases.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // Group by card_unique_id to combine family members under same purchase
+    const groupedMap = new Map<string, any>();
+    
+    for (const p of purchases) {
+        const key = p.card_number || p.id;
+        if (!groupedMap.has(key)) {
+            groupedMap.set(key, { ...p, family_members: [] });
+        }
+        if (p.relation !== 'Self') {
+            const existing = groupedMap.get(key);
+            existing.family_members = existing.family_members || [];
+            existing.family_members.push({
+                name: p.member_name,
+                relation: p.relation
+            });
+        }
+    }
 
-    return { success: true, data: purchases };
+    const groupedPurchases = Array.from(groupedMap.values());
+    
+    // Add members_count to each purchase
+    for (const p of groupedPurchases) {
+        p.members_count = data.filter((d: any) => (d.card_unique_id || d.id) === (p.card_number || p.id)).length;
+    }
+
+    // Sort by creation date, newest first
+    groupedPurchases.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return { success: true, data: groupedPurchases };
 }
 
 export async function getPurchaseDetail(id: string) {

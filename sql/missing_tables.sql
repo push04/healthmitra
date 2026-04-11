@@ -1,10 +1,15 @@
--- HealthMitra Database Schema - Missing Tables
--- Run this in Supabase Dashboard > SQL Editor
+-- =============================================================================
+-- HealthMitra Database - Missing Tables
+-- Run this in: Supabase Dashboard > SQL Editor
+-- URL: https://supabase.com/dashboard/project/fbqwsfkpytexbdsfgqbr/sql
+-- =============================================================================
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- =============================================================================
 -- 1. FAQS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS faqs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     question TEXT NOT NULL,
@@ -16,7 +21,9 @@ CREATE TABLE IF NOT EXISTS faqs (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 2. TESTIMONIALS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS testimonials (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -31,7 +38,9 @@ CREATE TABLE IF NOT EXISTS testimonials (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 3. PAGES Table (CMS Pages)
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS pages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     slug TEXT UNIQUE NOT NULL,
@@ -47,7 +56,9 @@ CREATE TABLE IF NOT EXISTS pages (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 4. HOMEPAGE SECTIONS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS homepage_sections (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     section_key TEXT UNIQUE NOT NULL,
@@ -61,7 +72,9 @@ CREATE TABLE IF NOT EXISTS homepage_sections (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 5. MEDIA FOLDERS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS media_folders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -70,7 +83,9 @@ CREATE TABLE IF NOT EXISTS media_folders (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 6. MEDIA Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS media (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     folder_id UUID REFERENCES media_folders(id),
@@ -88,7 +103,9 @@ CREATE TABLE IF NOT EXISTS media (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 7. PARTNERS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS partners (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -108,12 +125,14 @@ CREATE TABLE IF NOT EXISTS partners (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 8. COMMISSIONS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS commissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    partner_id UUID REFERENCES partners(id),
-    user_id UUID REFERENCES auth.users(id),
-    plan_id UUID REFERENCES plans(id),
+    partner_id UUID,
+    user_id UUID,
+    plan_id UUID,
     sale_id UUID,
     amount DECIMAL(10,2) NOT NULL,
     percentage DECIMAL(5,2),
@@ -124,11 +143,13 @@ CREATE TABLE IF NOT EXISTS commissions (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 9. WITHDRAWALS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS withdrawals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id),
-    partner_id UUID REFERENCES partners(id),
+    user_id UUID,
+    partner_id UUID,
     amount DECIMAL(10,2) NOT NULL,
     payment_method TEXT,
     bank_name TEXT,
@@ -137,42 +158,48 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     upi_id TEXT,
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'paid')),
     remarks TEXT,
-    processed_by UUID REFERENCES auth.users(id),
+    processed_by UUID,
     processed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 10. SUPPORT TICKETS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS support_tickets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_number TEXT UNIQUE NOT NULL,
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID,
     subject TEXT NOT NULL,
     description TEXT NOT NULL,
     category TEXT,
     priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
     status TEXT DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
-    assigned_to UUID REFERENCES auth.users(id),
+    assigned_to UUID,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 11. SUPPORT REPLIES Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS support_replies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID REFERENCES support_tickets(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID,
     message TEXT NOT NULL,
     is_internal BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 12. PAYMENT TRANSACTIONS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS payment_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id),
-    plan_id UUID REFERENCES plans(id),
+    user_id UUID,
+    plan_id UUID,
     invoice_id UUID,
     transaction_id TEXT,
     gateway TEXT,
@@ -185,10 +212,12 @@ CREATE TABLE IF NOT EXISTS payment_transactions (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- =============================================================================
 -- 13. ACTIVITY LOGS Table
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS activity_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID,
     action TEXT NOT NULL,
     entity_type TEXT,
     entity_id UUID,
@@ -199,7 +228,9 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create indexes for better performance
+-- =============================================================================
+-- INDEXES
+-- =============================================================================
 CREATE INDEX IF NOT EXISTS idx_faqs_active ON faqs(is_active, sort_order);
 CREATE INDEX IF NOT EXISTS idx_testimonials_active ON testimonials(is_active, sort_order);
 CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug);
@@ -217,7 +248,9 @@ CREATE INDEX IF NOT EXISTS idx_payment_transactions_status ON payment_transactio
 CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
 
--- Enable RLS on all tables
+-- =============================================================================
+-- ENABLE RLS (Row Level Security)
+-- =============================================================================
 ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pages ENABLE ROW LEVEL SECURITY;
@@ -232,63 +265,112 @@ ALTER TABLE support_replies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 
--- Create policies (allow read for all, write only for authenticated users)
--- FAQS
+-- =============================================================================
+-- RLS POLICIES
+-- =============================================================================
+
+-- FAQS: Public read, admin write
 CREATE POLICY "Allow read faqs" ON faqs FOR SELECT USING (true);
-CREATE POLICY "Allow admin write faqs" ON faqs FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
+CREATE POLICY "Allow admin write faqs" ON faqs FOR ALL USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
 
--- TESTIMONIALS
+-- TESTIMONIALS: Public read, admin write
 CREATE POLICY "Allow read testimonials" ON testimonials FOR SELECT USING (true);
-CREATE POLICY "Allow admin write testimonials" ON testimonials FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
+CREATE POLICY "Allow admin write testimonials" ON testimonials FOR ALL USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
 
--- PAGES
-CREATE POLICY "Allow read published pages" ON pages FOR SELECT USING (is_published = true OR auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
-CREATE POLICY "Allow admin write pages" ON pages FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
+-- PAGES: Public read (published), admin write
+CREATE POLICY "Allow read published pages" ON pages FOR SELECT USING (
+    is_published = true OR 
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
+CREATE POLICY "Allow admin write pages" ON pages FOR ALL USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
 
--- HOMEPAGE SECTIONS
+-- HOMEPAGE SECTIONS: Public read, admin write
 CREATE POLICY "Allow read homepage_sections" ON homepage_sections FOR SELECT USING (true);
-CREATE POLICY "Allow admin write homepage_sections" ON homepage_sections FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
+CREATE POLICY "Allow admin write homepage_sections" ON homepage_sections FOR ALL USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
 
--- MEDIA
+-- MEDIA: Public read, auth write
 CREATE POLICY "Allow read media" ON media FOR SELECT USING (true);
 CREATE POLICY "Allow auth write media" ON media FOR ALL USING (auth.uid() IS NOT NULL);
 
--- MEDIA FOLDERS
+-- MEDIA FOLDERS: Public read, auth write
 CREATE POLICY "Allow read media_folders" ON media_folders FOR SELECT USING (true);
 CREATE POLICY "Allow auth write media_folders" ON media_folders FOR ALL USING (auth.uid() IS NOT NULL);
 
--- PARTNERS
-CREATE POLICY "Allow admin read partners" ON partners FOR SELECT USING (auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee', 'franchise_owner')));
-CREATE POLICY "Allow admin write partners" ON partners FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+-- PARTNERS: Admin read, admin write
+CREATE POLICY "Allow admin read partners" ON partners FOR SELECT USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee', 'franchise_owner'))
+);
+CREATE POLICY "Allow admin write partners" ON partners FOR ALL USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
+);
 
--- COMMISSIONS
-CREATE POLICY "Allow own commissions read" ON commissions FOR SELECT USING (user_id = auth.uid() OR auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
-CREATE POLICY "Allow admin write commissions" ON commissions FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+-- COMMISSIONS: Owner or admin read, admin write
+CREATE POLICY "Allow own commissions read" ON commissions FOR SELECT USING (
+    user_id = auth.uid() OR 
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
+CREATE POLICY "Allow admin write commissions" ON commissions FOR ALL USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
+);
 
--- WITHDRAWALS
-CREATE POLICY "Allow own withdrawals read" ON withdrawals FOR SELECT USING (user_id = auth.uid() OR auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
+-- WITHDRAWALS: Owner or admin
+CREATE POLICY "Allow own withdrawals read" ON withdrawals FOR SELECT USING (
+    user_id = auth.uid() OR 
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
 CREATE POLICY "Allow auth create withdrawals" ON withdrawals FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Allow admin write withdrawals" ON withdrawals FOR UPDATE USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+CREATE POLICY "Allow admin write withdrawals" ON withdrawals FOR UPDATE USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
+);
 
--- SUPPORT TICKETS
-CREATE POLICY "Allow own tickets read" ON support_tickets FOR SELECT USING (user_id = auth.uid() OR auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee', 'call_center_agent')));
+-- SUPPORT TICKETS: Owner or agent/admin
+CREATE POLICY "Allow own tickets read" ON support_tickets FOR SELECT USING (
+    user_id = auth.uid() OR 
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee', 'call_center_agent'))
+);
 CREATE POLICY "Allow auth create tickets" ON support_tickets FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Allow admin write tickets" ON support_tickets FOR UPDATE USING (auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
+CREATE POLICY "Allow admin write tickets" ON support_tickets FOR UPDATE USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
 
--- SUPPORT REPLIES
-CREATE POLICY "Allow own replies read" ON support_replies FOR SELECT USING (user_id = auth.uid() OR auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee', 'call_center_agent')));
+-- SUPPORT REPLIES: Owner or agent/admin
+CREATE POLICY "Allow own replies read" ON support_replies FOR SELECT USING (
+    user_id = auth.uid() OR 
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee', 'call_center_agent'))
+);
 CREATE POLICY "Allow auth create replies" ON support_replies FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Allow admin write replies" ON support_replies FOR UPDATE USING (auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
+CREATE POLICY "Allow admin write replies" ON support_replies FOR UPDATE USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
 
--- PAYMENT TRANSACTIONS
-CREATE POLICY "Allow own transactions read" ON payment_transactions FOR SELECT USING (user_id = auth.uid() OR auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee')));
-CREATE POLICY "Allow admin write transactions" ON payment_transactions FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+-- PAYMENT TRANSACTIONS: Owner or admin
+CREATE POLICY "Allow own transactions read" ON payment_transactions FOR SELECT USING (
+    user_id = auth.uid() OR 
+    auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'employee'))
+);
+CREATE POLICY "Allow admin write transactions" ON payment_transactions FOR ALL USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
+);
 
--- ACTIVITY LOGS
-CREATE POLICY "Allow admin read activity_logs" ON activity_logs FOR SELECT USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
-CREATE POLICY "Allow admin write activity_logs" ON activity_logs FOR INSERT WITH CHECK (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+-- ACTIVITY LOGS: Admin only
+CREATE POLICY "Allow admin read activity_logs" ON activity_logs FOR SELECT USING (
+    auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
+);
+CREATE POLICY "Allow admin write activity_logs" ON activity_logs FOR INSERT WITH CHECK (
+    auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
+);
 
--- Insert default data
+-- =============================================================================
+-- SEED DATA (Optional homepage sections)
+-- =============================================================================
 INSERT INTO homepage_sections (section_key, title, is_active, sort_order) VALUES
     ('hero', 'Hero Section', true, 1),
     ('features', 'Features Section', true, 2),
@@ -299,7 +381,14 @@ INSERT INTO homepage_sections (section_key, title, is_active, sort_order) VALUES
     ('footer', 'Footer', true, 7)
 ON CONFLICT (section_key) DO NOTHING;
 
--- Grant permissions
+-- =============================================================================
+-- GRANT PERMISSIONS
+-- =============================================================================
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+
+-- =============================================================================
+-- VERIFICATION
+-- =============================================================================
+SELECT 'Tables created successfully!' as status;
