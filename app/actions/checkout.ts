@@ -164,6 +164,25 @@ export async function purchasePlan(data: PlanPurchaseData) {
         purpose: 'plan_purchase',
     });
 
+    // Create invoice record for the purchase (non-critical, don't fail if this fails)
+    try {
+        const invoiceNumber = `INV-${new Date().getFullYear()}-${member.id?.slice(-8).toUpperCase() || Date.now().toString(36).toUpperCase()}`;
+        const gstAmount = Math.round(plan.price * 0.18);
+        await adminClient.from('invoices').insert({
+            user_id: user.id,
+            plan_id: data.planId,
+            invoice_number: invoiceNumber,
+            amount: plan.price,
+            gst: gstAmount,
+            total: plan.price + gstAmount,
+            status: 'paid',
+            payment_method: data.paymentMethod,
+            transaction_id: transactionId,
+        });
+    } catch (invoiceErr: any) {
+        console.error('Invoice creation error (non-critical):', invoiceErr.message);
+    }
+
     return {
         success: true,
         data: {
