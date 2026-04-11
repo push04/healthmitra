@@ -1,6 +1,8 @@
 import { getUserInvoices } from "@/app/actions/user";
 import { InvoicesView } from "@/components/client/InvoicesView";
 
+export const dynamic = 'force-dynamic';
+
 export default async function InvoicesPage() {
     const { success, data } = await getUserInvoices();
 

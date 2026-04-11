@@ -171,6 +171,7 @@ export async function purchasePlan(data: PlanPurchaseData) {
         await adminClient.from('invoices').insert({
             user_id: user.id,
             plan_id: data.planId,
+            plan_name: plan.name,
             invoice_number: invoiceNumber,
             amount: plan.price,
             gst: gstAmount,

@@ -93,11 +93,11 @@ export async function getUserInvoices() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-    // Fallback to ecard_members if invoices table is empty or has error
-    if ((!invoices || invoices.length === 0) && error) {
+    if (error) {
         console.error('Error fetching invoices:', error);
     }
 
+    // Fallback to ecard_members if invoices table is empty
     if (!invoices || invoices.length === 0) {
         // Get purchases from ecard_members
         let { data: purchases, error: purchaseError } = await adminClient
