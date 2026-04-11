@@ -1,23 +1,12 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { ApiResponse, DashboardData } from "@/types/dashboard";
 
 export async function fetchDashboardData(): Promise<ApiResponse<DashboardData>> {
     try {
-        const cookieStore = await cookies();
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    getAll() {
-                        return cookieStore.getAll();
-                    },
-                },
-            }
-        );
+        const supabase = await createClient();
+        const adminClient = await createAdminClient();
         
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -26,10 +15,11 @@ export async function fetchDashboardData(): Promise<ApiResponse<DashboardData>> 
         }
 
         // Use Promise.allSettled to handle individual query failures gracefully
+        // Use admin client for ecard_members to bypass RLS
         const results = await Promise.allSettled([
             supabase.from('profiles').select('*').eq('id', user.id).single(),
             supabase.from('wallets').select('*').eq('user_id', user.id).single(),
-            supabase.from('ecard_members').select('*, plans(*)').eq('user_id', user.id),
+            adminClient.from('ecard_members').select('*, plans(*)').eq('user_id', user.id),
             supabase.from('service_requests').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
             supabase.from('reimbursement_claims').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
             supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(10),
