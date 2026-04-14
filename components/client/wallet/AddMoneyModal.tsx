@@ -20,23 +20,28 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
     const [isProcessing, setIsProcessing] = useState(false);
     const [razorpayEnabled, setRazorpayEnabled] = useState(false);
     const [razorpayKeyId, setRazorpayKeyId] = useState('');
+    const [paypalEnabled, setPaypalEnabled] = useState(false);
     const supabase = createClient();
 
+    const isLiveMode = razorpayEnabled || paypalEnabled;
+
     useEffect(() => {
-        const fetchRazorpaySettings = async () => {
+        const fetchPaymentSettings = async () => {
             const { data } = await supabase
                 .from('system_settings')
                 .select('key, value')
-                .in('key', ['razorpay_enabled', 'razorpay_key_id']);
+                .in('key', ['razorpay_enabled', 'razorpay_key_id', 'paypal_enabled']);
             
             if (data) {
-                const enabled = data.find(s => s.key === 'razorpay_enabled')?.value === 'true';
+                const rzEnabled = data.find(s => s.key === 'razorpay_enabled')?.value === 'true';
                 const keyId = data.find(s => s.key === 'razorpay_key_id')?.value || '';
-                setRazorpayEnabled(enabled);
+                const ppEnabled = data.find(s => s.key === 'paypal_enabled')?.value === 'true';
+                setRazorpayEnabled(rzEnabled);
                 setRazorpayKeyId(keyId);
+                setPaypalEnabled(ppEnabled);
             }
         };
-        if (isOpen) fetchRazorpaySettings();
+        if (isOpen) fetchPaymentSettings();
     }, [isOpen]);
 
     if (!isOpen) return null;
@@ -180,15 +185,15 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
 
                 <div className="p-6 space-y-6">
                     {/* Payment Mode Indicator */}
-                    <div className={`p-3 rounded-lg ${razorpayEnabled ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+                    <div className={`p-3 rounded-lg ${isLiveMode ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
                         <div className="flex items-center gap-2">
-                            {razorpayEnabled ? (
+                            {isLiveMode ? (
                                 <CheckCircle className="w-5 h-5 text-green-600" />
                             ) : (
                                 <span className="text-amber-600 text-sm font-medium">TEST MODE</span>
                             )}
-                            <span className={`text-sm ${razorpayEnabled ? 'text-green-700' : 'text-amber-700'}`}>
-                                {razorpayEnabled ? 'Live Payment - Real money will be deducted' : 'Test Mode - No real payment'}
+                            <span className={`text-sm ${isLiveMode ? 'text-green-700' : 'text-amber-700'}`}>
+                                {isLiveMode ? 'Live Payment - Real money will be deducted' : 'Test Mode - No real payment'}
                             </span>
                         </div>
                     </div>
@@ -282,10 +287,10 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
                     >
                         {isProcessing ? (
                             <>Processing <Loader2 size={16} className="animate-spin" /></>
-                        ) : razorpayEnabled ? (
+                        ) : isLiveMode ? (
                             `Pay $${Number(amount || 0).toLocaleString('en-US')}`
                         ) : (
-                            'Add Money (Test)'
+                            'Add Money'
                         )}
                     </button>
                 </div>

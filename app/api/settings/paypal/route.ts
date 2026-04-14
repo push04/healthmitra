@@ -4,30 +4,21 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 export async function GET() {
     try {
         const supabase = await createClient();
-        const adminClient = await createAdminClient();
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Check if user is admin
-        const { data: profile } = await adminClient
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-        if (profile?.role !== 'admin') {
-            return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
-        }
-
+        // Any authenticated user can read public PayPal settings (clientId, enabled, sandbox)
+        // Secret key is never returned here
+        const adminClient = await createAdminClient();
         const { data: settings } = await adminClient.from('system_settings')
             .select('key, value')
             .in('key', ['paypal_enabled', 'paypal_client_id', 'paypal_sandbox']);
 
         if (!settings) {
-            return NextResponse.json({ success: false, error: 'Settings not found' }, { status: 404 });
+            return NextResponse.json({ success: true, data: { enabled: false, clientId: '', sandbox: false } });
         }
 
         const enabled = settings.find(s => s.key === 'paypal_enabled')?.value === 'true';
