@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         }
 
         // Get Razorpay settings
-        const { data: settings } = await supabase.from('system_settings')
+        const { data: settings } = await adminClient.from('system_settings')
             .select('key, value')
             .in('key', ['razorpay_enabled']);
 

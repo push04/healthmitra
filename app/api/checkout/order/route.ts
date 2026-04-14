@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import Razorpay from 'razorpay';
 
 export async function POST(request: Request) {
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
         const { planId, amount } = await request.json();
 
         // Get Razorpay settings
-        const { data: settings } = await supabase.from('system_settings')
+        const adminClient = await createAdminClient();
+        const { data: settings } = await adminClient.from('system_settings')
             .select('key, value')
             .in('key', ['razorpay_enabled', 'razorpay_key_id', 'razorpay_key_secret']);
 
