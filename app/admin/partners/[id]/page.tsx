@@ -15,7 +15,7 @@ import {
     DollarSign, Users, Calendar, Edit, Globe, CheckCircle, Clock, CreditCard, FileText, CheckCircle2, XCircle, Upload
 } from 'lucide-react';
 import { Partner, SubPartner, PartnerCommission, PartnerKYC } from '@/types/partners';
-import { getPartner, getPartnerKYC, updatePartnerKYC, verifyPartnerKYC, uploadPartnerKYCDocument } from '@/app/actions/partners';
+import { getPartner, getPartnerKYC, updatePartnerKYC, verifyPartnerKYC } from '@/app/actions/partners';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -57,15 +57,26 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
 
     const handleDocUpload = async (docType: 'aadhaar_front' | 'aadhaar_back' | 'pan_card' | 'photo', file: File) => {
         setUploadingDoc(docType);
-        const res = await uploadPartnerKYCDocument(id, docType, file);
-        setUploadingDoc(null);
-        if (res.success) {
-            toast.success('Document uploaded');
-            const kycRes = await getPartnerKYC(id);
-            if (kycRes.success && kycRes.data) setKyc(kycRes.data);
-        } else {
-            toast.error(res.error || 'Upload failed');
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('bucket', 'documents');
+            formData.append('folder', `kyc/${id}/${docType}`);
+            const response = await fetch('/api/upload', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.success && result.data?.url) {
+                const fieldMap: Record<string, string> = { aadhaar_front: 'aadhaarFront', aadhaar_back: 'aadhaarBack', pan_card: 'panCard', photo: 'photo' };
+                await updatePartnerKYC(id, { [fieldMap[docType]]: result.data.url });
+                toast.success('Document uploaded');
+                const kycRes = await getPartnerKYC(id);
+                if (kycRes.success && kycRes.data) setKyc(kycRes.data);
+            } else {
+                toast.error(result.error || 'Upload failed');
+            }
+        } catch (e: any) {
+            toast.error(e.message || 'Upload failed');
         }
+        setUploadingDoc(null);
     };
 
     useEffect(() => {
@@ -408,7 +419,7 @@ function DocCard({ label, url, onUpload, uploading }: { label: string; url?: str
                     <p className="text-xs text-slate-400 mb-2">Not uploaded</p>
                     {onUpload && (
                         <label className="cursor-pointer">
-                            <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e: any) => {
+                            <input type="file" accept="image/*,.pdf,.jpg,.jpeg,.png,.doc,.docx" className="hidden" onChange={(e: any) => {
                                 const file = e.target.files?.[0];
                                 if (file) onUpload(file);
                             }} />

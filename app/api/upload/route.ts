@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 const ALLOWED_BUCKETS = ['documents', 'images', 'avatars'];
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'heic', 'heif', 'webp', 'tiff', 'tif', 'bmp'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 function sanitizePath(path: string): string {
     // Remove any path traversal attempts

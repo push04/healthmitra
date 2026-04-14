@@ -601,7 +601,7 @@ function DocumentCard({ title, number, status, documentUrl, onUpload }: { title:
             <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,.pdf"
+                accept="image/*,.pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,.heif,.webp"
                 onChange={handleFileChange}
                 className="hidden"
             />
