@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 async function getPayPalAccessToken(clientId: string, clientSecret: string, sandbox: boolean) {
     const base = sandbox ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
@@ -24,7 +24,8 @@ export async function POST(request: Request) {
 
         const { planId, amount } = await request.json();
 
-        const { data: settings } = await supabase.from('system_settings')
+        const adminClient = await createAdminClient();
+        const { data: settings } = await adminClient.from('system_settings')
             .select('key, value')
             .in('key', ['paypal_enabled', 'paypal_client_id', 'paypal_client_secret', 'paypal_sandbox']);
 

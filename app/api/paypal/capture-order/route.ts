@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
         const { paypalOrderId, planId } = await request.json();
 
-        const { data: settings } = await supabase.from('system_settings')
+        const { data: settings } = await adminClient.from('system_settings')
             .select('key, value')
             .in('key', ['paypal_client_id', 'paypal_client_secret', 'paypal_sandbox']);
 
