@@ -344,17 +344,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ plan: strin
                                     </CardHeader>
                                     <CardContent className="pt-0 space-y-4">
 
-                                        {/* Status pill */}
-                                        <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium ${
-                                            anyLivePayment
-                                                ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-                                                : 'bg-amber-50 border border-amber-200 text-amber-700'
-                                        }`}>
-                                            {anyLivePayment
-                                                ? <><CheckCircle className="w-4 h-4 shrink-0" /> Live Payment Mode</>
-                                                : <><AlertCircle className="w-4 h-4 shrink-0" /> Test Payment Mode</>
-                                            }
-                                        </div>
+                                        {/* Status pill - ONLY show if not in live mode */}
+                                        {!anyLivePayment && (
+                                            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium bg-amber-50 border border-amber-200 text-amber-700">
+                                                <AlertCircle className="w-4 h-4 shrink-0" /> Test Payment Mode
+                                            </div>
+                                        )}
 
                                         {/* Amount display */}
                                         <div className="text-center py-3 border border-slate-100 rounded-xl bg-slate-50">

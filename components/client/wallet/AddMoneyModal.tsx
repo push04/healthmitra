@@ -191,19 +191,15 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Payment Mode Indicator */}
-                    <div className={`p-3 rounded-lg ${isLiveMode ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
-                        <div className="flex items-center gap-2">
-                            {isLiveMode ? (
-                                <CheckCircle className="w-5 h-5 text-green-600" />
-                            ) : (
+                    {/* Payment Mode Indicator - ONLY show if not live */}
+                    {!isLiveMode && (
+                        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                            <div className="flex items-center gap-2">
                                 <span className="text-amber-600 text-sm font-medium">TEST MODE</span>
-                            )}
-                            <span className={`text-sm ${isLiveMode ? 'text-green-700' : 'text-amber-700'}`}>
-                                {isLiveMode ? 'Live Payment - Real money will be deducted' : 'Test Mode - No real payment'}
-                            </span>
+                                <span className="text-sm text-amber-700">Test Mode - No real payment</span>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="text-center">
                         <p className="text-sm text-slate-500 mb-1">Current Balance</p>
