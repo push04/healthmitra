@@ -1,27 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const supabase = await createClient();
-        const adminClient = await createAdminClient();
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Check if user is admin
-        const { data: profile } = await adminClient
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-        if (profile?.role !== 'admin') {
-            return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
-        }
-
+        const adminClient = await createAdminClient();
         const { data: settings } = await adminClient.from('system_settings')
             .select('key, value')
             .in('key', ['razorpay_enabled', 'razorpay_key_id', 'razorpay_key_secret']);

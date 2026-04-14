@@ -27,18 +27,25 @@ export default function AddMoneyModal({ isOpen, onClose, currentBalance, onSucce
 
     useEffect(() => {
         const fetchPaymentSettings = async () => {
-            const { data } = await supabase
-                .from('system_settings')
-                .select('key, value')
-                .in('key', ['razorpay_enabled', 'razorpay_key_id', 'paypal_enabled']);
-            
-            if (data) {
-                const rzEnabled = data.find(s => s.key === 'razorpay_enabled')?.value === 'true';
-                const keyId = data.find(s => s.key === 'razorpay_key_id')?.value || '';
-                const ppEnabled = data.find(s => s.key === 'paypal_enabled')?.value === 'true';
-                setRazorpayEnabled(rzEnabled);
-                setRazorpayKeyId(keyId);
-                setPaypalEnabled(ppEnabled);
+            try {
+                const [rzpRes, ppRes] = await Promise.all([
+                    fetch('/api/settings/razorpay'),
+                    fetch('/api/settings/paypal')
+                ]);
+                const [rzpData, ppData] = await Promise.all([
+                    rzpRes.json(),
+                    ppRes.json()
+                ]);
+
+                if (rzpData.success) {
+                    setRazorpayEnabled(rzpData.data.enabled);
+                    setRazorpayKeyId(rzpData.data.keyId);
+                }
+                if (ppData.success) {
+                    setPaypalEnabled(ppData.data.enabled);
+                }
+            } catch (error) {
+                console.error("Failed to fetch payment settings", error);
             }
         };
         if (isOpen) fetchPaymentSettings();
